@@ -881,7 +881,7 @@ document.addEventListener('DOMContentLoaded', function() {
 const translations = {
     en: {
         pageLangLabel: "Choose Your Language:",
-        dashboardTitle: "Referral Dashboard",
+        dashboardTitle: "TP External RAF Dashboard",
         dashboardSubtitle: "Enter your details to view your referral status",
         phoneLabel: "Phone Number:",
         phonePlaceholder: "Enter your phone number (01XXXXXXXX)",
