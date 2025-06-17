@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="reminder-section" class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
-                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join Teleperformance!</p>
+                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
                     <div id="friends-to-remind" class="row"></div>
                 </div>
             </div>
@@ -903,7 +903,7 @@ const translations = {
         earningsCount: "Count",
         earningsTotal: "Total",
         remindFriendsTitle: "Remind Your Friends",
-        remindFriendsText: "Help your friends complete their assessments to join Teleperformance!",
+        remindFriendsText: "Help your friends complete their assessments to join TP!",
         remindBtn: "Send WhatsApp Reminder",
         tpGlobal: "TP Global",
         followMalaysia: "TP Malaysia",
@@ -1101,7 +1101,7 @@ const translations = {
         earningsCount: "计数",
         earningsTotal: "总计",
         remindFriendsTitle: "提醒您的朋友",
-        remindFriendsText: "帮助您的朋友完成评估加入Teleperformance！",
+        remindFriendsText: "帮助您的朋友完成评估加入TP！",
         remindBtn: "发送WhatsApp提醒",
         tpGlobal: "TP全球",
         followMalaysia: "TP马来西亚",
@@ -1167,7 +1167,7 @@ const translations = {
         earningsCount: "計數",
         earningsTotal: "總計",
         remindFriendsTitle: "提醒您的朋友",
-        remindFriendsText: "幫助您的朋友完成評估加入Teleperformance！",
+        remindFriendsText: "幫助您的朋友完成評估加入TP！",
         remindBtn: "發送WhatsApp提醒",
         tpGlobal: "TP全球",
         followMalaysia: "TP馬來西亞",
