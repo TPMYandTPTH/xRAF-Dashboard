@@ -49,11 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const earningsStructure = {
         assessment: {
             label: "Assessment Pass",
-            amount: 250
+            amount: 50
         },
         probation: {
             label: "Probation Completion",
-            amount: 250
+            amount: 750
         }
     };
 
