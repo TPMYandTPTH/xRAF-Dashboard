@@ -1,4 +1,3 @@
-// Enhanced RAF Dashboard Script
 document.addEventListener('DOMContentLoaded', function() {
     // Set current year
     document.getElementById('current-year').textContent = new Date().getFullYear();
@@ -6,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentLanguage = 'en';
     let statusChart = null;
     
-    // User database (mock data for demo)
+    // User database (mock data)
     const userDatabase = {
         "0123456789:amr@tp.com": {
             fullName: "Amr EzZ",
@@ -28,6 +27,198 @@ document.addEventListener('DOMContentLoaded', function() {
             email: "pourya@example.com",
             phone: "0173890590"
         }
+    };
+
+    // Sample data with all status examples (keeping your original structure)
+    const sampleData = {
+        "0123456789:amr@tp.com": [
+            {
+                name: "John Smith (Passed Probation)",
+                email: "john.smith@example.com",
+                stage: "Hired",
+                status: "Successfully passed probation",
+                statusType: "passed",
+                applicationDate: "2023-11-15",
+                hireDate: "2023-11-20",
+                daysInStage: 95,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345678",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Sarah Johnson (In Probation)",
+                email: "sarah.j@example.com",
+                stage: "Hired",
+                status: "In probation period",
+                statusType: "probation",
+                applicationDate: "2023-12-10",
+                hireDate: "2023-12-15",
+                daysInStage: 45,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345679",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Michael Brown (Operations Review)",
+                email: "michael.b@example.com",
+                stage: "Operations",
+                status: "Final review by operations",
+                statusType: "operations",
+                applicationDate: "2024-01-05",
+                hireDate: "",
+                daysInStage: 10,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345680",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Loai (Interview Stage)",
+                email: "loai.d@example.com",
+                stage: "Talent",
+                status: "Interview scheduled",
+                statusType: "talent",
+                applicationDate: "2024-01-15",
+                hireDate: "",
+                daysInStage: 5,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0174669871",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Tarek (Assessment)",
+                email: "tarek@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-20",
+                hireDate: "",
+                daysInStage: 2,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0182708243",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Pourya (Assessment)",
+                email: "Pourya@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-20",
+                hireDate: "",
+                daysInStage: 2,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0173890590",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Lisa Miller (Application Received)",
+                email: "lisa.m@example.com",
+                stage: "Application",
+                status: "Application received",
+                statusType: "received",
+                applicationDate: "2024-01-25",
+                hireDate: "",
+                daysInStage: 1,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345683",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Robert Taylor (Not Selected)",
+                email: "robert.t@example.com",
+                stage: "Hired",
+                status: "Terminated during probation",
+                statusType: "failed",
+                applicationDate: "2023-10-01",
+                hireDate: "2023-10-10",
+                daysInStage: 45,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345684",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Previous Candidate (No Payment)",
+                email: "previous@example.com",
+                stage: "Application",
+                status: "Applied to TP before",
+                statusType: "previouslyApplied",
+                applicationDate: "2023-01-10",
+                hireDate: "",
+                daysInStage: 400,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345685",
+                isPreviousCandidate: true
+            }
+        ],
+        "0174669871:loai@example.com": [
+            {
+                name: "Jane Doe (Assessment)",
+                email: "jane.doe@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-18",
+                hireDate: "",
+                daysInStage: 3,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0112345686",
+                isPreviousCandidate: false
+            }
+        ],
+        "0182708243:tarek@example.com": [
+            {
+                name: "Mike Johnson (Probation)",
+                email: "mike.j@example.com",
+                stage: "Hired",
+                status: "In probation period",
+                statusType: "probation",
+                applicationDate: "2023-12-05",
+                hireDate: "2023-12-10",
+                daysInStage: 60,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345687",
+                isPreviousCandidate: false
+            }
+        ],
+        "0173890590:pourya@example.com": [
+            {
+                name: "Sarah Williams (Operations)",
+                email: "sarah.w@example.com",
+                stage: "Operations",
+                status: "Final review by operations",
+                statusType: "operations",
+                applicationDate: "2024-01-10",
+                hireDate: "",
+                daysInStage: 15,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345688",
+                isPreviousCandidate: false
+            }
+        ]
     };
 
     // Function to map a status to its simplified group
@@ -242,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (friendsNeedingReminder.length === 0) {
             friendsToRemind.innerHTML = `
                 <div class="col-12 text-center">
-                    <div class="alert alert-success">
+                    <div class="alert alert-success fade-in-up">
                         <i class="fas fa-check-circle me-2"></i>
                         <span data-translate="noRemindersNeeded">All your friends are on track!</span>
                     </div>
@@ -252,12 +443,744 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        friendsNeedingReminder.forEach(friend => {
+        friendsNeedingReminder.forEach((friend, index) => {
             const col = document.createElement('div');
             col.className = 'col-md-6 mb-3';
             
             col.innerHTML = `
-                <div class="friend-to-remind status-${friend.statusType}">
+                <div class="friend-to-remind status-${friend.statusType} fade-in-up" style="animation-delay: ${index * 0.1}s">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5><i class="fas fa-user me-2"></i>${friend.name}</h5>
+                        <span class="badge status-badge bg-${getStatusBadgeColor(friend.statusType)}">
+                            ${translations[currentLanguage][`status${friend.statusType.charAt(0).toUpperCase() + friend.statusType.slice(1)}`]}
+                        </span>
+                    </div>
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-envelope me-1"></i>${friend.email}
+                    </p>
+                    <p class="small mb-2">
+                        <strong><i class="fas fa-calendar-alt me-1"></i><span data-translate="referralDays">Days:</span></strong> ${friend.daysInStage}
+                    </p>
+                    <button class="btn btn-sm btn-success w-100 remind-btn" 
+                            data-name="${friend.name}" 
+                            data-phone="${friend.phone}" 
+                            data-translate="remindBtn">
+                        <i class="fab fa-whatsapp me-2"></i>${translations[currentLanguage].remindBtn}
+                    </button>
+                </div>
+            `;
+            
+            friendsToRemind.appendChild(col);
+        });
+        
+        updateTranslations();
+    }
+    
+    // Form submission with enhanced loading state
+    document.getElementById('dashboard-submit').addEventListener('click', function() {
+        const phone = document.getElementById('dashboard-phone').value.trim();
+        const email = document.getElementById('dashboard-email').value.trim();
+        let isValid = true;
+        
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        // Validate phone
+        if (!phone) {
+            showError(document.getElementById('dashboard-phone'), 
+                     translations[currentLanguage].phoneError);
+            isValid = false;
+        } else if (!validatePhone(phone)) {
+            showError(document.getElementById('dashboard-phone'), 
+                     translations[currentLanguage].phoneError);
+            isValid = false;
+        } else {
+            clearError(document.getElementById('dashboard-phone'));
+        }
+        
+        // Validate email
+        if (!email) {
+            showError(document.getElementById('dashboard-email'), 
+                     translations[currentLanguage].emailError);
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            showError(document.getElementById('dashboard-email'), 
+                     translations[currentLanguage].emailError);
+            isValid = false;
+        } else {
+            clearError(document.getElementById('dashboard-email'));
+        }
+        
+        if (!isValid) return;
+        
+        // Show loading state
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+        button.disabled = true;
+        
+        // Simulate API call delay
+        setTimeout(() => {
+            // Get referrals
+            const referrals = getReferrals(phone, email);
+            
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+            if (!referrals) {
+                // Show user not found modal
+                const userNotFoundModal = new bootstrap.Modal(document.getElementById('userNotFoundModal'));
+                userNotFoundModal.show();
+                return;
+            }
+            
+            // Show results
+            showReferralResults(referrals, phone, email);
+        }, 1000);
+    });
+    
+    // Show referral results
+    function showReferralResults(referrals, phone, email) {
+        document.getElementById('auth-step').style.display = 'none';
+        document.getElementById('results-step').style.display = 'block';
+        
+        // Get user info
+        const userInfo = getUserInfo(phone, email);
+        
+        // Create results content
+        const resultsContent = `
+            <div class="d-flex justify-content-between align-items-start mb-4 fade-in-up">
+                <div>
+                    ${userInfo ? `<h3 class="user-name-display"><i class="fas fa-user-tie me-2"></i>${userInfo.fullName}</h3>` : ''}
+                    <h4 data-translate="yourReferralsTitle"><i class="fas fa-users me-2"></i>Your Referrals</h4>
+                </div>
+                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </button>
+            </div>
+            
+            <div id="referral-stats" class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.1s">
+                        <h3 id="total-referrals">${referrals.length}</h3>
+                        <h5 data-translate="totalReferrals"><i class="fas fa-users me-2"></i>Total Referrals</h5>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.2s">
+                        <h3 class="text-success" id="hired-referrals">${referrals.filter(r => r.stage === 'Hired').length}</h3>
+                        <h5 data-translate="hiredReferrals"><i class="fas fa-check-circle me-2"></i>Hired</h5>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.3s">
+                        <h3 class="text-warning" id="progress-referrals">${referrals.filter(r => r.stage !== 'Hired').length}</h3>
+                        <h5 data-translate="inProgress"><i class="fas fa-clock me-2"></i>In Progress</h5>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3 fade-in-up" style="animation-delay: 0.4s">
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="filteredViewToggle">
+                        <label class="form-check-label" for="filteredViewToggle" data-translate="filteredViewLabel">
+                            <i class="fas fa-filter me-2"></i>Simplified Status View
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.5s">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">
+                        <i class="fas fa-chart-pie me-2"></i>Status Distribution
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                        <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
+                    </div>
+                    <div class="chart-legend text-center mt-3" id="chartLegend"></div>
+                </div>
+            </div>
+
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.6s">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">
+                        <i class="fas fa-money-bill-wave me-2"></i>Your Earnings
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="earnings-table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="earningsStage">Stage</th>
+                                    <th data-translate="earningsAmount">Amount (RM)</th>
+                                    <th data-translate="earningsCount">Count</th>
+                                    <th data-translate="earningsTotal">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="earnings-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th data-translate="earningsTotal">Total Earnings</th>
+                                    <th></th>
+                                    <th></th>
+                                    <th id="total-earnings">RM 0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+                            <i class="fas fa-info-circle me-2"></i>Payment Terms & Conditions
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="reminder-section" class="card mb-4 fade-in-up" style="animation-delay: 0.7s">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">
+                        <i class="fas fa-bell me-2"></i>Remind Your Friends
+                    </h5>
+                    <p class="text-center text-muted" data-translate="remindFriendsText">
+                        Help your friends complete their assessments to join TP!
+                    </p>
+                    <div id="friends-to-remind" class="row"></div>
+                </div>
+            </div>
+            
+            <div id="referral-list"></div>
+            
+            <!-- Status Examples Section -->
+            <div class="card mb-4 status-examples fade-in-up" style="animation-delay: 0.8s">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">
+                        <i class="fas fa-info-circle me-2"></i>Status Examples
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="status-example status-passed">
+                                <h5><i class="fas fa-check-circle me-2 text-success"></i>Passed Probation</h5>
+                                <p>Candidate completed 90+ days</p>
+                                <span class="badge bg-success">${translations[currentLanguage].statusPassed}</span>
+                            </div>
+                            <div class="status-example status-probation">
+                                <h5><i class="fas fa-clock me-2 text-warning"></i>In Probation</h5>
+                                <p>Candidate hired but under 90 days</p>
+                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusProbation}</span>
+                            </div>
+                            <div class="status-example status-operations">
+                                <h5><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h5>
+                                <p>Operations team finalizing</p>
+                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusOperations}</span>
+                            </div>
+                            <div class="status-example status-talent">
+                                <h5><i class="fas fa-users me-2 text-info"></i>Interview Stage</h5>
+                                <p>Candidate in interview process</p>
+                                <span class="badge bg-info">${translations[currentLanguage].statusTalent}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="status-example status-previously-applied">
+                                <h5><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h5>
+                                <p>No payment will be made</p>
+                                <span class="badge bg-previously-applied">${translations[currentLanguage].statusPreviouslyApplied}</span>
+                            </div>
+                            <div class="status-example status-assessment">
+                                <h5><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h5>
+                                <p>Candidate completing assessments</p>
+                                <span class="badge bg-primary">${translations[currentLanguage].statusAssessment}</span>
+                            </div>
+                            <div class="status-example status-received">
+                                <h5><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h5>
+                                <p>Initial application stage</p>
+                                <span class="badge bg-secondary">${translations[currentLanguage].statusReceived}</span>
+                            </div>
+                            <div class="status-example status-failed">
+                                <h5><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h5>
+                                <p>Candidate not hired</p>
+                                <span class="badge bg-danger">${translations[currentLanguage].statusFailed}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Social Media -->
+            <div class="mt-4 fade-in-up" style="animation-delay: 0.9s">
+                <div class="row text-center">
+                    <!-- TP Global -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="tpGlobal">TP Global</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
+                            <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    <!-- TP Malaysia -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followMalaysia">TP Malaysia</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                    <!-- TP Thailand -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followThailand">TP Thailand</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="document.addEventListener('DOMContentLoaded', function() {
+    // Set current year
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+    
+    let currentLanguage = 'en';
+    let statusChart = null;
+    
+    // User database (mock data)
+    const userDatabase = {
+        "0123456789:amr@tp.com": {
+            fullName: "Amr EzZ",
+            email: "amr@tp.com",
+            phone: "0123456789"
+        },
+        "0174669871:loai@example.com": {
+            fullName: "Loai Doe",
+            email: "loai@example.com",
+            phone: "0174669871"
+        },
+        "0182708243:tarek@example.com": {
+            fullName: "Tarek Smith",
+            email: "tarek@example.com",
+            phone: "0182708243"
+        },
+        "0173890590:pourya@example.com": {
+            fullName: "Pourya Johnson",
+            email: "pourya@example.com",
+            phone: "0173890590"
+        }
+    };
+
+    // Sample data with all status examples (keeping your original structure)
+    const sampleData = {
+        "0123456789:amr@tp.com": [
+            {
+                name: "John Smith (Passed Probation)",
+                email: "john.smith@example.com",
+                stage: "Hired",
+                status: "Successfully passed probation",
+                statusType: "passed",
+                applicationDate: "2023-11-15",
+                hireDate: "2023-11-20",
+                daysInStage: 95,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345678",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Sarah Johnson (In Probation)",
+                email: "sarah.j@example.com",
+                stage: "Hired",
+                status: "In probation period",
+                statusType: "probation",
+                applicationDate: "2023-12-10",
+                hireDate: "2023-12-15",
+                daysInStage: 45,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345679",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Michael Brown (Operations Review)",
+                email: "michael.b@example.com",
+                stage: "Operations",
+                status: "Final review by operations",
+                statusType: "operations",
+                applicationDate: "2024-01-05",
+                hireDate: "",
+                daysInStage: 10,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345680",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Loai (Interview Stage)",
+                email: "loai.d@example.com",
+                stage: "Talent",
+                status: "Interview scheduled",
+                statusType: "talent",
+                applicationDate: "2024-01-15",
+                hireDate: "",
+                daysInStage: 5,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0174669871",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Tarek (Assessment)",
+                email: "tarek@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-20",
+                hireDate: "",
+                daysInStage: 2,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0182708243",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Pourya (Assessment)",
+                email: "Pourya@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-20",
+                hireDate: "",
+                daysInStage: 2,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0173890590",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Lisa Miller (Application Received)",
+                email: "lisa.m@example.com",
+                stage: "Application",
+                status: "Application received",
+                statusType: "received",
+                applicationDate: "2024-01-25",
+                hireDate: "",
+                daysInStage: 1,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345683",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Robert Taylor (Not Selected)",
+                email: "robert.t@example.com",
+                stage: "Hired",
+                status: "Terminated during probation",
+                statusType: "failed",
+                applicationDate: "2023-10-01",
+                hireDate: "2023-10-10",
+                daysInStage: 45,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345684",
+                isPreviousCandidate: false
+            },
+            {
+                name: "Previous Candidate (No Payment)",
+                email: "previous@example.com",
+                stage: "Application",
+                status: "Applied to TP before",
+                statusType: "previouslyApplied",
+                applicationDate: "2023-01-10",
+                hireDate: "",
+                daysInStage: 400,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345685",
+                isPreviousCandidate: true
+            }
+        ],
+        "0174669871:loai@example.com": [
+            {
+                name: "Jane Doe (Assessment)",
+                email: "jane.doe@example.com",
+                stage: "Assessment",
+                status: "Assessment in progress",
+                statusType: "assessment",
+                applicationDate: "2024-01-18",
+                hireDate: "",
+                daysInStage: 3,
+                category: "Customer Service",
+                source: "Employee Referral",
+                needsAction: true,
+                phone: "0112345686",
+                isPreviousCandidate: false
+            }
+        ],
+        "0182708243:tarek@example.com": [
+            {
+                name: "Mike Johnson (Probation)",
+                email: "mike.j@example.com",
+                stage: "Hired",
+                status: "In probation period",
+                statusType: "probation",
+                applicationDate: "2023-12-05",
+                hireDate: "2023-12-10",
+                daysInStage: 60,
+                category: "Technical Support",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345687",
+                isPreviousCandidate: false
+            }
+        ],
+        "0173890590:pourya@example.com": [
+            {
+                name: "Sarah Williams (Operations)",
+                email: "sarah.w@example.com",
+                stage: "Operations",
+                status: "Final review by operations",
+                statusType: "operations",
+                applicationDate: "2024-01-10",
+                hireDate: "",
+                daysInStage: 15,
+                category: "Sales",
+                source: "Employee Referral",
+                needsAction: false,
+                phone: "0112345688",
+                isPreviousCandidate: false
+            }
+        ]
+    };
+
+    // Function to map a status to its simplified group
+    function mapStatusToGroup(status) {
+        if (!statusMapping.statusGroups) return status;
+        
+        for (const [group, statuses] of Object.entries(statusMapping.statusGroups)) {
+            if (statuses.includes(status)) {
+                return group;
+            }
+        }
+        
+        // If not found in any group, check if it starts with "Eliminated" or "Withdrew"
+        if (status.startsWith("Eliminated") || status.startsWith("Withdrew") || status.startsWith("Legacy")) {
+            return "Not Selected";
+        }
+        
+        return status;
+    }
+
+    // Helper function to get simplified status type
+    function getSimplifiedStatusType(status) {
+        const mappedStatus = mapStatusToGroup(status);
+        
+        switch(mappedStatus) {
+            case "Hired (Confirmed)":
+                return "passed";
+            case "Hired (Probation)":
+                return "probation";
+            case "Previously Applied (No Payment)":
+                return "previouslyApplied";
+            case "Final Review":
+                return "operations";
+            case "Interview Stage":
+                return "talent";
+            case "Assessment Stage":
+                return "assessment";
+            case "Application Received":
+                return "received";
+            case "Not Selected":
+                return "failed";
+            default:
+                return "received";
+        }
+    }
+
+    // Update translations
+    function updateTranslations() {
+        const translation = translations[currentLanguage] || translations.en;
+        
+        document.querySelectorAll('[data-translate]').forEach(el => {
+            const key = el.getAttribute('data-translate');
+            if (translation[key]) {
+                el.textContent = translation[key];
+            }
+        });
+        
+        document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-translate-placeholder');
+            if (translation[key]) {
+                el.placeholder = translation[key];
+            }
+        });
+    }
+    
+    // Language change handler
+    document.getElementById('lang-select').addEventListener('change', function() {
+        currentLanguage = this.value;
+        updateTranslations();
+        
+        // Refresh chart if it exists
+        if (statusChart) {
+            const referrals = getCurrentReferrals();
+            if (referrals) {
+                updateChart(referrals);
+                updateEarningsTable(referrals);
+                updateReminderSection(referrals);
+                updateReferralList(referrals);
+            }
+        }
+    });
+    
+    // Validate phone number
+    function validatePhone(phone) {
+        const regex = /^01\d{8,9}$/;
+        return regex.test(phone);
+    }
+    
+    // Validate email (case insensitive)
+    function validateEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+        return regex.test(email) && email.length <= 254;
+    }
+    
+    // Show error message
+    function showError(input, message) {
+        const formControl = input.closest('.mb-3');
+        const error = formControl.querySelector('.invalid-feedback');
+        
+        formControl.classList.add('was-validated');
+        error.textContent = message;
+        error.style.display = 'block';
+        input.classList.add('is-invalid');
+    }
+    
+    // Clear error
+    function clearError(input) {
+        const formControl = input.closest('.mb-3');
+        const error = formControl.querySelector('.invalid-feedback');
+        
+        formControl.classList.remove('was-validated');
+        error.style.display = 'none';
+        input.classList.remove('is-invalid');
+    }
+    
+    // Get referrals for current user
+    function getReferrals(phone, email) {
+        const key = `${phone}:${email.toLowerCase()}`; // Case insensitive email matching
+        return sampleData[key] || null;
+    }
+    
+    // Get current referrals (for chart refresh)
+    function getCurrentReferrals() {
+        const phone = document.getElementById('dashboard-phone').value.trim();
+        const email = document.getElementById('dashboard-email').value.trim();
+        return getReferrals(phone, email);
+    }
+    
+    // Get user info
+    function getUserInfo(phone, email) {
+        const key = `${phone}:${email.toLowerCase()}`;
+        return userDatabase[key] || null;
+    }
+    
+    // Get status badge color with payment eligibility check
+    function getStatusBadgeColor(statusType, daysInStage = 0, isPreviousCandidate = false) {
+        if (isPreviousCandidate) {
+            return 'previously-applied';
+        }
+        
+        switch(statusType) {
+            case 'passed':
+                return daysInStage >= 90 ? 'success' : 'warning';
+            case 'probation':
+                return 'warning';
+            case 'previouslyApplied':
+                return 'previously-applied';
+            case 'assessment':
+            case 'talent':
+            case 'operations':
+                return 'warning';
+            case 'failed':
+                return 'danger';
+            default:
+                return 'secondary';
+        }
+    }
+    
+    // Update earnings table
+    function updateEarningsTable(referrals) {
+        const earningsBody = document.getElementById('earnings-body');
+        earningsBody.innerHTML = '';
+        
+        let totalEarnings = 0;
+        
+        // Calculate assessment passes (not previously applied)
+        const assessmentPasses = referrals.filter(r => 
+            r.statusType === 'passed' && 
+            !r.isPreviousCandidate
+        );
+        
+        // Calculate probation completions (not previously applied)
+        const probationCompletions = referrals.filter(r => 
+            r.statusType === 'passed' && 
+            r.daysInStage >= 90 && 
+            !r.isPreviousCandidate
+        );
+        
+        // Add rows for each earning type
+        Object.entries(earningsStructure).forEach(([key, earning]) => {
+            const count = key === 'assessment' ? assessmentPasses.length : probationCompletions.length;
+            const total = count * earning.amount;
+            totalEarnings += total;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${translations[currentLanguage][`status${key.charAt(0).toUpperCase() + key.slice(1)}`] || earning.label}</td>
+                <td>RM ${earning.amount}</td>
+                <td>${count}</td>
+                <td>RM ${total}</td>
+            `;
+            earningsBody.appendChild(row);
+        });
+        
+        // Update total earnings
+        document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
+    }
+    
+    // Update reminder section
+    function updateReminderSection(referrals) {
+        const friendsToRemind = document.getElementById('friends-to-remind');
+        friendsToRemind.innerHTML = '';
+        
+        // Filter out previously applied candidates
+        const friendsNeedingReminder = referrals
+            .filter(r => r.needsAction && !r.isPreviousCandidate)
+            .sort((a, b) => {
+                const statusOrder = ['assessment', 'talent', 'operations', 'received'];
+                return statusOrder.indexOf(a.statusType) - statusOrder.indexOf(b.statusType);
+            });
+        
+        if (friendsNeedingReminder.length === 0) {
+            friendsToRemind.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="alert alert-success fade-in-up">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span data-translate="noRemindersNeeded">All your friends are on track!</span>
+                    </div>
+                </div>
+            `;
+            updateTranslations();
+            return;
+        }
+        
+        friendsNeedingReminder.forEach((friend, index) => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 mb-3';
+            
+            col.innerHTML = `
+                <div class="friend-to-remind status-${friend.statusType} fade-in-up" style="animation-delay: ${index * 0.1}s">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5><i class="fas fa-user me-2"></i>${friend.name}</h5>
                         <span class="badge status-badge bg-${getStatusBadgeColor(friend.statusType)}">
@@ -343,7 +1266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create results content
         const resultsContent = `
-            <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-4 fade-in-up">
                 <div>
                     ${userInfo ? `<h3 class="user-name-display"><i class="fas fa-user-tie me-2"></i>${userInfo.fullName}</h3>` : ''}
                     <h4 data-translate="yourReferralsTitle"><i class="fas fa-users me-2"></i>Your Referrals</h4>
@@ -355,26 +1278,26 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <div id="referral-stats" class="row mb-4">
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.1s">
                         <h3 id="total-referrals">${referrals.length}</h3>
                         <h5 data-translate="totalReferrals"><i class="fas fa-users me-2"></i>Total Referrals</h5>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.2s">
                         <h3 class="text-success" id="hired-referrals">${referrals.filter(r => r.stage === 'Hired').length}</h3>
                         <h5 data-translate="hiredReferrals"><i class="fas fa-check-circle me-2"></i>Hired</h5>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card">
+                    <div class="stats-card fade-in-up" style="animation-delay: 0.3s">
                         <h3 class="text-warning" id="progress-referrals">${referrals.filter(r => r.stage !== 'Hired').length}</h3>
                         <h5 data-translate="inProgress"><i class="fas fa-clock me-2"></i>In Progress</h5>
                     </div>
                 </div>
             </div>
             
-            <div class="card mb-3">
+            <div class="card mb-3 fade-in-up" style="animation-delay: 0.4s">
                 <div class="card-body">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="filteredViewToggle">
@@ -385,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <div class="card mb-4">
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.5s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="statusDistribution">
                         <i class="fas fa-chart-pie me-2"></i>Status Distribution
@@ -398,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.6s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="earningsTitle">
                         <i class="fas fa-money-bill-wave me-2"></i>Your Earnings
@@ -432,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <div id="reminder-section" class="card mb-4">
+            <div id="reminder-section" class="card mb-4 fade-in-up" style="animation-delay: 0.7s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">
                         <i class="fas fa-bell me-2"></i>Remind Your Friends
@@ -447,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="referral-list"></div>
             
             <!-- Status Examples Section -->
-            <div class="card mb-4 status-examples">
+            <div class="card mb-4 status-examples fade-in-up" style="animation-delay: 0.8s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-4">
                         <i class="fas fa-info-circle me-2"></i>Status Examples
@@ -455,46 +1378,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="row">
                         <div class="col-md-6">
                             <div class="status-example status-passed">
-                                <h6><i class="fas fa-check-circle me-2 text-success"></i>Hired (Confirmed)</h6>
-                                <p>Candidate completed 90+ days probation period</p>
-                                <span class="badge bg-success">Passed Probation</span>
+                                <h5><i class="fas fa-check-circle me-2 text-success"></i>Passed Probation</h5>
+                                <p>Candidate completed 90+ days</p>
+                                <span class="badge bg-success">${translations[currentLanguage].statusPassed}</span>
                             </div>
                             <div class="status-example status-probation">
-                                <h6><i class="fas fa-clock me-2 text-warning"></i>Hired (Probation)</h6>
-                                <p>Candidate hired but still in probation period</p>
-                                <span class="badge bg-warning text-dark">In Probation</span>
+                                <h5><i class="fas fa-clock me-2 text-warning"></i>In Probation</h5>
+                                <p>Candidate hired but under 90 days</p>
+                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusProbation}</span>
                             </div>
                             <div class="status-example status-operations">
-                                <h6><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h6>
-                                <p>Operations team conducting final review</p>
-                                <span class="badge bg-warning text-dark">Under Review</span>
+                                <h5><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h5>
+                                <p>Operations team finalizing</p>
+                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusOperations}</span>
                             </div>
                             <div class="status-example status-talent">
-                                <h6><i class="fas fa-users me-2 text-info"></i>Interview Stage</h6>
+                                <h5><i class="fas fa-users me-2 text-info"></i>Interview Stage</h5>
                                 <p>Candidate in interview process</p>
-                                <span class="badge bg-info">Interview Stage</span>
+                                <span class="badge bg-info">${translations[currentLanguage].statusTalent}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="status-example status-previously-applied">
-                                <h6><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h6>
-                                <p>No payment - candidate applied before</p>
-                                <span class="badge bg-secondary">No Payment</span>
+                                <h5><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h5>
+                                <p>No payment will be made</p>
+                                <span class="badge bg-previously-applied">${translations[currentLanguage].statusPreviouslyApplied}</span>
                             </div>
                             <div class="status-example status-assessment">
-                                <h6><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h6>
+                                <h5><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h5>
                                 <p>Candidate completing assessments</p>
-                                <span class="badge bg-primary">Assessment</span>
+                                <span class="badge bg-primary">${translations[currentLanguage].statusAssessment}</span>
                             </div>
                             <div class="status-example status-received">
-                                <h6><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h6>
-                                <p>Initial application received</p>
-                                <span class="badge bg-secondary">Received</span>
+                                <h5><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h5>
+                                <p>Initial application stage</p>
+                                <span class="badge bg-secondary">${translations[currentLanguage].statusReceived}</span>
                             </div>
                             <div class="status-example status-failed">
-                                <h6><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h6>
-                                <p>Candidate not selected for position</p>
-                                <span class="badge bg-danger">Not Selected</span>
+                                <h5><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h5>
+                                <p>Candidate not hired</p>
+                                <span class="badge bg-danger">${translations[currentLanguage].statusFailed}</span>
                             </div>
                         </div>
                     </div>
@@ -502,50 +1425,31 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <!-- Social Media -->
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-4">
-                        <i class="fas fa-share-alt me-2"></i>Follow Us
-                    </h5>
-                    <div class="row text-center">
-                        <!-- TP Global -->
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="tpGlobal">TP Global</h6>
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank">
-                                    <i class="fab fa-linkedin"></i>
-                                </a>
-                                <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank">
-                                    <i class="fab fa-youtube"></i>
-                                </a>
-                                <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank">
-                                    <i class="fab fa-tiktok"></i>
-                                </a>
-                            </div>
+            <div class="mt-4 fade-in-up" style="animation-delay: 0.9s">
+                <div class="row text-center">
+                    <!-- TP Global -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="tpGlobal">TP Global</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
+                            <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
                         </div>
-                        <!-- TP Malaysia -->
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="followMalaysia">TP Malaysia</h6>
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank">
-                                    <i class="fab fa-facebook-f"></i>
-                                </a>
-                                <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank">
-                                    <i class="fab fa-instagram"></i>
-                                </a>
-                            </div>
+                    </div>
+                    <!-- TP Malaysia -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followMalaysia">TP Malaysia</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
                         </div>
-                        <!-- TP Thailand -->
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="followThailand">TP Thailand</h6>
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank">
-                                    <i class="fab fa-facebook-f"></i>
-                                </a>
-                                <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank">
-                                    <i class="fab fa-instagram"></i>
-                                </a>
-                            </div>
+                    </div>
+                    <!-- TP Thailand -->
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followThailand">TP Thailand</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
                         </div>
                     </div>
                 </div>
@@ -595,10 +1499,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (referrals.length === 0) {
             referralList.innerHTML = `
-                <div class="card">
+                <div class="card fade-in-up">
                     <div class="card-body text-center">
                         <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
-                        <h5 data-translate="noReferrals">No referrals found with these details.</h5>
+                        <h5 data-translate="noReferrals">${translations[currentLanguage].noReferrals}</h5>
                     </div>
                 </div>
             `;
@@ -632,7 +1536,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create referral list card
         const referralListCard = document.createElement('div');
-        referralListCard.className = 'card mb-4';
+        referralListCard.className = 'card mb-4 fade-in-up';
+        referralListCard.style.animationDelay = '1s';
         referralListCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
@@ -647,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const referralItems = document.getElementById('referral-items');
         
-        sortedReferrals.forEach(referral => {
+        sortedReferrals.forEach((referral, index) => {
             const item = document.createElement('div');
             const statusKey = `status${referral.statusType.charAt(0).toUpperCase() + referral.statusType.slice(1)}`;
             const statusTranslation = translations[currentLanguage][statusKey] || referral.status;
@@ -657,7 +1562,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                       referral.daysInStage >= 90 && 
                                       !referral.isPreviousCandidate;
             
-            item.className = `card mb-3 status-${referral.statusType} ${isPaymentEligible ? 'payment-eligible' : ''}`;
+            item.className = `card mb-3 status-${referral.statusType} ${isPaymentEligible ? 'payment-eligible' : ''} slide-in`;
+            item.style.animationDelay = `${1.1 + (index * 0.1)}s`;
             
             item.innerHTML = `
                 <div class="card-body">
@@ -768,7 +1674,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 borderWidth: 2,
                 borderColor: '#fff',
-                hoverOffset: 10
+                hoverOffset: 8
             }]
         } : {
             // Original chart data setup
@@ -805,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 borderWidth: 2,
                 borderColor: '#fff',
-                hoverOffset: 10
+                hoverOffset: 8
             }]
         };
 
@@ -814,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', function() {
             statusChart.destroy();
         }
 
-        // Create new chart
+        // Create new chart with enhanced styling
         statusChart = new Chart(ctx, {
             type: 'doughnut',
             data: data,
@@ -827,6 +1733,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         display: false // We'll create custom legend below
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        cornerRadius: 8,
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
@@ -840,7 +1752,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 animation: {
                     animateScale: true,
-                    animateRotate: true
+                    animateRotate: true,
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
@@ -851,9 +1769,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         data.labels.forEach((label, i) => {
             const legendItem = document.createElement('span');
-            legendItem.className = 'd-inline-block mx-2 mb-1';
+            legendItem.className = 'd-inline-block mx-2 mb-2';
             legendItem.innerHTML = `
-                <span class="d-inline-block me-1" style="width: 12px; height: 12px; background-color: ${data.datasets[0].backgroundColor[i]}; border-radius: 50%;"></span>
+                <span class="d-inline-block me-2" style="width: 12px; height: 12px; background-color: ${data.datasets[0].backgroundColor[i]}; border-radius: 50%;"></span>
                 ${label}
             `;
             legendContainer.appendChild(legendItem);
@@ -867,8 +1785,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = button.dataset.name;
             const phone = button.dataset.phone;
             
-            const message = `Hi ${name}, this is a reminder to complete your TP assessment. ` +
-                           `We're excited about your application! Please complete it at your earliest convenience.`;
+            const message = `Hi ${name}, this is a friendly reminder to complete your TP assessment. ` +
+                           `We're excited about your application! Please complete it at your earliest convenience. Thank you!`;
             window.open(`https://wa.me/+6${phone}?text=${encodeURIComponent(message)}`, '_blank');
         }
     });
@@ -887,196 +1805,126 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize modals
     const tngModal = new bootstrap.Modal(document.getElementById('tngModal'));
     const userNotFoundModal = new bootstrap.Modal(document.getElementById('userNotFoundModal'));
+    
+    // Enhanced form interactions
+    const formInputs = document.querySelectorAll('.form-control, .form-select');
+    formInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    });
+    
+    // Enhanced scroll animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in-up');
+            }
+        });
+    }, observerOptions);
+    
+    // Observe elements for scroll animations
+    document.querySelectorAll('.card, .stats-card').forEach(el => {
+        observer.observe(el);
+    });
+    
+    // Enhanced error handling for chart
+    window.addEventListener('error', function(e) {
+        if (e.error && e.error.message && e.error.message.includes('Chart')) {
+            console.warn('Chart error handled gracefully');
+        }
+    });
+    
+    // Smooth scrolling for mobile
+    if ('scrollBehavior' in document.documentElement.style) {
+        document.documentElement.style.scrollBehavior = 'smooth';
+    }
+    
+    // Enhanced mobile touch interactions
+    if ('ontouchstart' in window) {
+        document.body.classList.add('touch-device');
+        
+        // Add touch feedback for buttons
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.classList.contains('btn')) {
+                e.target.classList.add('touch-active');
+            }
+        });
+        
+        document.addEventListener('touchend', function(e) {
+            if (e.target.classList.contains('btn')) {
+                setTimeout(() => {
+                    e.target.classList.remove('touch-active');
+                }, 150);
+            }
+        });
+    }
+    
+    // Performance monitoring for mobile
+    if ('performance' in window && 'memory' in performance) {
+        const memoryInfo = performance.memory;
+        if (memoryInfo.usedJSHeapSize > 50000000) { // 50MB
+            console.warn('High memory usage detected, optimizing animations');
+            document.body.classList.add('reduce-animations');
+        }
+    }
+    
+    // Add swipe gesture support for mobile
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    document.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    document.addEventListener('touchend', function(e) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        
+        // Detect swipe gestures
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX > 0) {
+                // Swipe right - could add navigation here
+            } else {
+                // Swipe left - could add navigation here
+            }
+        }
+    }, { passive: true });
+    
+    // Preload images for better performance
+    const imagesToPreload = ['TPLogo11.png'];
+    imagesToPreload.forEach(src => {
+        const img = new Image();
+        img.src = src;
+    });
+    
+    // Initialize app
+    console.log('xRAF Dashboard initialized successfully');
 });
-
-// Sample data with all status examples (keeping your original structure)
-const sampleData = {
-    "0123456789:amr@tp.com": [
-        {
-            name: "John Smith (Passed Probation)",
-            email: "john.smith@example.com",
-            stage: "Hired",
-            status: "Successfully passed probation",
-            statusType: "passed",
-            applicationDate: "2023-11-15",
-            hireDate: "2023-11-20",
-            daysInStage: 95,
-            category: "Customer Service",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345678",
-            isPreviousCandidate: false
+        document.addEventListener('DOMContentLoaded', function() {
+    // Set current year
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+    
+    let currentLanguage = 'en';
+    let statusChart = null;
+    
+    // User database (mock data)
+    const userDatabase = {
+        "0123456789:amr@tp.com": {
+            fullName: "Amr EzZ",
+            email: "amr@tp.com",
+            phone: "0123456789"
         },
-        {
-            name: "Sarah Johnson (In Probation)",
-            email: "sarah.j@example.com",
-            stage: "Hired",
-            status: "In probation period",
-            statusType: "probation",
-            applicationDate: "2023-12-10",
-            hireDate: "2023-12-15",
-            daysInStage: 45,
-            category: "Technical Support",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345679",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Michael Brown (Operations Review)",
-            email: "michael.b@example.com",
-            stage: "Operations",
-            status: "Final review by operations",
-            statusType: "operations",
-            applicationDate: "2024-01-05",
-            hireDate: "",
-            daysInStage: 10,
-            category: "Sales",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345680",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Loai (Interview Stage)",
-            email: "loai.d@example.com",
-            stage: "Talent",
-            status: "Interview scheduled",
-            statusType: "talent",
-            applicationDate: "2024-01-15",
-            hireDate: "",
-            daysInStage: 5,
-            category: "Customer Service",
-            source: "Employee Referral",
-            needsAction: true,
-            phone: "0174669871",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Tarek (Assessment)",
-            email: "tarek@example.com",
-            stage: "Assessment",
-            status: "Assessment in progress",
-            statusType: "assessment",
-            applicationDate: "2024-01-20",
-            hireDate: "",
-            daysInStage: 2,
-            category: "Technical Support",
-            source: "Employee Referral",
-            needsAction: true,
-            phone: "0182708243",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Pourya (Assessment)",
-            email: "Pourya@example.com",
-            stage: "Assessment",
-            status: "Assessment in progress",
-            statusType: "assessment",
-            applicationDate: "2024-01-20",
-            hireDate: "",
-            daysInStage: 2,
-            category: "Technical Support",
-            source: "Employee Referral",
-            needsAction: true,
-            phone: "0173890590",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Lisa Miller (Application Received)",
-            email: "lisa.m@example.com",
-            stage: "Application",
-            status: "Application received",
-            statusType: "received",
-            applicationDate: "2024-01-25",
-            hireDate: "",
-            daysInStage: 1,
-            category: "Sales",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345683",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Robert Taylor (Not Selected)",
-            email: "robert.t@example.com",
-            stage: "Hired",
-            status: "Terminated during probation",
-            statusType: "failed",
-            applicationDate: "2023-10-01",
-            hireDate: "2023-10-10",
-            daysInStage: 45,
-            category: "Customer Service",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345684",
-            isPreviousCandidate: false
-        },
-        {
-            name: "Previous Candidate (No Payment)",
-            email: "previous@example.com",
-            stage: "Application",
-            status: "Applied to TP before",
-            statusType: "previouslyApplied",
-            applicationDate: "2023-01-10",
-            hireDate: "",
-            daysInStage: 400,
-            category: "Customer Service",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345685",
-            isPreviousCandidate: true
-        }
-    ],
-    "0174669871:loai@example.com": [
-        {
-            name: "Jane Doe (Assessment)",
-            email: "jane.doe@example.com",
-            stage: "Assessment",
-            status: "Assessment in progress",
-            statusType: "assessment",
-            applicationDate: "2024-01-18",
-            hireDate: "",
-            daysInStage: 3,
-            category: "Customer Service",
-            source: "Employee Referral",
-            needsAction: true,
-            phone: "0112345686",
-            isPreviousCandidate: false
-        }
-    ],
-    "0182708243:tarek@example.com": [
-        {
-            name: "Mike Johnson (Probation)",
-            email: "mike.j@example.com",
-            stage: "Hired",
-            status: "In probation period",
-            statusType: "probation",
-            applicationDate: "2023-12-05",
-            hireDate: "2023-12-10",
-            daysInStage: 60,
-            category: "Technical Support",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345687",
-            isPreviousCandidate: false
-        }
-    ],
-    "0173890590:pourya@example.com": [
-        {
-            name: "Sarah Williams (Operations)",
-            email: "sarah.w@example.com",
-            stage: "Operations",
-            status: "Final review by operations",
-            statusType: "operations",
-            applicationDate: "2024-01-10",
-            hireDate: "",
-            daysInStage: 15,
-            category: "Sales",
-            source: "Employee Referral",
-            needsAction: false,
-            phone: "0112345688",
-            isPreviousCandidate: false
-        }
-    ]
-};
+        "0174669871:loai@example
