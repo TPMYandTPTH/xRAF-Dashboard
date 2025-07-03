@@ -446,6 +446,61 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <div id="referral-list"></div>
             
+            <!-- Status Examples Section -->
+            <div class="card mb-4 status-examples">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">
+                        <i class="fas fa-info-circle me-2"></i>Status Examples
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="status-example status-passed">
+                                <h6><i class="fas fa-check-circle me-2 text-success"></i>Hired (Confirmed)</h6>
+                                <p>Candidate completed 90+ days probation period</p>
+                                <span class="badge bg-success">Passed Probation</span>
+                            </div>
+                            <div class="status-example status-probation">
+                                <h6><i class="fas fa-clock me-2 text-warning"></i>Hired (Probation)</h6>
+                                <p>Candidate hired but still in probation period</p>
+                                <span class="badge bg-warning text-dark">In Probation</span>
+                            </div>
+                            <div class="status-example status-operations">
+                                <h6><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h6>
+                                <p>Operations team conducting final review</p>
+                                <span class="badge bg-warning text-dark">Under Review</span>
+                            </div>
+                            <div class="status-example status-talent">
+                                <h6><i class="fas fa-users me-2 text-info"></i>Interview Stage</h6>
+                                <p>Candidate in interview process</p>
+                                <span class="badge bg-info">Interview Stage</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="status-example status-previously-applied">
+                                <h6><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h6>
+                                <p>No payment - candidate applied before</p>
+                                <span class="badge bg-secondary">No Payment</span>
+                            </div>
+                            <div class="status-example status-assessment">
+                                <h6><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h6>
+                                <p>Candidate completing assessments</p>
+                                <span class="badge bg-primary">Assessment</span>
+                            </div>
+                            <div class="status-example status-received">
+                                <h6><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h6>
+                                <p>Initial application received</p>
+                                <span class="badge bg-secondary">Received</span>
+                            </div>
+                            <div class="status-example status-failed">
+                                <h6><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h6>
+                                <p>Candidate not selected for position</p>
+                                <span class="badge bg-danger">Not Selected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Social Media -->
             <div class="card">
                 <div class="card-body">
