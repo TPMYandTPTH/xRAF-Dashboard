@@ -3,7 +3,7 @@ const translations = {
     en: {
         pageLangLabel: "Choose Your Language:",
         dashboardTitle: "TP External RAF Dashboard",
-        dashboardSubtitle: "Enter your details to view your referral status and earnings",
+        dashboardSubtitle: "Enter your details to view your referral status",
         phoneLabel: "Phone Number:",
         phonePlaceholder: "Enter your phone number (01XXXXXXXX)",
         phoneError: "Please provide a valid phone number (01XXXXXXXX).",
@@ -59,7 +59,7 @@ const translations = {
         paymentTermsText2: "RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.",
         paymentTermsText3: "All payments are subject to verification and may take up to 30 days after probation completion.",
         closeBtn: "Close",
-        questionsTitle: "Need Help?",
+        questionsTitle: "Questions?",
         contactUsText: "Email us at:",
         statusAssessmentPassed: "Assessment Passed (RM50)",
         noRemindersNeeded: "All your friends are on track!",
@@ -68,7 +68,7 @@ const translations = {
     ja: {
         pageLangLabel: "言語を選択:",
         dashboardTitle: "紹介ダッシュボード",
-        dashboardSubtitle: "詳細を入力して紹介状況と収益を表示",
+        dashboardSubtitle: "詳細を入力して紹介状況を表示",
         phoneLabel: "電話番号:",
         phonePlaceholder: "電話番号を入力 (01XXXXXXXX)",
         phoneError: "有効な電話番号を入力してください (01XXXXXXXX)",
@@ -133,7 +133,7 @@ const translations = {
     ko: {
         pageLangLabel: "언어 선택:",
         dashboardTitle: "추천 대시보드",
-        dashboardSubtitle: "추천 현황과 수익을 보려면 정보 입력",
+        dashboardSubtitle: "추천 현황을 보려면 정보 입력",
         phoneLabel: "전화번호:",
         phonePlaceholder: "전화번호 입력 (01XXXXXXXX)",
         phoneError: "유효한 전화번호 입력 (01XXXXXXXX)",
@@ -198,7 +198,7 @@ const translations = {
     "zh-CN": {
         pageLangLabel: "选择语言:",
         dashboardTitle: "推荐仪表板",
-        dashboardSubtitle: "输入信息查看推荐状态和收益",
+        dashboardSubtitle: "输入信息查看推荐状态",
         phoneLabel: "电话号码:",
         phonePlaceholder: "输入电话号码 (01XXXXXXXX)",
         phoneError: "请输入有效电话号码 (01XXXXXXXX)",
@@ -263,7 +263,7 @@ const translations = {
     "zh-HK": {
         pageLangLabel: "選擇語言:",
         dashboardTitle: "推薦儀表板",
-        dashboardSubtitle: "輸入信息查看推薦狀態和收益",
+        dashboardSubtitle: "輸入信息查看推薦狀態",
         phoneLabel: "電話號碼:",
         phonePlaceholder: "輸入電話號碼 (01XXXXXXXX)",
         phoneError: "請輸入有效電話號碼 (01XXXXXXXX)",
