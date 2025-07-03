@@ -11,24 +11,21 @@
 </head>
 <body>
     <div class="container py-4">
-        <!-- Header with Logo -->
-        <div class="text-center mb-5">
+        <div class="text-center mb-4">
             <img src="TPLogo11.png" alt="TP Logo" class="logo">
         </div>
 
         <!-- Language Selection -->
-        <div class="row justify-content-end mb-4">
+        <div class="row justify-content-end mb-3">
             <div class="col-md-3">
                 <div class="mb-3">
-                    <label for="lang-select" class="form-label" data-translate="pageLangLabel">
-                        <i class="fas fa-language me-2"></i>Choose Your Language:
-                    </label>
+                    <label for="lang-select" class="form-label" data-translate="pageLangLabel">Choose Your Language:</label>
                     <select class="form-select" id="lang-select">
-                        <option value="en">🇺🇸 English</option>
-                        <option value="ja">🇯🇵 日本語</option>
-                        <option value="ko">🇰🇷 한국어</option>
-                        <option value="zh-CN">🇨🇳 中文 (简体)</option>
-                        <option value="zh-HK">🇭🇰 中文 (繁體)</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="zh-CN">中文 (简体)</option>
+                        <option value="zh-HK">中文 (繁體)</option>
                     </select>
                 </div>
             </div>
@@ -36,68 +33,38 @@
 
         <!-- Authentication Step -->
         <div id="auth-step">
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-body">
-                    <div class="text-center mb-4">
-                        <h2 class="card-title" data-translate="dashboardTitle">
-                            <i class="fas fa-users-cog me-2"></i>
-                            TP External RAF Dashboard
-                        </h2>
-                        <p class="card-text" data-translate="dashboardSubtitle">
-                            Enter your details to view your referral status and earnings
-                        </p>
-                    </div>
+                    <h2 class="card-title text-center" data-translate="dashboardTitle">TP External RAF Dashboard</h2>
+                    <p class="card-text text-center mb-4" data-translate="dashboardSubtitle">Enter your details to view your referral status</p>
                     
                     <form id="dashboard-form">
                         <div class="mb-3">
-                            <label for="dashboard-phone" class="form-label" data-translate="phoneLabel">
-                                <i class="fas fa-phone me-2"></i>Phone Number:
-                            </label>
-                            <input type="tel" class="form-control" id="dashboard-phone" 
-                                   placeholder="Enter your phone number (01XXXXXXXX)" 
-                                   data-translate-placeholder="phonePlaceholder" required>
-                            <div class="invalid-feedback" data-translate="phoneError">
-                                Please provide a valid phone number (01XXXXXXXX).
-                            </div>
+                            <label for="dashboard-phone" class="form-label" data-translate="phoneLabel">Phone Number:</label>
+                            <input type="tel" class="form-control" id="dashboard-phone" placeholder="Enter your phone number (01XXXXXXXX)" data-translate-placeholder="phonePlaceholder" required>
+                            <div class="invalid-feedback" data-translate="phoneError">Please provide a valid phone number (01XXXXXXXX).</div>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="dashboard-email" class="form-label" data-translate="emailLabel">
-                                <i class="fas fa-envelope me-2"></i>Email Address:
-                            </label>
-                            <input type="email" class="form-control" id="dashboard-email" 
-                                   placeholder="Enter your email address" 
-                                   data-translate-placeholder="emailPlaceholder" required>
-                            <div class="invalid-feedback" data-translate="emailError">
-                                Please provide a valid email address.
-                            </div>
+                            <label for="dashboard-email" class="form-label" data-translate="emailLabel">Email Address:</label>
+                            <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" data-translate-placeholder="emailPlaceholder" required>
+                            <div class="invalid-feedback" data-translate="emailError">Please provide a valid email address.</div>
                         </div>
                         
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="button" id="dashboard-submit" class="btn btn-primary btn-lg" data-translate="viewStatusBtn">
-                                <i class="fas fa-search me-2"></i>View Referral Status
-                            </button>
-                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Referral Form
-                            </a>
+                        <div class="d-grid gap-2">
+                            <button type="button" id="dashboard-submit" class="btn btn-primary" data-translate="viewStatusBtn">View Referral Status</button>
+                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">Back to Referral Form</a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Contact Information -->
-            <div class="card">
+            <!-- Email Contact Section -->
+            <div class="card mb-4">
                 <div class="card-body text-center">
-                    <h5 class="card-title">
-                        <i class="fas fa-question-circle me-2"></i>
-                        <span data-translate="questionsTitle">Need Help?</span>
-                    </h5>
                     <p class="mb-0">
                         <span data-translate="contactUsText">Email us at:</span>
-                        <a href="mailto:tpmycareers@teleperformance.com" class="ms-2">
-                            <i class="fas fa-envelope me-1"></i>
-                            tpmycareers@teleperformance.com
-                        </a>
+                        <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a>
                     </p>
                 </div>
             </div>
@@ -110,76 +77,35 @@
     </div>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row align-items-center">
+    <footer class="footer mt-auto py-3">
+        <div class="container-fluid">
+            <div class="row">
                 <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-copyright me-2"></i>
-                        <span id="current-year"></span> TP. All rights reserved.
-                    </div>
+                    <p class="mb-1">© <span id="current-year"></span> TP. All rights reserved.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <div class="d-flex justify-content-md-end justify-content-start align-items-center">
-                        <i class="fas fa-handshake me-2"></i>
-                        <span class="small">Employee Referral Program</span>
-                    </div>
+                    <p class="mb-1 small">Employee Referral Program</p>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Enhanced TnG Terms Modal -->
+    <!-- TnG Terms Modal -->
     <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title d-flex align-items-center">
-                        <i class="fas fa-file-contract me-2"></i>
-                        <span data-translate="paymentTermsTitle">Payment Terms & Conditions</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title" data-translate="paymentTermsTitle">Payment Terms & Conditions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card bg-light border-0 h-100">
-                                <div class="card-body">
-                                    <h6 class="card-title text-primary">
-                                        <i class="fas fa-mobile-alt me-2"></i>Payment Method
-                                    </h6>
-                                    <p class="card-text" data-translate="paymentTermsText1">
-                                        Payments will be made to your TnG eWallet linked to your phone number.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card bg-light border-0 h-100">
-                                <div class="card-body">
-                                    <h6 class="card-title text-success">
-                                        <i class="fas fa-calendar-check me-2"></i>Probation Bonus
-                                    </h6>
-                                    <p class="card-text" data-translate="paymentTermsText2">
-                                        RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="alert alert-warning" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Important:</strong> <span data-translate="paymentTermsText3">All payments are subject to verification and may take up to 30 days after probation completion.</span>
-                    </div>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-ban me-2"></i>
-                        <strong>New Condition:</strong> No payment will be made if the candidate had previously applied to TP
-                    </div>
+                    <p data-translate="paymentTermsText1">Payments will be made to your TnG eWallet linked to your phone number.</p>
+                    <p data-translate="paymentTermsText2">RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.</p>
+                    <p data-translate="paymentTermsText3">All payments are subject to verification and may take up to 30 days after probation completion.</p>
+                    <p><strong>New Condition:</strong> No payment will be made if the candidate had previously applied to TP</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">
-                        <i class="fas fa-times me-2"></i>Close
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
                 </div>
             </div>
         </div>
@@ -189,24 +115,16 @@
     <div class="modal fade" id="userNotFoundModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title d-flex align-items-center">
-                        <i class="fas fa-user-slash me-2"></i>
-                        User Not Found
-                    </h5>
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">User Not Found</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <h6>We couldn't find an account with the provided information.</h6>
-                    </div>
-                    <p class="text-muted">Please double-check your phone number and email address, or contact us for assistance.</p>
+                    <p>We couldn't find an account with the provided email and phone number.</p>
+                    <p>Please double-check your information or contact us at <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a> for assistance.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        <i class="fas fa-check me-2"></i>OK
-                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
                     <a href="mailto:tpmycareers@teleperformance.com" class="btn btn-outline-primary">
                         <i class="fas fa-envelope me-2"></i>Contact Us
                     </a>
@@ -215,288 +133,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="translations.js"></script>
-    <script src="statusMapping.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>user-name-display {
-                font-size: 1.5rem;
-            }
-            
-            .chart-container {
-                height: 280px;
-                padding: 1rem;
-            }
-            
-            .earnings-table th, 
-            .earnings-table td {
-                padding: 0.75rem;
-                font-size: 0.85rem;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .btn {
-                padding: 0.75rem 1.5rem;
-                font-size: 0.9rem;
-            }
-            
-            .chart-container {
-                height: 240px;
-            }
-            
-            .chart-legend {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .social-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 1.1rem;
-            }
-            
-            .earnings-table {
-                font-size: 0.8rem;
-            }
-        }
-
-        /* Accessibility and Focus States */
-        .btn:focus,
-        .form-control:focus,
-        .form-select:focus,
-        .social-icon:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .card {
-                border: 2px solid var(--primary-color);
-            }
-            
-            .btn-primary {
-                background: var(--primary-color);
-                border: 2px solid var(--secondary-color);
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-4">
-        <!-- Header with Logo -->
-        <div class="text-center mb-5">
-            <img src="TPLogo11.png" alt="TP Logo" class="logo">
-        </div>
-
-        <!-- Language Selection -->
-        <div class="row justify-content-end mb-4">
-            <div class="col-md-3">
-                <div class="mb-3">
-                    <label for="lang-select" class="form-label" data-translate="pageLangLabel">
-                        <i class="fas fa-language me-2"></i>Choose Your Language:
-                    </label>
-                    <select class="form-select" id="lang-select">
-                        <option value="en">🇺🇸 English</option>
-                        <option value="ja">🇯🇵 日本語</option>
-                        <option value="ko">🇰🇷 한국어</option>
-                        <option value="zh-CN">🇨🇳 中文 (简体)</option>
-                        <option value="zh-HK">🇭🇰 中文 (繁體)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Authentication Step -->
-        <div id="auth-step">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <h2 class="card-title" data-translate="dashboardTitle">
-                            <i class="fas fa-users-cog me-2"></i>
-                            TP External RAF Dashboard
-                        </h2>
-                        <p class="card-text" data-translate="dashboardSubtitle">
-                            Enter your details to view your referral status and earnings
-                        </p>
-                    </div>
-                    
-                    <form id="dashboard-form">
-                        <div class="mb-3">
-                            <label for="dashboard-phone" class="form-label" data-translate="phoneLabel">
-                                <i class="fas fa-phone me-2"></i>Phone Number:
-                            </label>
-                            <input type="tel" class="form-control" id="dashboard-phone" 
-                                   placeholder="Enter your phone number (01XXXXXXXX)" 
-                                   data-translate-placeholder="phonePlaceholder" required>
-                            <div class="invalid-feedback" data-translate="phoneError">
-                                Please provide a valid phone number (01XXXXXXXX).
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="dashboard-email" class="form-label" data-translate="emailLabel">
-                                <i class="fas fa-envelope me-2"></i>Email Address:
-                            </label>
-                            <input type="email" class="form-control" id="dashboard-email" 
-                                   placeholder="Enter your email address" 
-                                   data-translate-placeholder="emailPlaceholder" required>
-                            <div class="invalid-feedback" data-translate="emailError">
-                                Please provide a valid email address.
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="button" id="dashboard-submit" class="btn btn-primary btn-lg" data-translate="viewStatusBtn">
-                                <i class="fas fa-search me-2"></i>View Referral Status
-                            </button>
-                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Referral Form
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Contact Information -->
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">
-                        <i class="fas fa-question-circle me-2"></i>
-                        <span data-translate="questionsTitle">Need Help?</span>
-                    </h5>
-                    <p class="mb-0">
-                        <span data-translate="contactUsText">Email us at:</span>
-                        <a href="mailto:tpmycareers@teleperformance.com" class="ms-2">
-                            <i class="fas fa-envelope me-1"></i>
-                            tpmycareers@teleperformance.com
-                        </a>
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Results Step (initially hidden) -->
-        <div id="results-step" style="display: none;">
-            <!-- Content will be dynamically inserted here by JavaScript -->
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-copyright me-2"></i>
-                        <span id="current-year"></span> TP. All rights reserved.
-                    </div>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="d-flex justify-content-md-end justify-content-start align-items-center">
-                        <i class="fas fa-handshake me-2"></i>
-                        <span class="small">Employee Referral Program</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Enhanced TnG Terms Modal -->
-    <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50, #3498db); color: white;">
-                    <h5 class="modal-title d-flex align-items-center">
-                        <i class="fas fa-file-contract me-2"></i>
-                        <span data-translate="paymentTermsTitle">Payment Terms & Conditions</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card bg-light border-0 h-100">
-                                <div class="card-body">
-                                    <h6 class="card-title text-primary">
-                                        <i class="fas fa-mobile-alt me-2"></i>Payment Method
-                                    </h6>
-                                    <p class="card-text" data-translate="paymentTermsText1">
-                                        Payments will be made to your TnG eWallet linked to your phone number.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card bg-light border-0 h-100">
-                                <div class="card-body">
-                                    <h6 class="card-title text-success">
-                                        <i class="fas fa-calendar-check me-2"></i>Probation Bonus
-                                    </h6>
-                                    <p class="card-text" data-translate="paymentTermsText2">
-                                        RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="alert alert-warning" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Important:</strong> <span data-translate="paymentTermsText3">All payments are subject to verification and may take up to 30 days after probation completion.</span>
-                    </div>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-ban me-2"></i>
-                        <strong>New Condition:</strong> No payment will be made if the candidate had previously applied to TP
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">
-                        <i class="fas fa-times me-2"></i>Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Not Found Modal -->
-    <div class="modal fade" id="userNotFoundModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title d-flex align-items-center">
-                        <i class="fas fa-user-slash me-2"></i>
-                        User Not Found
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <h6>We couldn't find an account with the provided information.</h6>
-                    </div>
-                    <p class="text-muted">Please double-check your phone number and email address, or contact us for assistance.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        <i class="fas fa-check me-2"></i>OK
-                    </button>
-                    <a href="mailto:tpmycareers@teleperformance.com" class="btn btn-outline-primary">
-                        <i class="fas fa-envelope me-2"></i>Contact Us
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="translations.js"></script>
