@@ -5,81 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentLanguage = 'en';
     let statusChart = null;
     
-    // Define missing variables
-    const translations = {
-        en: {
-            phoneError: "Please enter a valid Malaysian phone number (e.g., 0123456789)",
-            emailError: "Please enter a valid email address",
-            remindBtn: "Remind via WhatsApp",
-            noRemindersNeeded: "All your friends are on track!",
-            statusPassed: "Passed Probation",
-            statusProbation: "In Probation",
-            statusPreviouslyApplied: "Previously Applied",
-            statusOperations: "Final Review",
-            statusTalent: "Interview Stage",
-            statusAssessment: "Assessment Stage",
-            statusReceived: "Application Received",
-            statusFailed: "Not Selected",
-            noReferrals: "You don't have any referrals yet",
-            yourReferralsTitle: "Your Referrals",
-            backBtn: "Back",
-            totalReferrals: "Total Referrals",
-            hiredReferrals: "Hired",
-            inProgress: "In Progress",
-            filteredViewLabel: "Simplified Status View",
-            statusDistribution: "Status Distribution",
-            earningsTitle: "Your Earnings",
-            earningsStage: "Stage",
-            earningsAmount: "Amount (RM)",
-            earningsCount: "Count",
-            earningsTotal: "Total",
-            paymentNote: "Payment Terms & Conditions",
-            remindFriendsTitle: "Remind Your Friends",
-            remindFriendsText: "Help your friends complete their assessments to join TP!",
-            referralStage: "Stage",
-            referralDate: "Application Date",
-            referralDays: "Days in Stage",
-            tpGlobal: "TP Global",
-            followMalaysia: "TP Malaysia",
-            followThailand: "TP Thailand"
-        }
-        // Add other languages if needed
-    };
-
-    const earningsStructure = {
-        assessment: {
-            label: "Assessment Pass",
-            amount: 50
-        },
-        probation: {
-            label: "Probation Completion",
-            amount: 750
-        }
-    };
-
-    const statusMapping = {
-        statusGroups: {
-            "Hired (Confirmed)": ["Successfully passed probation"],
-            "Hired (Probation)": ["In probation period"],
-            "Previously Applied (No Payment)": ["Applied to TP before"],
-            "Final Review": ["Final review by operations"],
-            "Interview Stage": ["Interview scheduled"],
-            "Assessment Stage": ["Assessment in progress"],
-            "Application Received": ["Application received"],
-            "Not Selected": ["Terminated during probation", "Eliminated", "Withdrew"]
-        },
-        displayOrder: [
-            "Hired (Confirmed)",
-            "Hired (Probation)",
-            "Previously Applied (No Payment)",
-            "Final Review",
-            "Interview Stage",
-            "Assessment Stage",
-            "Application Received",
-            "Not Selected"
-        ]
-    };
-
     // User database (mock data)
     const userDatabase = {
         "0123456789:amr@tp.com": {
@@ -163,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 daysInStage: 5,
                 category: "Customer Service",
                 source: "Employee Referral",
-                needsAction: true,
+                needsAction: false,
                 phone: "0174669871",
                 isPreviousCandidate: false
             },
@@ -480,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${translations[currentLanguage][`status${key.charAt(0).toUpperCase() + key.slice(1)}`] || earning.label}</td>
+                <td>${earning.label}</td>
                 <td>RM ${earning.amount}</td>
                 <td>${count}</td>
                 <td>RM ${total}</td>
@@ -492,25 +417,22 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
     }
     
-    // Update reminder section
+    // Update reminder section - ONLY FOR ASSESSMENT STAGE
     function updateReminderSection(referrals) {
         const friendsToRemind = document.getElementById('friends-to-remind');
         friendsToRemind.innerHTML = '';
         
-        // Filter out previously applied candidates
+        // Filter for Assessment Stage only
         const friendsNeedingReminder = referrals
-            .filter(r => r.needsAction && !r.isPreviousCandidate)
-            .sort((a, b) => {
-                const statusOrder = ['assessment', 'talent', 'operations', 'received'];
-                return statusOrder.indexOf(a.statusType) - statusOrder.indexOf(b.statusType);
-            });
+            .filter(r => r.statusType === 'assessment' && !r.isPreviousCandidate)
+            .sort((a, b) => b.daysInStage - a.daysInStage);
         
         if (friendsNeedingReminder.length === 0) {
             friendsToRemind.innerHTML = `
                 <div class="col-12 text-center">
                     <div class="alert alert-success fade-in-up">
                         <i class="fas fa-check-circle me-2"></i>
-                        <span data-translate="noRemindersNeeded">All your friends are on track!</span>
+                        <span data-translate="noRemindersNeeded">${translations[currentLanguage].noRemindersNeeded}</span>
                     </div>
                 </div>
             `;
@@ -522,19 +444,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const col = document.createElement('div');
             col.className = 'col-md-6 mb-3';
             
+            const statusTranslation = translations[currentLanguage].statusAssessment || 'Assessment Stage';
+            
             col.innerHTML = `
                 <div class="friend-to-remind status-${friend.statusType} fade-in-up" style="animation-delay: ${index * 0.1}s">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5><i class="fas fa-user me-2"></i>${friend.name}</h5>
                         <span class="badge status-badge bg-${getStatusBadgeColor(friend.statusType)}">
-                            ${translations[currentLanguage][`status${friend.statusType.charAt(0).toUpperCase() + friend.statusType.slice(1)}`]}
+                            ${statusTranslation}
                         </span>
                     </div>
                     <p class="small text-muted mb-2">
                         <i class="fas fa-envelope me-1"></i>${friend.email}
                     </p>
                     <p class="small mb-2">
-                        <strong><i class="fas fa-calendar-alt me-1"></i><span data-translate="referralDays">Days:</span></strong> ${friend.daysInStage}
+                        <strong><i class="fas fa-calendar-alt me-1"></i><span data-translate="referralDays">${translations[currentLanguage].referralDays}:</span></strong> ${friend.daysInStage}
                     </p>
                     <button class="btn btn-sm btn-success w-100 remind-btn" 
                             data-name="${friend.name}" 
@@ -610,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show results
             showReferralResults(referrals, phone, email);
-        }, 1000);
+        }, 800);
     });
     
     // Show referral results
@@ -620,16 +544,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get user info
         const userInfo = getUserInfo(phone, email);
+        const translation = translations[currentLanguage] || translations.en;
         
         // Create results content
         const resultsContent = `
             <div class="d-flex justify-content-between align-items-start mb-4 fade-in-up">
                 <div>
                     ${userInfo ? `<h3 class="user-name-display"><i class="fas fa-user-tie me-2"></i>${userInfo.fullName}</h3>` : ''}
-                    <h4 data-translate="yourReferralsTitle"><i class="fas fa-users me-2"></i>Your Referrals</h4>
+                    <h4 data-translate="yourReferralsTitle"><i class="fas fa-users me-2"></i>${translation.yourReferralsTitle}</h4>
                 </div>
                 <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
-                    <i class="fas fa-arrow-left me-2"></i> Back
+                    <i class="fas fa-arrow-left me-2"></i> ${translation.backBtn}
                 </button>
             </div>
             
@@ -637,19 +562,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-md-4 mb-3">
                     <div class="stats-card fade-in-up" style="animation-delay: 0.1s">
                         <h3 id="total-referrals">${referrals.length}</h3>
-                        <h5 data-translate="totalReferrals"><i class="fas fa-users me-2"></i>Total Referrals</h5>
+                        <h5 data-translate="totalReferrals"><i class="fas fa-users me-2"></i>${translation.totalReferrals}</h5>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="stats-card fade-in-up" style="animation-delay: 0.2s">
                         <h3 class="text-success" id="hired-referrals">${referrals.filter(r => r.stage === 'Hired').length}</h3>
-                        <h5 data-translate="hiredReferrals"><i class="fas fa-check-circle me-2"></i>Hired</h5>
+                        <h5 data-translate="hiredReferrals"><i class="fas fa-check-circle me-2"></i>${translation.hiredReferrals}</h5>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="stats-card fade-in-up" style="animation-delay: 0.3s">
                         <h3 class="text-warning" id="progress-referrals">${referrals.filter(r => r.stage !== 'Hired').length}</h3>
-                        <h5 data-translate="inProgress"><i class="fas fa-clock me-2"></i>In Progress</h5>
+                        <h5 data-translate="inProgress"><i class="fas fa-clock me-2"></i>${translation.inProgress}</h5>
                     </div>
                 </div>
             </div>
@@ -659,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="filteredViewToggle">
                         <label class="form-check-label" for="filteredViewToggle" data-translate="filteredViewLabel">
-                            <i class="fas fa-filter me-2"></i>Simplified Status View
+                            <i class="fas fa-filter me-2"></i>${translation.filteredViewLabel}
                         </label>
                     </div>
                 </div>
@@ -668,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card mb-4 fade-in-up" style="animation-delay: 0.5s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="statusDistribution">
-                        <i class="fas fa-chart-pie me-2"></i>Status Distribution
+                        <i class="fas fa-chart-pie me-2"></i>${translation.statusDistribution}
                     </h5>
                     <div class="chart-container">
                         <canvas id="statusChart"></canvas>
@@ -681,22 +606,22 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card mb-4 fade-in-up" style="animation-delay: 0.6s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="earningsTitle">
-                        <i class="fas fa-money-bill-wave me-2"></i>Your Earnings
+                        <i class="fas fa-money-bill-wave me-2"></i>${translation.earningsTitle}
                     </h5>
                     <div class="table-responsive">
                         <table class="earnings-table">
                             <thead>
                                 <tr>
-                                    <th data-translate="earningsStage">Stage</th>
-                                    <th data-translate="earningsAmount">Amount (RM)</th>
-                                    <th data-translate="earningsCount">Count</th>
-                                    <th data-translate="earningsTotal">Total</th>
+                                    <th data-translate="earningsStage">${translation.earningsStage}</th>
+                                    <th data-translate="earningsAmount">${translation.earningsAmount}</th>
+                                    <th data-translate="earningsCount">${translation.earningsCount}</th>
+                                    <th data-translate="earningsTotal">${translation.earningsTotal}</th>
                                 </tr>
                             </thead>
                             <tbody id="earnings-body"></tbody>
                             <tfoot>
                                 <tr>
-                                    <th data-translate="earningsTotal">Total Earnings</th>
+                                    <th data-translate="earningsTotal">${translation.earningsTotal}</th>
                                     <th></th>
                                     <th></th>
                                     <th id="total-earnings">RM 0</th>
@@ -706,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="text-center mt-3">
                         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
-                            <i class="fas fa-info-circle me-2"></i>Payment Terms & Conditions
+                            <i class="fas fa-info-circle me-2"></i>${translation.paymentNote}
                         </button>
                     </div>
                 </div>
@@ -715,10 +640,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="reminder-section" class="card mb-4 fade-in-up" style="animation-delay: 0.7s">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">
-                        <i class="fas fa-bell me-2"></i>Remind Your Friends
+                        <i class="fas fa-bell me-2"></i>${translation.remindFriendsTitle}
                     </h5>
                     <p class="text-center text-muted" data-translate="remindFriendsText">
-                        Help your friends complete their assessments to join TP!
+                        ${translation.remindFriendsText}
                     </p>
                     <div id="friends-to-remind" class="row"></div>
                 </div>
@@ -737,44 +662,44 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="status-example status-passed">
                                 <h5><i class="fas fa-check-circle me-2 text-success"></i>Passed Probation</h5>
                                 <p>Candidate completed 90+ days</p>
-                                <span class="badge bg-success">${translations[currentLanguage].statusPassed}</span>
+                                <span class="badge bg-success">${translation.statusPassed}</span>
                             </div>
                             <div class="status-example status-probation">
                                 <h5><i class="fas fa-clock me-2 text-warning"></i>In Probation</h5>
                                 <p>Candidate hired but under 90 days</p>
-                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusProbation}</span>
+                                <span class="badge bg-warning text-dark">${translation.statusProbation}</span>
                             </div>
                             <div class="status-example status-operations">
                                 <h5><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h5>
                                 <p>Operations team finalizing</p>
-                                <span class="badge bg-warning text-dark">${translations[currentLanguage].statusOperations}</span>
+                                <span class="badge bg-warning text-dark">${translation.statusOperations}</span>
                             </div>
                             <div class="status-example status-talent">
                                 <h5><i class="fas fa-users me-2 text-info"></i>Interview Stage</h5>
                                 <p>Candidate in interview process</p>
-                                <span class="badge bg-info">${translations[currentLanguage].statusTalent}</span>
+                                <span class="badge bg-info">${translation.statusTalent}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="status-example status-previously-applied">
+                            <div class="status-example status-previouslyApplied">
                                 <h5><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h5>
                                 <p>No payment will be made</p>
-                                <span class="badge bg-previously-applied">${translations[currentLanguage].statusPreviouslyApplied}</span>
+                                <span class="badge bg-previously-applied">${translation.statusPreviouslyApplied}</span>
                             </div>
                             <div class="status-example status-assessment">
                                 <h5><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h5>
                                 <p>Candidate completing assessments</p>
-                                <span class="badge bg-primary">${translations[currentLanguage].statusAssessment}</span>
+                                <span class="badge bg-primary">${translation.statusAssessment}</span>
                             </div>
                             <div class="status-example status-received">
                                 <h5><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h5>
                                 <p>Initial application stage</p>
-                                <span class="badge bg-secondary">${translations[currentLanguage].statusReceived}</span>
+                                <span class="badge bg-secondary">${translation.statusReceived}</span>
                             </div>
                             <div class="status-example status-failed">
                                 <h5><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h5>
                                 <p>Candidate not hired</p>
-                                <span class="badge bg-danger">${translations[currentLanguage].statusFailed}</span>
+                                <span class="badge bg-danger">${translation.statusFailed}</span>
                             </div>
                         </div>
                     </div>
@@ -786,7 +711,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="row text-center">
                     <!-- TP Global -->
                     <div class="col-md-4 mb-3">
-                        <h5 data-translate="tpGlobal">TP Global</h5>
+                        <h5 data-translate="tpGlobal">${translation.tpGlobal}</h5>
                         <div class="d-flex justify-content-center gap-3">
                             <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
                             <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
@@ -795,7 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <!-- TP Malaysia -->
                     <div class="col-md-4 mb-3">
-                        <h5 data-translate="followMalaysia">TP Malaysia</h5>
+                        <h5 data-translate="followMalaysia">${translation.followMalaysia}</h5>
                         <div class="d-flex justify-content-center gap-3">
                             <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
                             <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -803,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <!-- TP Thailand -->
                     <div class="col-md-4 mb-3">
-                        <h5 data-translate="followThailand">TP Thailand</h5>
+                        <h5 data-translate="followThailand">${translation.followThailand}</h5>
                         <div class="d-flex justify-content-center gap-3">
                             <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
                             <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -899,7 +824,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
                     <i class="fas fa-list me-2"></i>
-                    <span data-translate="yourReferralsTitle">Your Referrals</span>
+                    <span data-translate="yourReferralsTitle">${translations[currentLanguage].yourReferralsTitle}</span>
                 </h5>
                 <div id="referral-items"></div>
             </div>
@@ -922,6 +847,9 @@ document.addEventListener('DOMContentLoaded', function() {
             item.className = `card mb-3 status-${referral.statusType} ${isPaymentEligible ? 'payment-eligible' : ''} slide-in`;
             item.style.animationDelay = `${1.1 + (index * 0.1)}s`;
             
+            // Only show WhatsApp button for Assessment Stage
+            const showRemindButton = referral.statusType === 'assessment' && !referral.isPreviousCandidate;
+            
             item.innerHTML = `
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -941,26 +869,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="col-md-3 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-layer-group me-1"></i>
-                                <span data-translate="referralStage">Stage</span>
+                                <span data-translate="referralStage">${translations[currentLanguage].referralStage}</span>
                             </small>
                             <span class="fw-bold">${referral.stage}</span>
                         </div>
                         <div class="col-md-3 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-calendar-alt me-1"></i>
-                                <span data-translate="referralDate">Application Date</span>
+                                <span data-translate="referralDate">${translations[currentLanguage].referralDate}</span>
                             </small>
                             <span class="fw-bold">${new Date(referral.applicationDate).toLocaleDateString()}</span>
                         </div>
                         <div class="col-md-3 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-clock me-1"></i>
-                                <span data-translate="referralDays">Days in Stage</span>
+                                <span data-translate="referralDays">${translations[currentLanguage].referralDays}</span>
                             </small>
                             <span class="fw-bold">${referral.daysInStage}</span>
                         </div>
                         <div class="col-md-3 mb-2">
-                            ${referral.needsAction && !referral.isPreviousCandidate ? `
+                            ${showRemindButton ? `
                             <button class="btn btn-sm btn-success w-100 remind-btn" 
                                     data-name="${referral.name}" 
                                     data-phone="${referral.phone}" 
@@ -1021,11 +949,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: statusMapping.displayOrder.map(group => statusCounts[group]),
                 backgroundColor: [
                     '#28a745', // Hired (Confirmed) - green
-                    '#7cb342', // Hired (Probation) - light green
+                    '#ffc107', // Hired (Probation) - yellow
                     '#6c757d', // Previously Applied - gray
-                    '#ffc107', // Final Review - yellow
-                    '#fd7e14', // Interview Stage - orange
-                    '#17a2b8', // Assessment Stage - teal
+                    '#fd7e14', // Final Review - orange
+                    '#17a2b8', // Interview Stage - teal
+                    '#007bff', // Assessment Stage - blue
                     '#6c757d', // Application Received - gray
                     '#dc3545'  // Not Selected - red
                 ],
@@ -1058,11 +986,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 backgroundColor: [
                     '#28a745', // Passed - green
-                    '#7cb342', // Probation - light green
+                    '#ffc107', // Probation - yellow
                     '#6c757d', // Previously applied - gray
-                    '#ffc107', // Operations - yellow
-                    '#fd7e14', // Talent - orange
-                    '#17a2b8', // Assessment - teal
+                    '#fd7e14', // Operations - orange
+                    '#17a2b8', // Talent - teal
+                    '#007bff', // Assessment - blue
                     '#6c757d', // Received - gray
                     '#dc3545'  // Failed - red
                 ],
@@ -1095,7 +1023,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         bodyColor: '#fff',
                         borderColor: '#fff',
                         borderWidth: 1,
-                        cornerRadius: 8,
+                        cornerRadius: 4,
+                        padding: 10,
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
@@ -1110,12 +1039,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 animation: {
                     animateScale: true,
                     animateRotate: true,
-                    duration: 1000,
+                    duration: 800,
                     easing: 'easeOutQuart'
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
@@ -1126,11 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         data.labels.forEach((label, i) => {
             const legendItem = document.createElement('span');
-            legendItem.className = 'd-inline-block mx-2 mb-2';
-            legendItem.innerHTML = `
-                <span class="d-inline-block me-2" style="width: 12px; height: 12px; background-color: ${data.datasets[0].backgroundColor[i]}; border-radius: 50%;"></span>
-                ${label}
-            `;
+            legendItem.innerHTML = `<span style="background-color: ${data.datasets[0].backgroundColor[i]}"></span>${label}`;
             legendContainer.appendChild(legendItem);
         });
     }
@@ -1194,71 +1115,10 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(el);
     });
     
-    // Enhanced error handling for chart
-    window.addEventListener('error', function(e) {
-        if (e.error && e.error.message && e.error.message.includes('Chart')) {
-            console.warn('Chart error handled gracefully');
-        }
-    });
-    
-    // Smooth scrolling for mobile
-    if ('scrollBehavior' in document.documentElement.style) {
-        document.documentElement.style.scrollBehavior = 'smooth';
-    }
-    
-    // Enhanced mobile touch interactions
+    // Mobile optimizations
     if ('ontouchstart' in window) {
         document.body.classList.add('touch-device');
-        
-        // Add touch feedback for buttons
-        document.addEventListener('touchstart', function(e) {
-            if (e.target.classList.contains('btn')) {
-                e.target.classList.add('touch-active');
-            }
-        });
-        
-        document.addEventListener('touchend', function(e) {
-            if (e.target.classList.contains('btn')) {
-                setTimeout(() => {
-                    e.target.classList.remove('touch-active');
-                }, 150);
-            }
-        });
     }
-    
-    // Performance monitoring for mobile
-    if ('performance' in window && 'memory' in performance) {
-        const memoryInfo = performance.memory;
-        if (memoryInfo.usedJSHeapSize > 50000000) { // 50MB
-            console.warn('High memory usage detected, optimizing animations');
-            document.body.classList.add('reduce-animations');
-        }
-    }
-    
-    // Add swipe gesture support for mobile
-    let touchStartX = 0;
-    let touchStartY = 0;
-    
-    document.addEventListener('touchstart', function(e) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    
-    document.addEventListener('touchend', function(e) {
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-        
-        // Detect swipe gestures
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-            if (deltaX > 0) {
-                // Swipe right - could add navigation here
-            } else {
-                // Swipe left - could add navigation here
-            }
-        }
-    }, { passive: true });
     
     // Preload images for better performance
     const imagesToPreload = ['TPLogo11.png'];
