@@ -4,222 +4,96 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let currentLanguage = 'en';
     let statusChart = null;
+    let currentReferralData = null;
     
-    // User database (mock data)
-    const userDatabase = {
-        "0123456789:amr@tp.com": {
-            fullName: "Amr EzZ",
-            email: "amr@tp.com",
-            phone: "0123456789"
-        },
-        "0174669871:loai@example.com": {
-            fullName: "Loai Doe",
-            email: "loai@example.com",
-            phone: "0174669871"
-        },
-        "0182708243:tarek@example.com": {
-            fullName: "Tarek Smith",
-            email: "tarek@example.com",
-            phone: "0182708243"
-        },
-        "0173890590:pourya@example.com": {
-            fullName: "Pourya Johnson",
-            email: "pourya@example.com",
-            phone: "0173890590"
-        }
-    };
+    // Make sure all scripts are loaded
+    if (typeof translations === 'undefined') {
+        console.error('Translations not loaded! Make sure translations.js is included before script.js');
+    }
+    
+    if (typeof statusMapping === 'undefined') {
+        console.error('Status mapping not loaded! Make sure statusMapping.js is included before script.js');
+    }
+    
+    if (typeof earningsStructure === 'undefined') {
+        console.error('Earnings structure not defined! Adding default...');
+        window.earningsStructure = {
+            assessment: {
+                amount: 50,
+                label: "Pass Assessment",
+                description: "Paid when candidate passes the assessment"
+            },
+            probation: { 
+                amount: 750, 
+                label: "Complete Probation (90 days)",
+                description: "Paid only for new candidates who complete 90 days"
+            }
+        };
+    }
 
-    // Sample data with all status examples
-    const sampleData = {
-        "0123456789:amr@tp.com": [
-            {
-                name: "John Smith (Passed Probation)",
-                email: "john.smith@example.com",
-                stage: "Hired",
-                status: "Successfully passed probation",
-                statusType: "passed",
-                applicationDate: "2023-11-15",
-                hireDate: "2023-11-20",
-                daysInStage: 95,
-                category: "Customer Service",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345678",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Sarah Johnson (In Probation)",
-                email: "sarah.j@example.com",
-                stage: "Hired",
-                status: "In probation period",
-                statusType: "probation",
-                applicationDate: "2023-12-10",
-                hireDate: "2023-12-15",
-                daysInStage: 45,
-                category: "Technical Support",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345679",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Michael Brown (Operations Review)",
-                email: "michael.b@example.com",
-                stage: "Operations",
-                status: "Final review by operations",
-                statusType: "operations",
-                applicationDate: "2024-01-05",
-                hireDate: "",
-                daysInStage: 10,
-                category: "Sales",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345680",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Loai (Interview Stage)",
-                email: "loai.d@example.com",
-                stage: "Talent",
-                status: "Interview scheduled",
-                statusType: "talent",
-                applicationDate: "2024-01-15",
-                hireDate: "",
-                daysInStage: 5,
-                category: "Customer Service",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0174669871",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Tarek (Assessment)",
-                email: "tarek@example.com",
-                stage: "Assessment",
-                status: "Assessment in progress",
-                statusType: "assessment",
-                applicationDate: "2024-01-20",
-                hireDate: "",
-                daysInStage: 2,
-                category: "Technical Support",
-                source: "Employee Referral",
-                needsAction: true,
-                phone: "0182708243",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Pourya (Assessment)",
-                email: "Pourya@example.com",
-                stage: "Assessment",
-                status: "Assessment in progress",
-                statusType: "assessment",
-                applicationDate: "2024-01-20",
-                hireDate: "",
-                daysInStage: 2,
-                category: "Technical Support",
-                source: "Employee Referral",
-                needsAction: true,
-                phone: "0173890590",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Lisa Miller (Application Received)",
-                email: "lisa.m@example.com",
-                stage: "Application",
-                status: "Application received",
-                statusType: "received",
-                applicationDate: "2024-01-25",
-                hireDate: "",
-                daysInStage: 1,
-                category: "Sales",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345683",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Robert Taylor (Not Selected)",
-                email: "robert.t@example.com",
-                stage: "Hired",
-                status: "Terminated during probation",
-                statusType: "failed",
-                applicationDate: "2023-10-01",
-                hireDate: "2023-10-10",
-                daysInStage: 45,
-                category: "Customer Service",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345684",
-                isPreviousCandidate: false
-            },
-            {
-                name: "Previous Candidate (No Payment)",
-                email: "previous@example.com",
-                stage: "Application",
-                status: "Applied to TP before",
-                statusType: "previouslyApplied",
-                applicationDate: "2023-01-10",
-                hireDate: "",
-                daysInStage: 400,
-                category: "Customer Service",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345685",
-                isPreviousCandidate: true
+    // Function to get translated status
+    function getTranslatedStatus(statusType) {
+        const translation = translations[currentLanguage] || translations.en;
+        
+        switch(statusType) {
+            case 'passed':
+                return translation.statusPassed || 'Hired (Confirmed)';
+            case 'passedAssessment':
+                return translation.statusAssessmentPassed || 'Passed Assessment';
+            case 'probation':
+                return translation.statusProbation || 'Hired (Probation)';
+            case 'previouslyApplied':
+                return translation.statusPreviouslyApplied || 'Previously Applied (No Payment)';
+            case 'received':
+                return translation.statusReceived || 'Application Received';
+            case 'failed':
+                return translation.statusFailed || 'Not Selected';
+            default:
+                return statusType;
+        }
+    }
+
+    // Function to calculate days between dates
+    function calculateDays(startDate, endDate = new Date()) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    }
+
+    // Function to process referral data from API
+    function processReferralData(apiData) {
+        if (!apiData || !apiData.referrals) return [];
+        
+        return apiData.referrals.map(referral => {
+            let daysInStage = 0;
+            if (referral.hireDate) {
+                daysInStage = calculateDays(referral.hireDate);
+            } else {
+                daysInStage = calculateDays(referral.applicationDate);
             }
-        ],
-        "0174669871:loai@example.com": [
-            {
-                name: "Jane Doe (Assessment)",
-                email: "jane.doe@example.com",
-                stage: "Assessment",
-                status: "Assessment in progress",
-                statusType: "assessment",
-                applicationDate: "2024-01-18",
-                hireDate: "",
-                daysInStage: 3,
-                category: "Customer Service",
-                source: "Employee Referral",
-                needsAction: true,
-                phone: "0112345686",
-                isPreviousCandidate: false
-            }
-        ],
-        "0182708243:tarek@example.com": [
-            {
-                name: "Mike Johnson (Probation)",
-                email: "mike.j@example.com",
-                stage: "Hired",
-                status: "In probation period",
-                statusType: "probation",
-                applicationDate: "2023-12-05",
-                hireDate: "2023-12-10",
-                daysInStage: 60,
-                category: "Technical Support",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345687",
-                isPreviousCandidate: false
-            }
-        ],
-        "0173890590:pourya@example.com": [
-            {
-                name: "Sarah Williams (Operations)",
-                email: "sarah.w@example.com",
-                stage: "Operations",
-                status: "Final review by operations",
-                statusType: "operations",
-                applicationDate: "2024-01-10",
-                hireDate: "",
-                daysInStage: 15,
-                category: "Sales",
-                source: "Employee Referral",
-                needsAction: false,
-                phone: "0112345688",
-                isPreviousCandidate: false
-            }
-        ]
-    };
+            
+            const statusType = getSimplifiedStatusType(referral.currentStatus);
+            const needsAction = statusType === 'received' && !referral.isPreviousCandidate;
+            
+            return {
+                name: referral.candidateName,
+                email: referral.candidateEmail,
+                phone: referral.candidatePhone,
+                stage: referral.stage,
+                status: referral.currentStatus,
+                statusType: statusType,
+                applicationDate: referral.applicationDate,
+                hireDate: referral.hireDate || '',
+                daysInStage: daysInStage,
+                category: referral.category,
+                source: referral.source,
+                needsAction: needsAction,
+                isPreviousCandidate: referral.isPreviousCandidate || false
+            };
+        });
+    }
 
     // Function to map a status to its simplified group
     function mapStatusToGroup(status) {
@@ -231,7 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // If not found in any group, check if it starts with "Eliminated" or "Withdrew"
         if (status.startsWith("Eliminated") || status.startsWith("Withdrew") || status.startsWith("Legacy")) {
             return "Not Selected";
         }
@@ -250,24 +123,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 return "probation";
             case "Previously Applied (No Payment)":
                 return "previouslyApplied";
-            case "Final Review":
-                return "operations";
-            case "Interview Stage":
-                return "talent";
-            case "Assessment Stage":
-                return "assessment";
+            case "Passed Assessment":
+                return "passedAssessment";
             case "Application Received":
                 return "received";
             case "Not Selected":
                 return "failed";
             default:
+                if (status.includes("Final Review") || status.includes("Interview")) {
+                    return "passedAssessment";
+                }
                 return "received";
         }
     }
 
     // Update translations
     function updateTranslations() {
+        if (typeof translations === 'undefined') {
+            console.error('Translations object not found!');
+            return;
+        }
+        
         const translation = translations[currentLanguage] || translations.en;
+        if (!translation) {
+            console.error('Translation not found for language:', currentLanguage);
+            return;
+        }
         
         document.querySelectorAll('[data-translate]').forEach(el => {
             const key = el.getAttribute('data-translate');
@@ -284,21 +165,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Language change handler
-    document.getElementById('lang-select').addEventListener('change', function() {
-        currentLanguage = this.value;
-        updateTranslations();
-        
-        // Refresh chart if it exists
-        if (statusChart) {
-            const referrals = getCurrentReferrals();
-            if (referrals) {
-                updateChart(referrals);
-                updateEarningsTable(referrals);
-                updateReminderSection(referrals);
-                updateReferralList(referrals);
+    // Language flag click handler
+    document.querySelectorAll('.lang-flag').forEach(flag => {
+        flag.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            document.querySelectorAll('.lang-flag').forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            currentLanguage = this.dataset.lang;
+            console.log('Language changed to:', currentLanguage);
+            updateTranslations();
+            
+            if (currentReferralData) {
+                const processedReferrals = processReferralData(currentReferralData);
+                updateChart(processedReferrals);
+                updateEarningsTable(processedReferrals);
+                updateReminderSection(processedReferrals);
+                updateReferralList(processedReferrals);
             }
-        }
+        });
     });
     
     // Validate phone number
@@ -307,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return regex.test(phone);
     }
     
-    // Validate email (case insensitive)
+    // Validate email
     function validateEmail(email) {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
         return regex.test(email) && email.length <= 254;
@@ -334,42 +220,23 @@ document.addEventListener('DOMContentLoaded', function() {
         input.classList.remove('is-invalid');
     }
     
-    // Get referrals for current user
-    function getReferrals(phone, email) {
-        const key = `${phone}:${email.toLowerCase()}`; // Case insensitive email matching
-        return sampleData[key] || null;
-    }
-    
-    // Get current referrals (for chart refresh)
-    function getCurrentReferrals() {
-        const phone = document.getElementById('dashboard-phone').value.trim();
-        const email = document.getElementById('dashboard-email').value.trim();
-        return getReferrals(phone, email);
-    }
-    
-    // Get user info
-    function getUserInfo(phone, email) {
-        const key = `${phone}:${email.toLowerCase()}`;
-        return userDatabase[key] || null;
-    }
-    
-    // Get status badge color with payment eligibility check
+    // Get status badge color
     function getStatusBadgeColor(statusType, daysInStage = 0, isPreviousCandidate = false) {
         if (isPreviousCandidate) {
-            return 'previously-applied';
+            return 'secondary';
         }
         
         switch(statusType) {
             case 'passed':
-                return daysInStage >= 90 ? 'success' : 'warning';
+                return 'success';
+            case 'passedAssessment':
+                return 'success';
             case 'probation':
                 return 'warning';
             case 'previouslyApplied':
-                return 'previously-applied';
-            case 'assessment':
-            case 'talent':
-            case 'operations':
-                return 'warning';
+                return 'secondary';
+            case 'received':
+                return 'primary';
             case 'failed':
                 return 'danger';
             default:
@@ -380,63 +247,71 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update earnings table
     function updateEarningsTable(referrals) {
         const earningsBody = document.getElementById('earnings-body');
+        if (!earningsBody) return;
+        
         earningsBody.innerHTML = '';
         
         let totalEarnings = 0;
         
-        // Calculate assessment passes (not previously applied)
         const assessmentPasses = referrals.filter(r => 
-            r.statusType === 'passed' && 
+            (r.statusType === 'passedAssessment' || r.statusType === 'probation' || 
+             r.statusType === 'passed') && 
             !r.isPreviousCandidate
         );
         
-        // Calculate probation completions (not previously applied)
         const probationCompletions = referrals.filter(r => 
             r.statusType === 'passed' && 
             r.daysInStage >= 90 && 
             !r.isPreviousCandidate
         );
         
-        // Add rows for each earning type
         Object.entries(earningsStructure).forEach(([key, earning]) => {
             const count = key === 'assessment' ? assessmentPasses.length : probationCompletions.length;
             const total = count * earning.amount;
             totalEarnings += total;
             
             const row = document.createElement('tr');
+            if (count > 0) {
+                row.className = 'payment-success';
+            }
             row.innerHTML = `
                 <td>${earning.label}</td>
-                <td>RM ${earning.amount}</td>
-                <td>${count}</td>
-                <td>RM ${total}</td>
+                <td style="color: var(--tp-green-flash); font-weight: 700;">RM ${earning.amount}</td>
+                <td style="color: var(--tp-dark-gray); font-weight: 600;">${count}</td>
+                <td style="color: var(--tp-green-flash); font-weight: 700;"><strong>RM ${total}</strong></td>
             `;
             earningsBody.appendChild(row);
         });
         
-        // Update total earnings
-        document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
+        const totalEarningsEl = document.getElementById('total-earnings');
+        if (totalEarningsEl) {
+            totalEarningsEl.textContent = `RM ${totalEarnings}`;
+            totalEarningsEl.style.color = 'var(--tp-green-flash)';
+            totalEarningsEl.style.fontWeight = '700';
+        }
     }
     
-    // Update reminder section - ONLY FOR ASSESSMENT STAGE
+    // Update reminder section
     function updateReminderSection(referrals) {
         const friendsToRemind = document.getElementById('friends-to-remind');
+        if (!friendsToRemind) return;
+        
         friendsToRemind.innerHTML = '';
         
-        // Filter for Assessment Stage only
         const friendsNeedingReminder = referrals
-            .filter(r => r.statusType === 'assessment' && !r.isPreviousCandidate)
+            .filter(r => r.statusType === 'received' && !r.isPreviousCandidate)
             .sort((a, b) => b.daysInStage - a.daysInStage);
         
         if (friendsNeedingReminder.length === 0) {
+            const translation = translations[currentLanguage] || translations.en;
             friendsToRemind.innerHTML = `
                 <div class="col-12 text-center">
-                    <div class="alert alert-success fade-in-up">
+                    <div class="alert alert-success">
                         <i class="fas fa-check-circle me-2"></i>
-                        <span data-translate="noRemindersNeeded">${translations[currentLanguage].noRemindersNeeded}</span>
+                        <span>${translation.noRemindersNeeded || 'All your friends are on track!'}</span>
                     </div>
                 </div>
             `;
-            updateTranslations();
             return;
         }
         
@@ -444,13 +319,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const col = document.createElement('div');
             col.className = 'col-md-6 mb-3';
             
-            const statusTranslation = translations[currentLanguage].statusAssessment || 'Assessment Stage';
+            const translation = translations[currentLanguage] || translations.en;
+            const statusTranslation = getTranslatedStatus(friend.statusType);
             
             col.innerHTML = `
-                <div class="friend-to-remind status-${friend.statusType} fade-in-up" style="animation-delay: ${index * 0.1}s">
+                <div class="friend-to-remind status-item status-received">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5><i class="fas fa-user me-2"></i>${friend.name}</h5>
-                        <span class="badge status-badge bg-${getStatusBadgeColor(friend.statusType)}">
+                        <span class="badge status-badge bg-primary">
                             ${statusTranslation}
                         </span>
                     </div>
@@ -458,25 +334,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-envelope me-1"></i>${friend.email}
                     </p>
                     <p class="small mb-2">
-                        <strong><i class="fas fa-calendar-alt me-1"></i><span data-translate="referralDays">${translations[currentLanguage].referralDays}:</span></strong> ${friend.daysInStage}
+                        <strong><i class="fas fa-calendar-alt me-1"></i>${translation.referralDays || 'Days in Stage'}:</strong> ${friend.daysInStage}
                     </p>
                     <button class="btn btn-sm btn-success w-100 remind-btn" 
                             data-name="${friend.name}" 
-                            data-phone="${friend.phone}" 
-                            data-translate="remindBtn">
-                        <i class="fab fa-whatsapp me-2"></i>${translations[currentLanguage].remindBtn}
+                            data-phone="${friend.phone}">
+                        <i class="fab fa-whatsapp me-2"></i>${translation.remindBtn || 'Send WhatsApp Reminder'}
                     </button>
                 </div>
             `;
             
             friendsToRemind.appendChild(col);
         });
-        
-        updateTranslations();
     }
     
-    // Form submission with enhanced loading state
-    document.getElementById('dashboard-submit').addEventListener('click', function() {
+    // Form submission
+    document.getElementById('dashboard-submit').addEventListener('click', async function() {
         const phone = document.getElementById('dashboard-phone').value.trim();
         const email = document.getElementById('dashboard-email').value.trim();
         let isValid = true;
@@ -487,11 +360,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate phone
         if (!phone) {
             showError(document.getElementById('dashboard-phone'), 
-                     translations[currentLanguage].phoneError);
+                     (translations[currentLanguage] || translations.en).phoneError || 'Please provide a valid phone number');
             isValid = false;
         } else if (!validatePhone(phone)) {
             showError(document.getElementById('dashboard-phone'), 
-                     translations[currentLanguage].phoneError);
+                     (translations[currentLanguage] || translations.en).phoneError || 'Please provide a valid phone number');
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-phone'));
@@ -500,11 +373,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate email
         if (!email) {
             showError(document.getElementById('dashboard-email'), 
-                     translations[currentLanguage].emailError);
+                     (translations[currentLanguage] || translations.en).emailError || 'Please provide a valid email address');
             isValid = false;
         } else if (!validateEmail(email)) {
             showError(document.getElementById('dashboard-email'), 
-                     translations[currentLanguage].emailError);
+                     (translations[currentLanguage] || translations.en).emailError || 'Please provide a valid email address');
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-email'));
@@ -516,96 +389,142 @@ document.addEventListener('DOMContentLoaded', function() {
         button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
         button.disabled = true;
         
-        // Simulate API call delay
-        setTimeout(() => {
-            // Get referrals
-            const referrals = getReferrals(phone, email);
+        try {
+            // Try to fetch data from API first
+            let apiData = null;
+            if (typeof fetchReferrals === 'function') {
+                apiData = await fetchReferrals(phone, email);
+            }
             
-            // Reset button
+            // If API fails or no data, use mock data
+            if (!apiData || !apiData.success) {
+                console.log('Using mock data');
+                apiData = getMockData(phone, email);
+            }
+            
             button.innerHTML = originalText;
             button.disabled = false;
             
-            if (!referrals) {
-                // Show user not found modal
-                const userNotFoundModal = new bootstrap.Modal(document.getElementById('userNotFoundModal'));
-                userNotFoundModal.show();
-                return;
+            if (apiData && apiData.success) {
+                currentReferralData = apiData.data;
+                const processedReferrals = processReferralData(apiData.data);
+                showReferralResults(processedReferrals, apiData.data.referrer);
+            } else {
+                // Show empty dashboard
+                const emptyData = {
+                    referrer: {
+                        phone: phone,
+                        email: email,
+                        fullName: "New User"
+                    },
+                    referrals: []
+                };
+                
+                currentReferralData = emptyData;
+                const processedReferrals = processReferralData(emptyData);
+                showReferralResults(processedReferrals, emptyData.referrer, true);
             }
             
-            // Show results
-            showReferralResults(referrals, phone, email);
-        }, 800);
+        } catch (error) {
+            console.error('Error fetching referrals:', error);
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+            // Show empty dashboard on error
+            const emptyData = {
+                referrer: {
+                    phone: phone,
+                    email: email,
+                    fullName: "Guest User"
+                },
+                referrals: []
+            };
+            
+            currentReferralData = emptyData;
+            const processedReferrals = processReferralData(emptyData);
+            showReferralResults(processedReferrals, emptyData.referrer, true);
+        }
     });
     
     // Show referral results
-    function showReferralResults(referrals, phone, email) {
+    function showReferralResults(referrals, referrerInfo, isNewUser = false) {
         document.getElementById('auth-step').style.display = 'none';
         document.getElementById('results-step').style.display = 'block';
         
-        // Get user info
-        const userInfo = getUserInfo(phone, email);
         const translation = translations[currentLanguage] || translations.en;
+        const displayName = isNewUser ? 'Welcome!' : (referrerInfo ? referrerInfo.fullName : 'User');
         
-        // Create results content
         const resultsContent = `
-            <div class="d-flex justify-content-between align-items-start mb-4 fade-in-up">
+            <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
-                    ${userInfo ? `<h3 class="user-name-display"><i class="fas fa-user-tie me-2"></i>${userInfo.fullName}</h3>` : ''}
+                    <h3 class="user-name-display"><i class="fas fa-user-tie me-2"></i>${displayName}</h3>
                     <h4 data-translate="yourReferralsTitle"><i class="fas fa-users me-2"></i>${translation.yourReferralsTitle}</h4>
                 </div>
-                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
-                    <i class="fas fa-arrow-left me-2"></i> ${translation.backBtn}
-                </button>
+                <div>
+                    <button id="dashboard-back" class="btn btn-outline-primary" data-translate="backBtn">
+                        <i class="fas fa-arrow-left me-2"></i> ${translation.backBtn}
+                    </button>
+                </div>
             </div>
             
             <div id="referral-stats" class="row mb-4">
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card fade-in-up" style="animation-delay: 0.1s">
-                        <h3 id="total-referrals">${referrals.length}</h3>
+                    <div class="stats-card">
+                        <h3 id="total-referrals" data-target="${referrals.length}">0</h3>
                         <h5 data-translate="totalReferrals"><i class="fas fa-users me-2"></i>${translation.totalReferrals}</h5>
+                        <div class="mini-progress">
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar" style="width: ${Math.min(referrals.length * 10, 100)}%;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card fade-in-up" style="animation-delay: 0.2s">
-                        <h3 class="text-success" id="hired-referrals">${referrals.filter(r => r.stage === 'Hired').length}</h3>
+                    <div class="stats-card">
+                        <h3 style="color: var(--tp-green-light);" id="hired-referrals" data-target="${referrals.filter(r => r.statusType === 'passed' || r.statusType === 'probation').length}">0</h3>
                         <h5 data-translate="hiredReferrals"><i class="fas fa-check-circle me-2"></i>${translation.hiredReferrals}</h5>
+                        <div class="mini-progress">
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar" style="width: ${referrals.length > 0 ? (referrals.filter(r => r.statusType === 'passed' || r.statusType === 'probation').length / referrals.length * 100) : 0}%;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="stats-card fade-in-up" style="animation-delay: 0.3s">
-                        <h3 class="text-warning" id="progress-referrals">${referrals.filter(r => r.stage !== 'Hired').length}</h3>
+                    <div class="stats-card">
+                        <h3 style="color: var(--tp-yellow);" id="progress-referrals" data-target="${referrals.filter(r => ['received', 'passedAssessment'].includes(r.statusType)).length}">0</h3>
                         <h5 data-translate="inProgress"><i class="fas fa-clock me-2"></i>${translation.inProgress}</h5>
+                        <div class="mini-progress">
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar" style="width: ${referrals.length > 0 ? (referrals.filter(r => ['received', 'passedAssessment'].includes(r.statusType)).length / referrals.length * 100) : 0}%;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="card mb-3 fade-in-up" style="animation-delay: 0.4s">
-                <div class="card-body">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="filteredViewToggle">
-                        <label class="form-check-label" for="filteredViewToggle" data-translate="filteredViewLabel">
-                            <i class="fas fa-filter me-2"></i>${translation.filteredViewLabel}
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card mb-4 fade-in-up" style="animation-delay: 0.5s">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">
+            <div class="modern-chart-section mb-4">
+                <div class="chart-header text-center mb-4">
+                    <h5 class="chart-title" data-translate="statusDistribution">
                         <i class="fas fa-chart-pie me-2"></i>${translation.statusDistribution}
                     </h5>
-                    <div class="chart-container">
+                    <p class="chart-subtitle text-muted">Track your referral progress across all stages</p>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-canvas-container">
                         <canvas id="statusChart"></canvas>
-                        <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
+                        <div class="chart-center-info">
+                            <div class="total-count">${referrals.length}</div>
+                            <div class="total-label">Total Referrals</div>
+                        </div>
                     </div>
-                    <div class="chart-legend text-center mt-3" id="chartLegend"></div>
+                    <div class="chart-legend-modern" id="chartLegend"></div>
                 </div>
             </div>
 
-            <div class="card mb-4 fade-in-up" style="animation-delay: 0.6s">
+            <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">
+                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle" style="color: var(--tp-green-flash);">
                         <i class="fas fa-money-bill-wave me-2"></i>${translation.earningsTitle}
                     </h5>
                     <div class="table-responsive">
@@ -630,14 +549,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         </table>
                     </div>
                     <div class="text-center mt-3">
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
-                            <i class="fas fa-info-circle me-2"></i>${translation.paymentNote}
+                        <button type="button" class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+                            <i class="fas fa-info-circle me-2"></i>${translation.paymentNote || 'View Payment Terms'}
                         </button>
                     </div>
                 </div>
             </div>
             
-            <div id="reminder-section" class="card mb-4 fade-in-up" style="animation-delay: 0.7s">
+            <div id="reminder-section" class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">
                         <i class="fas fa-bell me-2"></i>${translation.remindFriendsTitle}
@@ -652,64 +571,90 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="referral-list"></div>
             
             <!-- Status Examples Section -->
-            <div class="card mb-4 status-examples fade-in-up" style="animation-delay: 0.8s">
+            <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-4">
-                        <i class="fas fa-info-circle me-2"></i>Status Examples
+                        <i class="fas fa-info-circle me-2"></i>Status Guide - Understand Your Referral Journey
                     </h5>
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="status-example status-passed">
-                                <h5><i class="fas fa-check-circle me-2 text-success"></i>Passed Probation</h5>
-                                <p>Candidate completed 90+ days</p>
-                                <span class="badge bg-success">${translation.statusPassed}</span>
+                            <div class="status-example status-item status-received">
+                                <h6><i class="fas fa-file-alt me-2"></i>Application Received</h6>
+                                <p>Your friend's application is in the system. <strong>Remind them to take the assessment!</strong></p>
+                                <span class="badge bg-primary">${getTranslatedStatus('received')}</span>
                             </div>
-                            <div class="status-example status-probation">
-                                <h5><i class="fas fa-clock me-2 text-warning"></i>In Probation</h5>
-                                <p>Candidate hired but under 90 days</p>
-                                <span class="badge bg-warning text-dark">${translation.statusProbation}</span>
+                            <div class="status-example status-item status-passedAssessment">
+                                <h6><i class="fas fa-check-circle me-2"></i>Passed Assessment 💵</h6>
+                                <p>Great news! Your friend passed the assessment. <strong>You earned RM50!</strong> They're now moving to the next stage.</p>
+                                <span class="badge bg-success">${getTranslatedStatus('passedAssessment')}</span>
                             </div>
-                            <div class="status-example status-operations">
-                                <h5><i class="fas fa-cogs me-2 text-warning"></i>Final Review</h5>
-                                <p>Operations team finalizing</p>
-                                <span class="badge bg-warning text-dark">${translation.statusOperations}</span>
-                            </div>
-                            <div class="status-example status-talent">
-                                <h5><i class="fas fa-users me-2 text-info"></i>Interview Stage</h5>
-                                <p>Candidate in interview process</p>
-                                <span class="badge bg-info">${translation.statusTalent}</span>
+                            <div class="status-example status-item status-probation">
+                                <h6><i class="fas fa-clock me-2"></i>Hired (Probation)</h6>
+                                <p>Congratulations! Your friend got hired and is in their probation period. <strong>RM750 pending after 90 days.</strong></p>
+                                <span class="badge bg-warning">${getTranslatedStatus('probation')}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="status-example status-previouslyApplied">
-                                <h5><i class="fas fa-ban me-2 text-secondary"></i>Previously Applied</h5>
-                                <p>No payment will be made</p>
-                                <span class="badge bg-previously-applied">${translation.statusPreviouslyApplied}</span>
+                            <div class="status-example status-item status-passed">
+                                <h6><i class="fas fa-trophy me-2"></i>Hired (Confirmed) 💵</h6>
+                                <p>Excellent! Your friend completed 90+ days successfully. <strong>You earned RM750 bonus!</strong> Total: RM800</p>
+                                <span class="badge bg-success" style="background-color: var(--tp-green-light) !important;">${getTranslatedStatus('passed')}</span>
                             </div>
-                            <div class="status-example status-assessment">
-                                <h5><i class="fas fa-clipboard-check me-2 text-primary"></i>Assessment Stage</h5>
-                                <p>Candidate completing assessments</p>
-                                <span class="badge bg-primary">${translation.statusAssessment}</span>
+                            <div class="status-example status-item status-previouslyApplied">
+                                <h6><i class="fas fa-ban me-2"></i>Previously Applied</h6>
+                                <p>This person applied to TP before your referral. <strong>No payment will be made</strong> for previous applicants.</p>
+                                <span class="badge bg-secondary">${getTranslatedStatus('previouslyApplied')}</span>
                             </div>
-                            <div class="status-example status-received">
-                                <h5><i class="fas fa-file-alt me-2 text-secondary"></i>Application Received</h5>
-                                <p>Initial application stage</p>
-                                <span class="badge bg-secondary">${translation.statusReceived}</span>
-                            </div>
-                            <div class="status-example status-failed">
-                                <h5><i class="fas fa-times-circle me-2 text-danger"></i>Not Selected</h5>
-                                <p>Candidate not hired</p>
-                                <span class="badge bg-danger">${translation.statusFailed}</span>
+                            <div class="status-example status-item status-failed">
+                                <h6><i class="fas fa-times-circle me-2"></i>Not Selected</h6>
+                                <p>Unfortunately, your friend wasn't selected or withdrew from the process. No payment for this referral.</p>
+                                <span class="badge bg-danger">${getTranslatedStatus('failed')}</span>
                             </div>
                         </div>
                     </div>
+                    <div class="mt-4 p-3 status-item" style="background: rgba(0, 123, 255, 0.1);">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Pro Tips:</h6>
+                        <ul class="mb-0">
+                            <li><strong>Follow up quickly:</strong> Remind friends to complete their assessment within 7 days</li>
+                            <li><strong>Earn more:</strong> You can earn up to RM800 per successful referral (RM50 + RM750)</li>
+                            <li><strong>Track progress:</strong> Use this dashboard to monitor all your referrals in real-time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Section -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-question-circle me-2"></i>
+                        <span data-translate="questionsTitle">Questions?</span>
+                    </h5>
+                    <p class="mb-0" style="font-size: 1.1rem;">
+                        <span data-translate="contactUsText">Email us at:</span><br>
+                        <a href="mailto:tpmycareers@teleperformance.com" style="color: var(--tp-light-blue); font-weight: 600; font-size: 1.2rem;">
+                            tpmycareers@teleperformance.com
+                        </a>
+                    </p>
                 </div>
             </div>
             
-            <!-- Social Media -->
-            <div class="mt-4 fade-in-up" style="animation-delay: 0.9s">
+            ${isNewUser || referrals.length === 0 ? `
+            <div class="card mb-4 getting-started">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <i class="fas fa-rocket me-2"></i>Ready to Start Earning?
+                    </h5>
+                    <p class="mb-3">Start referring friends to TP and track their progress here!</p>
+                    <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Start Referring Now
+                    </a>
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="mt-4">
                 <div class="row text-center">
-                    <!-- TP Global -->
                     <div class="col-md-4 mb-3">
                         <h5 data-translate="tpGlobal">${translation.tpGlobal}</h5>
                         <div class="d-flex justify-content-center gap-3">
@@ -718,7 +663,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
                         </div>
                     </div>
-                    <!-- TP Malaysia -->
                     <div class="col-md-4 mb-3">
                         <h5 data-translate="followMalaysia">${translation.followMalaysia}</h5>
                         <div class="d-flex justify-content-center gap-3">
@@ -726,7 +670,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
                         </div>
                     </div>
-                    <!-- TP Thailand -->
                     <div class="col-md-4 mb-3">
                         <h5 data-translate="followThailand">${translation.followThailand}</h5>
                         <div class="d-flex justify-content-center gap-3">
@@ -740,16 +683,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('results-step').innerHTML = resultsContent;
         
-        // Update chart
+        // Update all components
         updateChart(referrals);
-        
-        // Update earnings table
         updateEarningsTable(referrals);
-        
-        // Update reminder section
         updateReminderSection(referrals);
-        
-        // Update referral list
         updateReferralList(referrals);
         
         // Re-attach back button event
@@ -757,74 +694,64 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('auth-step').style.display = 'block';
             document.getElementById('results-step').style.display = 'none';
             
-            // Destroy chart when going back
             if (statusChart) {
                 statusChart.destroy();
                 statusChart = null;
             }
-        });
-        
-        // Add event listener for filtered view toggle
-        document.getElementById('filteredViewToggle').addEventListener('change', function() {
-            updateChart(referrals);
-            updateReferralList(referrals);
+            
+            currentReferralData = null;
         });
         
         // Update translations
         updateTranslations();
+        
+        // Animate numbers
+        setTimeout(() => {
+            document.querySelectorAll('[data-target]').forEach(el => {
+                const target = parseInt(el.getAttribute('data-target'));
+                animateNumber(el, target);
+            });
+        }, 300);
     }
     
     // Update referral list
     function updateReferralList(referrals) {
         const referralList = document.getElementById('referral-list');
+        if (!referralList) return;
+        
         referralList.innerHTML = '';
+        const translation = translations[currentLanguage] || translations.en;
         
         if (referrals.length === 0) {
             referralList.innerHTML = `
-                <div class="card fade-in-up">
-                    <div class="card-body text-center">
-                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
-                        <h5 data-translate="noReferrals">${translations[currentLanguage].noReferrals}</h5>
+                <div class="card">
+                    <div class="card-body empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4>${translation.noReferrals || 'No referrals yet!'}</h4>
+                        <p class="text-muted mb-4">Start referring friends and track their journey here. You can earn up to RM800 per successful referral!</p>
+                        <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Start Your First Referral
+                        </a>
                     </div>
                 </div>
             `;
-            updateTranslations();
             return;
         }
         
-        // Check if filtered view is enabled
-        const filteredView = document.getElementById('filteredViewToggle')?.checked || false;
-        
-        // Process referrals based on view mode
-        const processedReferrals = referrals.map(r => {
-            if (filteredView) {
-                return {
-                    ...r,
-                    status: mapStatusToGroup(r.status),
-                    statusType: getSimplifiedStatusType(r.status)
-                };
-            }
-            return r;
-        });
-        
-        // Sort referrals with new status
-        const statusOrder = filteredView ? 
-            statusMapping.displayOrder || ['passed', 'probation', 'previouslyApplied', 'operations', 'talent', 'assessment', 'received', 'failed'] :
-            ['passed', 'probation', 'previouslyApplied', 'operations', 'talent', 'assessment', 'received', 'failed'];
-            
-        const sortedReferrals = [...processedReferrals].sort((a, b) => {
+        const statusOrder = ['passed', 'passedAssessment', 'probation', 'previouslyApplied', 'received', 'failed'];
+        const sortedReferrals = [...referrals].sort((a, b) => {
             return statusOrder.indexOf(a.statusType) - statusOrder.indexOf(b.statusType);
         });
         
-        // Create referral list card
         const referralListCard = document.createElement('div');
-        referralListCard.className = 'card mb-4 fade-in-up';
-        referralListCard.style.animationDelay = '1s';
+        referralListCard.className = 'card mb-4';
         referralListCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
                     <i class="fas fa-list me-2"></i>
-                    <span data-translate="yourReferralsTitle">${translations[currentLanguage].yourReferralsTitle}</span>
+                    <span>${translation.yourReferralsTitle || 'Your Referrals'}</span>
                 </h5>
                 <div id="referral-items"></div>
             </div>
@@ -836,64 +763,77 @@ document.addEventListener('DOMContentLoaded', function() {
         
         sortedReferrals.forEach((referral, index) => {
             const item = document.createElement('div');
-            const statusKey = `status${referral.statusType.charAt(0).toUpperCase() + referral.statusType.slice(1)}`;
-            const statusTranslation = translations[currentLanguage][statusKey] || referral.status;
             
-            // Determine if payment is eligible
-            const isPaymentEligible = referral.statusType === 'passed' && 
-                                      referral.daysInStage >= 90 && 
+            const statusTranslation = getTranslatedStatus(referral.statusType);
+            
+            const isPaymentEligible = (referral.statusType === 'passed' || referral.statusType === 'passedAssessment') && 
                                       !referral.isPreviousCandidate;
             
-            item.className = `card mb-3 status-${referral.statusType} ${isPaymentEligible ? 'payment-eligible' : ''} slide-in`;
-            item.style.animationDelay = `${1.1 + (index * 0.1)}s`;
+            item.className = `card mb-3 status-item status-${referral.statusType} ${isPaymentEligible ? 'payment-eligible' : ''}`;
             
-            // Only show WhatsApp button for Assessment Stage
-            const showRemindButton = referral.statusType === 'assessment' && !referral.isPreviousCandidate;
+            const showRemindButton = referral.statusType === 'received' && !referral.isPreviousCandidate;
+            
+            let progressPercentage = 0;
+            switch(referral.statusType) {
+                case 'received': progressPercentage = 25; break;
+                case 'passedAssessment': progressPercentage = 50; break;
+                case 'probation': progressPercentage = 75; break;
+                case 'passed': progressPercentage = 100; break;
+                case 'previouslyApplied': progressPercentage = 0; break;
+                case 'failed': progressPercentage = 0; break;
+            }
             
             item.innerHTML = `
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <h6 class="mb-1">
+                    <div class="referral-header mb-3">
+                        <div class="referral-info">
+                            <h6 class="mb-1 referral-name">
                                 <i class="fas fa-user me-2"></i>${referral.name}
+                                ${isPaymentEligible ? '💵' : ''}
                             </h6>
-                            <p class="mb-1 text-muted small">
+                            <p class="mb-1 text-muted small referral-email">
                                 <i class="fas fa-envelope me-1"></i>${referral.email}
                             </p>
                         </div>
-                        <span class="badge status-badge bg-${getStatusBadgeColor(referral.statusType, referral.daysInStage, referral.isPreviousCandidate)}">
-                            ${statusTranslation}
-                        </span>
+                        <div class="status-badge-wrapper">
+                            <span class="badge status-badge bg-${getStatusBadgeColor(referral.statusType, referral.daysInStage, referral.isPreviousCandidate)}">
+                                ${statusTranslation}
+                            </span>
+                        </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-2">
+                    ${referral.statusType !== 'previouslyApplied' && referral.statusType !== 'failed' ? `
+                    <div class="status-progress">
+                        <div class="status-progress-bar" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                    ` : ''}
+                    <div class="row mt-3">
+                        <div class="col-md-3 col-6 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-layer-group me-1"></i>
-                                <span data-translate="referralStage">${translations[currentLanguage].referralStage}</span>
+                                ${translation.referralStage || 'Stage'}
                             </small>
-                            <span class="fw-bold">${referral.stage}</span>
+                            <span class="fw-bold">${referral.stage || 'N/A'}</span>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-3 col-6 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-calendar-alt me-1"></i>
-                                <span data-translate="referralDate">${translations[currentLanguage].referralDate}</span>
+                                ${translation.referralDate || 'Application Date'}
                             </small>
                             <span class="fw-bold">${new Date(referral.applicationDate).toLocaleDateString()}</span>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-3 col-6 mb-2">
                             <small class="text-muted d-block">
                                 <i class="fas fa-clock me-1"></i>
-                                <span data-translate="referralDays">${translations[currentLanguage].referralDays}</span>
+                                ${translation.referralDays || 'Days in Stage'}
                             </small>
                             <span class="fw-bold">${referral.daysInStage}</span>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-3 col-6 mb-2">
                             ${showRemindButton ? `
                             <button class="btn btn-sm btn-success w-100 remind-btn" 
                                     data-name="${referral.name}" 
-                                    data-phone="${referral.phone}" 
-                                    data-translate="remindBtn">
-                                <i class="fab fa-whatsapp me-2"></i>${translations[currentLanguage].remindBtn}
+                                    data-phone="${referral.phone}">
+                                <i class="fab fa-whatsapp me-2"></i>${translation.remindBtn || 'WhatsApp'}
                             </button>
                             ` : ''}
                         </div>
@@ -903,134 +843,90 @@ document.addEventListener('DOMContentLoaded', function() {
             
             referralItems.appendChild(item);
         });
-        
-        // Update translations for dynamic content
-        updateTranslations();
     }
     
-    // Update chart with referral data
+    // Update chart
     function updateChart(referrals) {
-        const ctx = document.getElementById('statusChart').getContext('2d');
+        const chartCanvas = document.getElementById('statusChart');
+        if (!chartCanvas) return;
+        
+        const ctx = chartCanvas.getContext('2d');
         const translation = translations[currentLanguage] || translations.en;
         
-        // Check if filtered view is enabled
-        const filteredView = document.getElementById('filteredViewToggle')?.checked || false;
+        let statusCounts = {
+            received: referrals.filter(r => r.statusType === 'received').length,
+            passedAssessment: referrals.filter(r => r.statusType === 'passedAssessment').length,
+            probation: referrals.filter(r => r.statusType === 'probation').length,
+            passed: referrals.filter(r => r.statusType === 'passed').length,
+            previouslyApplied: referrals.filter(r => r.statusType === 'previouslyApplied').length,
+            failed: referrals.filter(r => r.statusType === 'failed').length
+        };
         
-        // Count statuses
-        let statusCounts = {};
+        const hasData = Object.values(statusCounts).some(count => count > 0);
         
-        if (filteredView) {
-            // Use the simplified status groups
-            statusMapping.displayOrder.forEach(group => {
-                statusCounts[group] = referrals.filter(r => mapStatusToGroup(r.status) === group).length;
-            });
-        } else {
-            // Original status counting
-            statusCounts = {
-                passed: referrals.filter(r => r.statusType === 'passed').length,
-                probation: referrals.filter(r => r.statusType === 'probation').length,
-                previouslyApplied: referrals.filter(r => r.statusType === 'previouslyApplied').length,
-                operations: referrals.filter(r => r.statusType === 'operations').length,
-                talent: referrals.filter(r => r.statusType === 'talent').length,
-                assessment: referrals.filter(r => r.statusType === 'assessment').length,
-                received: referrals.filter(r => r.statusType === 'received').length,
-                failed: referrals.filter(r => r.statusType === 'failed').length
-            };
-        }
-        
-        // Chart data - different setup for filtered vs unfiltered
-        const data = filteredView ? {
-            labels: statusMapping.displayOrder.map(group => {
-                // Try to find a translation, fallback to group name
-                const translationKey = `status${group.replace(/\s+/g, '').replace(/[()]/g, '')}`;
-                return translation[translationKey] || group;
-            }),
-            datasets: [{
-                data: statusMapping.displayOrder.map(group => statusCounts[group]),
-                backgroundColor: [
-                    '#28a745', // Hired (Confirmed) - green
-                    '#ffc107', // Hired (Probation) - yellow
-                    '#6c757d', // Previously Applied - gray
-                    '#fd7e14', // Final Review - orange
-                    '#17a2b8', // Interview Stage - teal
-                    '#007bff', // Assessment Stage - blue
-                    '#6c757d', // Application Received - gray
-                    '#dc3545'  // Not Selected - red
-                ],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 8
-            }]
-        } : {
-            // Original chart data setup
+        const data = {
             labels: [
-                translation.statusPassed,
-                translation.statusProbation,
-                translation.statusPreviouslyApplied,
-                translation.statusOperations,
-                translation.statusTalent,
-                translation.statusAssessment,
-                translation.statusReceived,
-                translation.statusFailed
+                getTranslatedStatus('received'),
+                getTranslatedStatus('passedAssessment'),
+                getTranslatedStatus('probation'),
+                getTranslatedStatus('passed'),
+                getTranslatedStatus('previouslyApplied'),
+                getTranslatedStatus('failed')
             ],
             datasets: [{
-                data: [
-                    statusCounts.passed,
-                    statusCounts.probation,
-                    statusCounts.previouslyApplied,
-                    statusCounts.operations,
-                    statusCounts.talent,
-                    statusCounts.assessment,
+                data: hasData ? [
                     statusCounts.received,
+                    statusCounts.passedAssessment,
+                    statusCounts.probation,
+                    statusCounts.passed,
+                    statusCounts.previouslyApplied,
                     statusCounts.failed
-                ],
+                ] : [1, 1, 1, 1, 1, 1],
                 backgroundColor: [
-                    '#28a745', // Passed - green
-                    '#ffc107', // Probation - yellow
-                    '#6c757d', // Previously applied - gray
-                    '#fd7e14', // Operations - orange
-                    '#17a2b8', // Talent - teal
-                    '#007bff', // Assessment - blue
-                    '#6c757d', // Received - gray
-                    '#dc3545'  // Failed - red
+                    '#0087FF',  // TP Light Blue
+                    '#00d769',  // TP Green Flash
+                    '#f5d200',  // TP Yellow
+                    '#84c98b',  // TP Green Light
+                    '#5f365e',  // TP Burgundy
+                    '#ab2c37'   // TP Carmine
                 ],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 8
+                borderWidth: 0,
+                hoverOffset: hasData ? 8 : 0
             }]
         };
 
-        // Destroy previous chart if exists
         if (statusChart) {
             statusChart.destroy();
         }
 
-        // Create new chart with enhanced styling
         statusChart = new Chart(ctx, {
             type: 'doughnut',
             data: data,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '65%',
+                cutout: '70%',
                 plugins: {
                     legend: {
-                        display: false // We'll create custom legend below
+                        display: false
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        enabled: hasData,
+                        backgroundColor: 'rgba(65, 65, 65, 0.95)',
                         titleColor: '#fff',
                         bodyColor: '#fff',
                         borderColor: '#fff',
                         borderWidth: 1,
-                        cornerRadius: 4,
-                        padding: 10,
+                        cornerRadius: 8,
+                        padding: 12,
+                        displayColors: false,
                         callbacks: {
                             label: function(context) {
+                                if (!hasData) return 'No data yet';
                                 const label = context.label || '';
                                 const value = context.raw || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                 return `${label}: ${value} (${percentage}%)`;
                             }
                         }
@@ -1039,38 +935,74 @@ document.addEventListener('DOMContentLoaded', function() {
                 animation: {
                     animateScale: true,
                     animateRotate: true,
-                    duration: 800,
+                    duration: 1200,
                     easing: 'easeOutQuart'
                 }
             }
         });
 
-        // Create custom legend below chart
+        // Update legend
         const legendContainer = document.getElementById('chartLegend');
-        legendContainer.innerHTML = '';
-        
-        data.labels.forEach((label, i) => {
-            const legendItem = document.createElement('span');
-            legendItem.innerHTML = `<span style="background-color: ${data.datasets[0].backgroundColor[i]}"></span>${label}`;
-            legendContainer.appendChild(legendItem);
-        });
+        if (legendContainer) {
+            legendContainer.innerHTML = '';
+            
+            if (!hasData) {
+                const noDataMsg = document.createElement('div');
+                noDataMsg.className = 'text-muted text-center p-4';
+                noDataMsg.innerHTML = '<i class="fas fa-chart-pie me-2"></i>Start referring to see your status distribution!';
+                legendContainer.appendChild(noDataMsg);
+            } else {
+                data.labels.forEach((label, i) => {
+                    const count = data.datasets[0].data[i];
+                    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                    
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <div class="legend-color" style="background-color: ${data.datasets[0].backgroundColor[i]};"></div>
+                        <div class="legend-info">
+                            <div class="legend-label">${label}</div>
+                            <div class="legend-count">${count} <span class="legend-percentage">(${percentage}%)</span></div>
+                        </div>
+                    `;
+                    legendContainer.appendChild(legendItem);
+                });
+            }
+        }
     }
 
-    // Handle remind button clicks - opens WhatsApp with template message
+    // Handle remind button clicks
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('remind-btn') || e.target.closest('.remind-btn')) {
             const button = e.target.classList.contains('remind-btn') ? e.target : e.target.closest('.remind-btn');
             const name = button.dataset.name;
             const phone = button.dataset.phone;
             
-            const message = `Hi ${name}, this is a friendly reminder to complete your TP assessment. ` +
-                           `We're excited about your application! Please complete it at your earliest convenience. Thank you!`;
+            const message = `Hi ${name}, this is a friendly reminder to complete your assessment for TP. ` +
+                           `It's quick and easy! Please complete it at your earliest convenience to move forward with your application. Thank you!`;
             window.open(`https://wa.me/+6${phone}?text=${encodeURIComponent(message)}`, '_blank');
         }
     });
 
-    // Initialize translations
+    // Initialize app
     updateTranslations();
+    
+    // Number animation
+    function animateNumber(element, target, duration = 1000) {
+        const start = 0;
+        const increment = target / (duration / 16);
+        let current = start;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current);
+        }, 16);
+    }
     
     // Auto-focus phone input
     document.getElementById('dashboard-phone').focus();
@@ -1079,54 +1011,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dashboard-phone').addEventListener('input', function(e) {
         this.value = this.value.replace(/[^0-9]/g, '');
     });
-
-    // Initialize modals
-    const tngModal = new bootstrap.Modal(document.getElementById('tngModal'));
-    const userNotFoundModal = new bootstrap.Modal(document.getElementById('userNotFoundModal'));
     
-    // Enhanced form interactions
-    const formInputs = document.querySelectorAll('.form-control, .form-select');
-    formInputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('focused');
-        });
-        
-        input.addEventListener('blur', function() {
-            this.parentElement.classList.remove('focused');
-        });
-    });
-    
-    // Enhanced scroll animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in-up');
-            }
-        });
-    }, observerOptions);
-    
-    // Observe elements for scroll animations
-    document.querySelectorAll('.card, .stats-card').forEach(el => {
-        observer.observe(el);
-    });
-    
-    // Mobile optimizations
-    if ('ontouchstart' in window) {
-        document.body.classList.add('touch-device');
-    }
-    
-    // Preload images for better performance
-    const imagesToPreload = ['TPLogo11.png'];
-    imagesToPreload.forEach(src => {
-        const img = new Image();
-        img.src = src;
-    });
-    
-    // Initialize app
     console.log('xRAF Dashboard initialized successfully');
 });
