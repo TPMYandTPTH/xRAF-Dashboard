@@ -156,8 +156,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="translations.js"></script>
-    <script src="apiService.js"></script>
     <script src="statusMapping.js"></script>
+    <script src="apiService.js"></script>
+    <script src="mockDataService.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Check if we should use mock data (for testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mock') === 'true') {
+            console.log('Mock mode enabled via URL parameter');
+            window.ApiService = window.MockDataService;
+        }
+    </script>
 </body>
 </html>
