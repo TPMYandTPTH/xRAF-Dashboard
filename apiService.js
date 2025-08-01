@@ -1,407 +1,341 @@
-// Translations for all languages
-const translations = {
-    en: {
-        pageLangLabel: "Choose Your Language:",
-        dashboardTitle: "TP External RAF Dashboard",
-        dashboardSubtitle: "Enter your details to view your referral status",
-        phoneLabel: "Phone Number:",
-        phonePlaceholder: "Enter your phone number (01XXXXXXXX)",
-        phoneError: "Please provide a valid phone number (01XXXXXXXX).",
-        emailLabel: "Email Address:",
-        emailPlaceholder: "Enter your email address",
-        emailError: "Please provide a valid email address.",
-        viewStatusBtn: "View Referral Status",
-        backToRAF: "Back to Referral Form",
-        yourReferralsTitle: "Your Referrals",
-        backBtn: "Back",
-        totalReferrals: "Total Referrals",
-        hiredReferrals: "Hired",
-        inProgress: "In Progress",
-        statusDistribution: "Status Distribution",
-        earningsTitle: "Your Earnings",
-        earningsStage: "Stage",
-        earningsAmount: "Amount (RM)",
-        earningsCount: "Count",
-        earningsTotal: "Total",
-        remindFriendsTitle: "Remind Your Friends",
-        remindFriendsText: "Help your friends complete their assessments to join TP!",
-        remindBtn: "Send WhatsApp Reminder",
-        tpGlobal: "TP Global",
-        followMalaysia: "TP Malaysia",
-        followThailand: "TP Thailand",
-        noReferrals: "No referrals found with these details.",
-        referralName: "Friend's Name",
-        referralEmail: "Email",
-        referralStage: "Stage",
-        referralStatus: "Status",
-        referralDate: "Application Date",
-        referralDays: "Days in Stage",
-        referralAction: "Action",
-        statusReceived: "Application Received",
-        statusAssessment: "Assessment Stage",
-        statusTalent: "Interview Stage",
-        statusOperations: "Final Review",
-        statusProbation: "Hired (Probation)",
-        statusPassed: "Hired (Confirmed)",
-        statusFailed: "Not Selected",
-        statusPreviouslyApplied: "Previously Applied (No Payment)",
-        statusHiredConfirmed: "Hired (Confirmed)",
-        statusHiredProbation: "Hired (Probation)",
-        statusPreviouslyAppliedNoPayment: "Previously Applied (No Payment)",
-        statusFinalReview: "Final Review",
-        statusInterviewStage: "Interview Stage",
-        statusAssessmentStage: "Assessment Stage",
-        statusApplicationReceived: "Application Received",
-        statusNotSelected: "Not Selected",
-        paymentNote: "Payment Information",
-        paymentTermsTitle: "Payment Terms & Conditions",
-        paymentTermsText1: "Payments will be made to your TnG eWallet linked to your phone number.",
-        paymentTermsText2: "RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.",
-        paymentTermsText3: "All payments are subject to verification and may take up to 30 days after probation completion.",
-        closeBtn: "Close",
-        questionsTitle: "Questions?",
-        contactUsText: "Email us at:",
-        statusAssessmentPassed: "Assessment Passed (RM50)",
-        statusProbationPassed: "Probation Completed (RM750)",
-        noRemindersNeeded: "All your friends are on track!",
-        filteredViewLabel: "Simplified Status View",
-        userNotFoundTitle: "No Referrals Found",
-        userNotFoundText1: "We couldn't find any referrals with the provided email and phone number.",
-        userNotFoundText2: "Please double-check your information or contact us for assistance.",
-        okBtn: "OK",
-        contactUsBtn: "Contact Us",
-        errorTitle: "Error",
-        errorMessage: "Failed to fetch referrals. Please try again later.",
-        previouslyAppliedNote: "Note:",
-        previouslyAppliedNoteText: "No payment will be made if the candidate had previously applied to TP",
-        authErrorMessage: "Authentication required. Please ensure you are logged into SharePoint and have the necessary permissions.",
-        notFoundErrorMessage: "SharePoint lists not found. Please contact your administrator to verify the list configuration.",
-        connectingMessage: "Connecting to SharePoint..."
-    },
-    ja: {
-        pageLangLabel: "言語を選択:",
-        dashboardTitle: "紹介ダッシュボード",
-        dashboardSubtitle: "詳細を入力して紹介状況を表示",
-        phoneLabel: "電話番号:",
-        phonePlaceholder: "電話番号を入力 (01XXXXXXXX)",
-        phoneError: "有効な電話番号を入力してください (01XXXXXXXX)",
-        emailLabel: "メールアドレス:",
-        emailPlaceholder: "メールアドレスを入力",
-        emailError: "有効なメールアドレスを入力してください",
-        viewStatusBtn: "紹介状況を表示",
-        backToRAF: "紹介フォームに戻る",
-        yourReferralsTitle: "あなたの紹介",
-        backBtn: "戻る",
-        totalReferrals: "総紹介数",
-        hiredReferrals: "採用",
-        inProgress: "進行中",
-        statusDistribution: "ステータス分布",
-        earningsTitle: "あなたの収益",
-        earningsStage: "ステージ",
-        earningsAmount: "金額 (RM)",
-        earningsCount: "カウント",
-        earningsTotal: "合計",
-        remindFriendsTitle: "友達にリマインダーを送る",
-        remindFriendsText: "友達が審査を完了できるようサポートしましょう！",
-        remindBtn: "WhatsAppリマインダーを送る",
-        tpGlobal: "TPグローバル",
-        followMalaysia: "TPマレーシア",
-        followThailand: "TPタイ",
-        noReferrals: "該当する紹介は見つかりませんでした",
-        referralName: "友達の名前",
-        referralEmail: "メール",
-        referralStage: "ステージ",
-        referralStatus: "状態",
-        referralDate: "申込日",
-        referralDays: "ステージ日数",
-        referralAction: "操作",
-        statusReceived: "申込受付",
-        statusAssessment: "審査ステージ",
-        statusTalent: "面接ステージ",
-        statusOperations: "最終レビュー",
-        statusProbation: "採用（試用期間中）",
-        statusPassed: "採用（確定）",
-        statusFailed: "不採用",
-        statusPreviouslyApplied: "以前に応募済み（支払い対象外）",
-        statusHiredConfirmed: "採用（確定）",
-        statusHiredProbation: "採用（試用期間中）",
-        statusPreviouslyAppliedNoPayment: "以前に応募済み（支払い対象外）",
-        statusFinalReview: "最終レビュー",
-        statusInterviewStage: "面接ステージ",
-        statusAssessmentStage: "審査ステージ",
-        statusApplicationReceived: "申込受付",
-        statusNotSelected: "不採用",
-        paymentNote: "支払い情報",
-        paymentTermsTitle: "支払い条件",
-        paymentTermsText1: "支払いは登録された電話番号にリンクされたTnG電子財布に行われます。",
-        paymentTermsText2: "候補者が審査を通過するとRM50が支払われます。RM750のボーナスは、紹介された候補者が90日の試用期間を無事に完了した後にのみ支払われます。",
-        paymentTermsText3: "すべての支払いは確認が必要であり、試用期間完了後最大30日かかる場合があります。",
-        closeBtn: "閉じる",
-        questionsTitle: "質問がありますか？",
-        contactUsText: "メールでお問い合わせ:",
-        statusAssessmentPassed: "審査通過 (RM50)",
-        statusProbationPassed: "試用期間完了 (RM750)",
-        noRemindersNeeded: "すべての友達が順調です！",
-        filteredViewLabel: "簡易ステータス表示",
-        userNotFoundTitle: "紹介が見つかりません",
-        userNotFoundText1: "提供されたメールアドレスと電話番号で紹介が見つかりませんでした。",
-        userNotFoundText2: "情報を再確認するか、サポートにお問い合わせください。",
-        okBtn: "OK",
-        contactUsBtn: "お問い合わせ",
-        errorTitle: "エラー",
-        errorMessage: "紹介の取得に失敗しました。後でもう一度お試しください。",
-        previouslyAppliedNote: "注意:",
-        previouslyAppliedNoteText: "候補者が以前にTPに応募していた場合、支払いは行われません",
-        authErrorMessage: "認証が必要です。SharePointにログインし、必要な権限があることを確認してください。",
-        notFoundErrorMessage: "SharePointリストが見つかりません。管理者に連絡してリスト構成を確認してください。",
-        connectingMessage: "SharePointに接続中..."
-    },
-    ko: {
-        pageLangLabel: "언어 선택:",
-        dashboardTitle: "추천 대시보드",
-        dashboardSubtitle: "추천 현황을 보려면 정보 입력",
-        phoneLabel: "전화번호:",
-        phonePlaceholder: "전화번호 입력 (01XXXXXXXX)",
-        phoneError: "유효한 전화번호 입력 (01XXXXXXXX)",
-        emailLabel: "이메일 주소:",
-        emailPlaceholder: "이메일 주소 입력",
-        emailError: "유효한 이메일 주소 입력",
-        viewStatusBtn: "추천 현황 보기",
-        backToRAF: "추천 양식으로 돌아가기",
-        yourReferralsTitle: "귀하의 추천",
-        backBtn: "뒤로",
-        totalReferrals: "총 추천 수",
-        hiredReferrals: "채용됨",
-        inProgress: "진행 중",
-        statusDistribution: "상태 분포",
-        earningsTitle: "귀하의 수익",
-        earningsStage: "단계",
-        earningsAmount: "금액 (RM)",
-        earningsCount: "카운트",
-        earningsTotal: "합계",
-        remindFriendsTitle: "친구들에게 알림 보내기",
-        remindFriendsText: "친구들이 평가를 완료할 수 있도록 도와주세요!",
-        remindBtn: "WhatsApp 알림 보내기",
-        tpGlobal: "TP 글로벌",
-        followMalaysia: "TP 말레이시아",
-        followThailand: "TP 태국",
-        noReferrals: "일치하는 추천 없음",
-        referralName: "친구 이름",
-        referralEmail: "이메일",
-        referralStage: "단계",
-        referralStatus: "상태",
-        referralDate: "신청 날짜",
-        referralDays: "단계 일수",
-        referralAction: "조치",
-        statusReceived: "신청서 접수",
-        statusAssessment: "평가 단계",
-        statusTalent: "면접 단계",
-        statusOperations: "최종 검토",
-        statusProbation: "채용 (수습 기간)",
-        statusPassed: "채용 (확정)",
-        statusFailed: "미채용",
-        statusPreviouslyApplied: "이전 지원자 (지급 불가)",
-        statusHiredConfirmed: "채용 (확정)",
-        statusHiredProbation: "채용 (수습 기간)",
-        statusPreviouslyAppliedNoPayment: "이전 지원자 (지급 불가)",
-        statusFinalReview: "최종 검토",
-        statusInterviewStage: "면접 단계",
-        statusAssessmentStage: "평가 단계",
-        statusApplicationReceived: "신청서 접수",
-        statusNotSelected: "미채용",
-        paymentNote: "결제 정보",
-        paymentTermsTitle: "결제 조건",
-        paymentTermsText1: "결제는 등록된 전화번호에 연결된 TnG 전자지갑으로 진행됩니다.",
-        paymentTermsText2: "후보자가 평가를 통과하면 RM50이 지급됩니다。RM750 보너스는 추천한 후보자가 90일 수습 기간을 성공적으로 완료한 후에만 지급됩니다.",
-        paymentTermsText3: "모든 결제는 확인이 필요하며 수습 기간 완료 후 최대 30일이 소요될 수 있습니다.",
-        closeBtn: "닫기",
-        questionsTitle: "질문이 있으신가요?",
-        contactUsText: "이메일로 문의:",
-        statusAssessmentPassed: "평가 통과 (RM50)",
-        statusProbationPassed: "수습 기간 완료 (RM750)",
-        noRemindersNeeded: "모든 친구들이 순조롭게 진행 중입니다!",
-        filteredViewLabel: "간략한 상태 보기",
-        userNotFoundTitle: "추천을 찾을 수 없음",
-        userNotFoundText1: "제공된 이메일과 전화번호로 추천을 찾을 수 없습니다.",
-        userNotFoundText2: "정보를 다시 확인하거나 지원팀에 문의하세요.",
-        okBtn: "확인",
-        contactUsBtn: "문의하기",
-        errorTitle: "오류",
-        errorMessage: "추천을 가져오지 못했습니다. 나중에 다시 시도하세요.",
-        previouslyAppliedNote: "참고:",
-        previouslyAppliedNoteText: "후보자가 이전에 TP에 지원한 경우 지급되지 않습니다",
-        authErrorMessage: "인증이 필요합니다. SharePoint에 로그인하고 필요한 권한이 있는지 확인하세요.",
-        notFoundErrorMessage: "SharePoint 목록을 찾을 수 없습니다. 관리자에게 연락하여 목록 구성을 확인하세요.",
-        connectingMessage: "SharePoint에 연결 중..."
-    },
-    "zh-CN": {
-        pageLangLabel: "选择语言:",
-        dashboardTitle: "推荐仪表板",
-        dashboardSubtitle: "输入信息查看推荐状态",
-        phoneLabel: "电话号码:",
-        phonePlaceholder: "输入电话号码 (01XXXXXXXX)",
-        phoneError: "请输入有效电话号码 (01XXXXXXXX)",
-        emailLabel: "电子邮件:",
-        emailPlaceholder: "输入电子邮件",
-        emailError: "请输入有效电子邮件",
-        viewStatusBtn: "查看推荐状态",
-        backToRAF: "返回推荐表格",
-        yourReferralsTitle: "您的推荐",
-        backBtn: "返回",
-        totalReferrals: "总推荐数",
-        hiredReferrals: "已雇用",
-        inProgress: "进行中",
-        statusDistribution: "状态分布",
-        earningsTitle: "您的收益",
-        earningsStage: "阶段",
-        earningsAmount: "金额 (RM)",
-        earningsCount: "计数",
-        earningsTotal: "总计",
-        remindFriendsTitle: "提醒您的朋友",
-        remindFriendsText: "帮助您的朋友完成评估加入TP！",
-        remindBtn: "发送WhatsApp提醒",
-        tpGlobal: "TP全球",
-        followMalaysia: "TP马来西亚",
-        followThailand: "TP泰国",
-        noReferrals: "未找到匹配推荐",
-        referralName: "朋友姓名",
-        referralEmail: "电子邮件",
-        referralStage: "阶段",
-        referralStatus: "状态",
-        referralDate: "申请日期",
-        referralDays: "阶段天数",
-        referralAction: "操作",
-        statusReceived: "已收申请",
-        statusAssessment: "评估阶段",
-        statusTalent: "面试阶段",
-        statusOperations: "最终审核",
-        statusProbation: "雇用（试用期）",
-        statusPassed: "雇用（确定）",
-        statusFailed: "未通过",
-        statusPreviouslyApplied: "之前申请过 (不支付)",
-        statusHiredConfirmed: "雇用（确定）",
-        statusHiredProbation: "雇用（试用期）",
-        statusPreviouslyAppliedNoPayment: "之前申请过 (不支付)",
-        statusFinalReview: "最终审核",
-        statusInterviewStage: "面试阶段",
-        statusAssessmentStage: "评估阶段",
-        statusApplicationReceived: "已收申请",
-        statusNotSelected: "未通过",
-        paymentNote: "支付信息",
-        paymentTermsTitle: "支付条款",
-        paymentTermsText1: "款项将支付至与您电话号码关联的TnG电子钱包。",
-        paymentTermsText2: "候选人通过评估后将支付RM50。RM750奖金仅在您推荐的候选人成功完成90天试用期后支付。",
-        paymentTermsText3: "所有付款需经核实，可能在试用期完成后最多30天内完成。",
-        closeBtn: "关闭",
-        questionsTitle: "有问题吗？",
-        contactUsText: "发送邮件至:",
-        statusAssessmentPassed: "评估通过 (RM50)",
-        statusProbationPassed: "试用期完成 (RM750)",
-        noRemindersNeeded: "您的朋友们都在正常进行中！",
-        filteredViewLabel: "简化状态视图",
-        userNotFoundTitle: "未找到推荐",
-        userNotFoundText1: "使用提供的电子邮件和电话号码未找到任何推荐。",
-        userNotFoundText2: "请仔细检查您的信息或联系我们寻求帮助。",
-        okBtn: "确定",
-        contactUsBtn: "联系我们",
-        errorTitle: "错误",
-        errorMessage: "获取推荐失败。请稍后再试。",
-        previouslyAppliedNote: "注意:",
-        previouslyAppliedNoteText: "如果候选人之前申请过TP，将不会支付",
-        authErrorMessage: "需要身份验证。请确保您已登录SharePoint并具有必要的权限。",
-        notFoundErrorMessage: "找不到SharePoint列表。请联系管理员验证列表配置。",
-        connectingMessage: "正在连接到SharePoint..."
-    },
-    "zh-HK": {
-        pageLangLabel: "選擇語言:",
-        dashboardTitle: "推薦儀表板",
-        dashboardSubtitle: "輸入信息查看推薦狀態",
-        phoneLabel: "電話號碼:",
-        phonePlaceholder: "輸入電話號碼 (01XXXXXXXX)",
-        phoneError: "請輸入有效電話號碼 (01XXXXXXXX)",
-        emailLabel: "電子郵件:",
-        emailPlaceholder: "輸入電子郵件",
-        emailError: "請輸入有效電子郵件",
-        viewStatusBtn: "查看推薦狀態",
-        backToRAF: "返回推薦表格",
-        yourReferralsTitle: "您的推薦",
-        backBtn: "返回",
-        totalReferrals: "總推薦數",
-        hiredReferrals: "已僱用",
-        inProgress: "進行中",
-        statusDistribution: "狀態分佈",
-        earningsTitle: "您的收益",
-        earningsStage: "階段",
-        earningsAmount: "金額 (RM)",
-        earningsCount: "計數",
-        earningsTotal: "總計",
-        remindFriendsTitle: "提醒您的朋友",
-        remindFriendsText: "幫助您的朋友完成評估加入TP！",
-        remindBtn: "發送WhatsApp提醒",
-        tpGlobal: "TP全球",
-        followMalaysia: "TP馬來西亞",
-        followThailand: "TP泰國",
-        noReferrals: "未找到匹配推薦",
-        referralName: "朋友姓名",
-        referralEmail: "電子郵件",
-        referralStage: "階段",
-        referralStatus: "狀態",
-        referralDate: "申請日期",
-        referralDays: "階段天數",
-        referralAction: "操作",
-        statusReceived: "已收申請",
-        statusAssessment: "評估階段",
-        statusTalent: "面試階段",
-        statusOperations: "最終審核",
-        statusProbation: "僱用（試用期）",
-        statusPassed: "僱用（確定）",
-        statusFailed: "未通過",
-        statusPreviouslyApplied: "之前申請過 (不支付)",
-        statusHiredConfirmed: "僱用（確定）",
-        statusHiredProbation: "僱用（試用期）",
-        statusPreviouslyAppliedNoPayment: "之前申請過 (不支付)",
-        statusFinalReview: "最終審核",
-        statusInterviewStage: "面試階段",
-        statusAssessmentStage: "評估階段",
-        statusApplicationReceived: "已收申請",
-        statusNotSelected: "未通過",
-        paymentNote: "支付信息",
-        paymentTermsTitle: "支付條款",
-        paymentTermsText1: "款項將支付至與您電話號碼關聯的TnG電子錢包。",
-        paymentTermsText2: "候選人通過評估後將支付RM50。RM750獎金僅在您推薦的候選人成功完成90天試用期後支付。",
-        paymentTermsText3: "所有付款需經核實，可能在試用期完成後最多30天內完成。",
-        closeBtn: "關閉",
-        questionsTitle: "有問題嗎？",
-        contactUsText: "發送郵件至:",
-        statusAssessmentPassed: "評估通過 (RM50)",
-        statusProbationPassed: "試用期完成 (RM750)",
-        noRemindersNeeded: "您的朋友們都在正常進行中！",
-        filteredViewLabel: "簡化狀態視圖",
-        userNotFoundTitle: "未找到推薦",
-        userNotFoundText1: "使用提供的電子郵件和電話號碼未找到任何推薦。",
-        userNotFoundText2: "請仔細檢查您的信息或聯繫我們尋求幫助。",
-        okBtn: "確定",
-        contactUsBtn: "聯繫我們",
-        errorTitle: "錯誤",
-        errorMessage: "獲取推薦失敗。請稍後再試。",
-        previouslyAppliedNote: "注意:",
-        previouslyAppliedNoteText: "如果候選人之前申請過TP，將不會支付",
-        authErrorMessage: "需要身份驗證。請確保您已登錄SharePoint並具有必要的權限。",
-        notFoundErrorMessage: "找不到SharePoint列表。請聯繫管理員驗證列表配置。",
-        connectingMessage: "正在連接到SharePoint..."
-    }
-};
+// API Service Module - SharePoint Integration
+const ApiService = (function() {
+    // SharePoint Configuration
+    const SHAREPOINT_CONFIG = {
+        // Your actual SharePoint list URLs converted to REST API endpoints
+        candidateEndpoint: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment/_api/web/lists/getbytitle(\'ExRAF\')/items',
+        assessmentEndpoint: 'https://teleperformance.sharepoint.com/sites/TAteamautomations/_api/web/lists/getbytitle(\'Hallo%20AI\')/items',
+        
+        // Base URLs for context
+        candidateBaseUrl: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment',
+        assessmentBaseUrl: 'https://teleperformance.sharepoint.com/sites/TAteamautomations',
+        
+        // Headers for SharePoint REST API
+        headers: {
+            'Accept': 'application/json;odata=verbose',
+            'Content-Type': 'application/json;odata=verbose'
+        }
+    };
 
-// Earnings structure
-const earningsStructure = {
-    assessment: {
-        amount: 50,
-        label: "Pass Assessment",
-        description: "Paid when candidate passes assessment"
-    },
-    probation: { 
-        amount: 750, 
-        label: "Pass Probation (90 days)",
-        description: "Paid only for new candidates who complete 90 days"
+    // Get SharePoint context info for authentication
+    async function getSharePointContext(siteUrl) {
+        try {
+            console.log('Getting SharePoint context for:', siteUrl);
+            
+            const response = await fetch(`${siteUrl}/_api/contextinfo`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'Content-Type': 'application/json;odata=verbose'
+                },
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Context info failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            return data.d.GetContextWebInformation.FormDigestValue;
+            
+        } catch (error) {
+            console.error('Error getting SharePoint context:', error);
+            throw error;
+        }
     }
-};
+
+    // Fetch data from SharePoint REST API
+    async function fetchSharePointData(endpoint, siteUrl, options = {}) {
+        try {
+            console.log(`Fetching from: ${endpoint}`);
+            
+            // Try without authentication first (for anonymous access)
+            let useAuth = false;
+            let formDigest = null;
+            
+            // Build query parameters
+            const queryParams = [];
+            if (options.select) queryParams.push(`$select=${encodeURIComponent(options.select)}`);
+            if (options.filter) queryParams.push(`$filter=${encodeURIComponent(options.filter)}`);
+            if (options.orderby) queryParams.push(`$orderby=${encodeURIComponent(options.orderby)}`);
+            if (options.top) queryParams.push(`$top=${options.top}`);
+            if (options.expand) queryParams.push(`$expand=${encodeURIComponent(options.expand)}`);
+            
+            const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
+            const fullUrl = endpoint + queryString;
+            
+            console.log(`Full URL: ${fullUrl}`);
+            
+            // First attempt without authentication
+            let response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: SHAREPOINT_CONFIG.headers,
+                credentials: 'include'
+            });
+            
+            // If unauthorized, try with authentication
+            if (response.status === 401 || response.status === 403) {
+                console.log('Attempting authenticated request...');
+                useAuth = true;
+                formDigest = await getSharePointContext(siteUrl);
+                
+                response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        ...SHAREPOINT_CONFIG.headers,
+                        'X-RequestDigest': formDigest
+                    },
+                    credentials: 'include'
+                });
+            }
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`SharePoint API Error: ${response.status} ${response.statusText}\nDetails: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log(`Retrieved ${data.d.results.length} items`);
+            return data.d.results;
+            
+        } catch (error) {
+            console.error('Error fetching SharePoint data:', error);
+            throw error;
+        }
+    }
+
+    // Main function to fetch referrals
+    async function fetchReferrals(phone, email) {
+        console.log('=== Starting fetchReferrals ===');
+        console.log('Phone:', phone);
+        console.log('Email:', email);
+        
+        try {
+            // Step 1: Fetch candidate data from ExRAF list
+            console.log('\n--- Fetching Candidate Data ---');
+            const candidateOptions = {
+                select: 'ID,Title,Person_x0020_Full_x0020_Name,Person_x0020_Email,Default_x0020_Phone,Source_x0020_Name,Recent_x0020_Status,Created,Modified,Referrer_x0020_Phone,Referrer_x0020_Email,Nationality,Location',
+                filter: `(Referrer_x0020_Phone eq '${phone}' or Referrer_x0020_Email eq '${email}')`,
+                orderby: 'Created desc',
+                top: 1000
+            };
+            
+            const candidateData = await fetchSharePointData(
+                SHAREPOINT_CONFIG.candidateEndpoint, 
+                SHAREPOINT_CONFIG.candidateBaseUrl, 
+                candidateOptions
+            );
+            
+            console.log(`Found ${candidateData.length} candidate records`);
+            
+            if (candidateData.length === 0) {
+                console.log('No candidates found for this referrer');
+                return [];
+            }
+            
+            // Step 2: Fetch assessment data from Hallo AI list
+            console.log('\n--- Fetching Assessment Data ---');
+            const assessmentOptions = {
+                select: 'ID,Title,Email,First_x0020_Name,Last_x0020_Name,Language,Score,English,CEFR,Created,Modified',
+                top: 5000
+            };
+            
+            const assessmentData = await fetchSharePointData(
+                SHAREPOINT_CONFIG.assessmentEndpoint, 
+                SHAREPOINT_CONFIG.assessmentBaseUrl, 
+                assessmentOptions
+            );
+            
+            console.log(`Found ${assessmentData.length} assessment records`);
+            
+            // Step 3: Process and match the data
+            console.log('\n--- Processing Data ---');
+            const referrals = processReferralData(candidateData, assessmentData, phone, email);
+            
+            console.log(`Processed ${referrals.length} referrals`);
+            
+            return referrals;
+            
+        } catch (error) {
+            console.error('=== fetchReferrals Error ===');
+            console.error('Error details:', error.message);
+            console.error('Stack trace:', error.stack);
+            throw error;
+        }
+    }
+
+    // Process the data from both lists
+    function processReferralData(candidateData, assessmentData, referrerPhone, referrerEmail) {
+        console.log('Processing referral data...');
+        
+        // Create assessment lookup map by email
+        const assessmentMap = new Map();
+        assessmentData.forEach(assessment => {
+            if (assessment.Email) {
+                assessmentMap.set(assessment.Email.toLowerCase(), {
+                    firstName: assessment.First_x0020_Name,
+                    lastName: assessment.Last_x0020_Name,
+                    email: assessment.Email,
+                    language: assessment.Language,
+                    score: assessment.Score,
+                    english: assessment.English,
+                    cefr: assessment.CEFR,
+                    created: assessment.Created,
+                    modified: assessment.Modified
+                });
+            }
+        });
+        
+        console.log(`Created assessment lookup map with ${assessmentMap.size} entries`);
+        
+        // Process each candidate
+        const referrals = [];
+        
+        candidateData.forEach((candidate, index) => {
+            console.log(`Processing candidate ${index + 1}:`, candidate.Person_x0020_Full_x0020_Name);
+            
+            const candidateEmail = candidate.Person_x0020_Email;
+            if (!candidateEmail) {
+                console.log('  - Skipping: No email address');
+                return;
+            }
+            
+            // Find matching assessment
+            const assessment = assessmentMap.get(candidateEmail.toLowerCase());
+            console.log(`  - Assessment found: ${assessment ? 'Yes' : 'No'}`);
+            
+            // Determine status and stage
+            let status = candidate.Recent_x0020_Status || 'Application Received';
+            
+            // Override status based on assessment if no recent status
+            if (!candidate.Recent_x0020_Status && assessment && assessment.cefr) {
+                const cefr = assessment.cefr;
+                if (['C2', 'C1', 'B2'].includes(cefr)) {
+                    status = 'Assessment Stage';
+                } else if (['B1', 'A2', 'A1'].includes(cefr)) {
+                    status = 'Eliminated - Assessment Results Did Not Meet Criteria';
+                }
+            }
+            
+            // Calculate days since last update
+            const lastUpdate = candidate.Modified || candidate.Created;
+            const updatedDate = new Date(lastUpdate);
+            const today = new Date();
+            const daysInStage = Math.floor((today - updatedDate) / (1000 * 60 * 60 * 24));
+            
+            // Check if this is an xRAF referral
+            const isXRAF = candidate.Source_x0020_Name === 'xRAF' || candidate.Source_x0020_Name === 'Employee Referral';
+            const isPreviousCandidate = status === 'Previously Applied (No Payment)' || !isXRAF;
+            
+            // Create referral object
+            const referral = {
+                // SharePoint fields
+                Person_system_id: candidate.ID?.toString() || '',
+                First_Name: candidate.Person_x0020_Full_x0020_Name || candidate.Title || 'Unknown',
+                Employee: candidate.Default_x0020_Phone || '',
+                Email: candidateEmail,
+                Source: candidate.Source_x0020_Name || 'Unknown',
+                Status: status,
+                Location: candidate.Location || '',
+                F_Nationality: candidate.Nationality || '',
+                CreatedDate: candidate.Created,
+                UpdatedDate: lastUpdate,
+                SourceName: candidate.Source_x0020_Name || 'Unknown',
+                
+                // Additional fields for UI
+                personId: candidate.ID?.toString() || '',
+                name: candidate.Person_x0020_Full_x0020_Name || candidate.Title || 'Unknown',
+                email: candidateEmail,
+                employee: candidate.Default_x0020_Phone || '',
+                status: status,
+                location: candidate.Location || '',
+                nationality: candidate.Nationality || '',
+                source: candidate.Source_x0020_Name || 'Unknown',
+                sourceName: candidate.Source_x0020_Name || 'Unknown',
+                createdDate: candidate.Created,
+                updatedDate: lastUpdate,
+                daysInStage: daysInStage,
+                isPreviousCandidate: isPreviousCandidate,
+                applicationDate: candidate.Created,
+                
+                // Assessment data
+                assessmentScore: assessment?.score || null,
+                assessmentCEFR: assessment?.cefr || null,
+                assessmentLanguage: assessment?.language || null,
+                assessmentDate: assessment?.modified || null
+            };
+            
+            referrals.push(referral);
+            console.log(`  - Added referral: ${referral.name}`);
+        });
+        
+        console.log(`Total referrals processed: ${referrals.length}`);
+        return referrals;
+    }
+
+    // Test SharePoint connectivity
+    async function testSharePointConnection() {
+        console.log('=== Testing SharePoint Connection ===');
+        
+        try {
+            // Test candidate list
+            console.log('\n--- Testing Candidate List ---');
+            const candidateTest = await fetchSharePointData(
+                SHAREPOINT_CONFIG.candidateEndpoint, 
+                SHAREPOINT_CONFIG.candidateBaseUrl, 
+                { top: 1 }
+            );
+            console.log('✓ Candidate list accessible');
+            console.log('Sample candidate:', candidateTest[0]);
+            
+            // Test assessment list  
+            console.log('\n--- Testing Assessment List ---');
+            const assessmentTest = await fetchSharePointData(
+                SHAREPOINT_CONFIG.assessmentEndpoint, 
+                SHAREPOINT_CONFIG.assessmentBaseUrl, 
+                { top: 1 }
+            );
+            console.log('✓ Assessment list accessible');
+            console.log('Sample assessment:', assessmentTest[0]);
+            
+            console.log('\n✓ All SharePoint connections successful!');
+            return { success: true };
+            
+        } catch (error) {
+            console.error('✗ SharePoint connection failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Debug function to inspect list fields
+    async function debugListFields(listType = 'candidate') {
+        const endpoint = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateEndpoint : SHAREPOINT_CONFIG.assessmentEndpoint;
+        const baseUrl = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateBaseUrl : SHAREPOINT_CONFIG.assessmentBaseUrl;
+        
+        console.log(`=== Debugging ${listType} List Fields ===`);
+        
+        try {
+            // Get sample data
+            const sampleData = await fetchSharePointData(endpoint, baseUrl, { top: 1 });
+            if (sampleData.length > 0) {
+                console.log('\nSample Item Fields:');
+                Object.keys(sampleData[0]).forEach(key => {
+                    console.log(`  ${key}: ${sampleData[0][key]}`);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error debugging fields:', error);
+        }
+    }
+
+    // Public API
+    return {
+        fetchReferrals: fetchReferrals,
+        testSharePointConnection: testSharePointConnection,
+        debugListFields: debugListFields,
+        updateApiConfig: function(config) {
+            Object.assign(SHAREPOINT_CONFIG, config);
+        }
+    };
+})();
