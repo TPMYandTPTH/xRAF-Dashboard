@@ -110,15 +110,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('API Service not loaded');
             }
             
-            // Check if we got data
-            if (!apiData || (Array.isArray(apiData) && apiData.length === 0)) {
-                console.log('No referrals found, showing empty dashboard');
-                // Show empty dashboard instead of error
-                apiData = [];
-            }
-            
-            // Ensure data is in array format
-            const referrals = Array.isArray(apiData) ? apiData : [apiData];
+            // Ensure data is in array format - even if empty
+            const referrals = Array.isArray(apiData) ? apiData : [];
             
             // Process referrals with status mapping
             const processedReferrals = processReferrals(referrals);
@@ -126,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store in app state
             AppState.currentReferralsData = processedReferrals;
             
-            // Show results
+            // Show results - even if empty
             showReferralResults(processedReferrals, phone, email);
             
         } catch (error) {
@@ -134,31 +127,15 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
             
-            // Check different error types
-            if (error.message && error.message.includes('NetworkError')) {
-                showErrorModal('Network error: Unable to connect to SharePoint. Please check your internet connection.');
-            } else if (error.message && error.message.includes('CORS')) {
-                showErrorModal('CORS error: This application must be hosted on SharePoint or use a proxy server.');
-            } else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
-                showErrorModal(translations[AppState.currentLanguage].authErrorMessage);
-            } else if (error.message && error.message.includes('404')) {
-                showErrorModal(translations[AppState.currentLanguage].notFoundErrorMessage);
-            } else {
-                // For any other error, show empty dashboard with warning
-                console.warn('Error fetching data, showing empty dashboard');
-                
-                // Show empty dashboard
-                AppState.currentReferralsData = [];
-                showReferralResults([], phone, email);
-                
-                // Show warning message
-                setTimeout(() => {
-                    showErrorModal(
-                        'Warning: Could not connect to SharePoint. Showing empty dashboard. ' +
-                        'Error: ' + (error.message || 'Unknown error')
-                    );
-                }, 500);
-            }
+            // Always show the dashboard, even on error
+            AppState.currentReferralsData = [];
+            showReferralResults([], phone, email);
+            
+            // Show a non-blocking notification about the error
+            setTimeout(() => {
+                const errorMessage = getErrorMessage(error);
+                showNonBlockingError(errorMessage);
+            }, 500);
         } finally {
             setLoadingState(false);
         }
@@ -889,7 +866,39 @@ document.addEventListener('DOMContentLoaded', function() {
         return item;
     }
     
-    function getStatusBadgeColor(statusType, daysInStage = 0, isPreviousCandidate = false) {
+    function getErrorMessage(error) {
+        if (error.message && error.message.includes('Failed to fetch')) {
+            return 'Unable to connect to SharePoint. This could be due to CORS restrictions. Please host this application on SharePoint or contact your administrator.';
+        } else if (error.message && error.message.includes('NetworkError')) {
+            return 'Network connection error. Please check your internet connection.';
+        } else if (error.message && error.message.includes('401')) {
+            return 'Authentication required. Please ensure you are logged into SharePoint.';
+        } else if (error.message && error.message.includes('403')) {
+            return 'Access denied. You may not have permission to access the SharePoint lists.';
+        } else if (error.message && error.message.includes('404')) {
+            return 'SharePoint lists not found. Please verify the list names and URLs.';
+        } else {
+            return `Connection error: ${error.message || 'Unknown error'}. The dashboard is showing with no data.`;
+        }
+    }
+    
+    function showNonBlockingError(message) {
+        // Create a dismissible alert instead of a modal
+        const alertHtml = `
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <strong>Notice:</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Add to the top of results
+        const resultsStep = document.getElementById('results-step');
+        const existingAlert = resultsStep.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        resultsStep.insertAdjacentHTML('afterbegin', alertHtml);
+    }
         if (isPreviousCandidate) {
             return 'previously-applied';
         }
