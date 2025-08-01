@@ -112,8 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Check if we got data
             if (!apiData || (Array.isArray(apiData) && apiData.length === 0)) {
-                showUserNotFoundModal();
-                return;
+                console.log('No referrals found, showing empty dashboard');
+                // Show empty dashboard instead of error
+                apiData = [];
             }
             
             // Ensure data is in array format
@@ -129,18 +130,34 @@ document.addEventListener('DOMContentLoaded', function() {
             showReferralResults(processedReferrals, phone, email);
             
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error details:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             
-            // Check if it's an authentication error
-            if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+            // Check different error types
+            if (error.message && error.message.includes('NetworkError')) {
+                showErrorModal('Network error: Unable to connect to SharePoint. Please check your internet connection.');
+            } else if (error.message && error.message.includes('CORS')) {
+                showErrorModal('CORS error: This application must be hosted on SharePoint or use a proxy server.');
+            } else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
                 showErrorModal(translations[AppState.currentLanguage].authErrorMessage);
             } else if (error.message && error.message.includes('404')) {
                 showErrorModal(translations[AppState.currentLanguage].notFoundErrorMessage);
             } else {
-                showErrorModal(
-                    translations[AppState.currentLanguage].errorMessage || 
-                    'Failed to fetch referrals. Please try again later.'
-                );
+                // For any other error, show empty dashboard with warning
+                console.warn('Error fetching data, showing empty dashboard');
+                
+                // Show empty dashboard
+                AppState.currentReferralsData = [];
+                showReferralResults([], phone, email);
+                
+                // Show warning message
+                setTimeout(() => {
+                    showErrorModal(
+                        'Warning: Could not connect to SharePoint. Showing empty dashboard. ' +
+                        'Error: ' + (error.message || 'Unknown error')
+                    );
+                }, 500);
             }
         } finally {
             setLoadingState(false);
