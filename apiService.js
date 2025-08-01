@@ -120,33 +120,44 @@ const ApiService = (function() {
                 top: 1000
             };
             
-            const candidateData = await fetchSharePointData(
-                SHAREPOINT_CONFIG.candidateEndpoint, 
-                SHAREPOINT_CONFIG.candidateBaseUrl, 
-                candidateOptions
-            );
+            let candidateData = [];
+            let assessmentData = [];
             
-            console.log(`Found ${candidateData.length} candidate records`);
+            try {
+                candidateData = await fetchSharePointData(
+                    SHAREPOINT_CONFIG.candidateEndpoint, 
+                    SHAREPOINT_CONFIG.candidateBaseUrl, 
+                    candidateOptions
+                );
+                console.log(`Found ${candidateData.length} candidate records`);
+            } catch (candidateError) {
+                console.error('Error fetching candidates:', candidateError);
+                // Continue anyway - we'll return empty array
+            }
             
             if (candidateData.length === 0) {
                 console.log('No candidates found for this referrer');
-                return [];
+                return []; // Return empty array, not null
             }
             
-            // Step 2: Fetch assessment data from Hallo AI list
+            // Step 2: Try to fetch assessment data (but don't fail if it errors)
             console.log('\n--- Fetching Assessment Data ---');
             const assessmentOptions = {
                 select: 'ID,Title,Email,First_x0020_Name,Last_x0020_Name,Language,Score,English,CEFR,Created,Modified',
                 top: 5000
             };
             
-            const assessmentData = await fetchSharePointData(
-                SHAREPOINT_CONFIG.assessmentEndpoint, 
-                SHAREPOINT_CONFIG.assessmentBaseUrl, 
-                assessmentOptions
-            );
-            
-            console.log(`Found ${assessmentData.length} assessment records`);
+            try {
+                assessmentData = await fetchSharePointData(
+                    SHAREPOINT_CONFIG.assessmentEndpoint, 
+                    SHAREPOINT_CONFIG.assessmentBaseUrl, 
+                    assessmentOptions
+                );
+                console.log(`Found ${assessmentData.length} assessment records`);
+            } catch (assessmentError) {
+                console.warn('Could not fetch assessment data:', assessmentError);
+                // Continue with empty assessment data
+            }
             
             // Step 3: Process and match the data
             console.log('\n--- Processing Data ---');
@@ -154,13 +165,15 @@ const ApiService = (function() {
             
             console.log(`Processed ${referrals.length} referrals`);
             
-            return referrals;
+            return referrals; // Always return array
             
         } catch (error) {
             console.error('=== fetchReferrals Error ===');
             console.error('Error details:', error.message);
             console.error('Stack trace:', error.stack);
-            throw error;
+            
+            // Don't throw - return empty array
+            return [];
         }
     }
 
