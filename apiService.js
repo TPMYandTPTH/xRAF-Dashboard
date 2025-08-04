@@ -1,9 +1,5 @@
 // API Service Module - SharePoint Integration
 const ApiService = (function() {
-    // SharePoint Configuration
-const SHAREPOINT_CONFIG = {
-  candidateEndpoint: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment/_api/web/lists/getbytitle(\'ExRAF\')/items',
-  assessmentEndpoint: 'https://teleperformance.sharepoint.com/sites/TAteamautomations/_api/web/lists/getbytitle(\'Hallo%20AI\')/items',
   
   // Add authentication headers
   headers: {
@@ -18,33 +14,6 @@ function getAccessToken() {
   // This requires Azure AD app registration
   return localStorage.getItem('sharepoint_access_token') || '';
 }
-
-    // Get SharePoint context info for authentication
-    async function getSharePointContext(siteUrl) {
-        try {
-            console.log('Getting SharePoint context for:', siteUrl);
-            
-            const response = await fetch(`${siteUrl}/_api/contextinfo`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json;odata=verbose',
-                    'Content-Type': 'application/json;odata=verbose'
-                },
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Context info failed: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            return data.d.GetContextWebInformation.FormDigestValue;
-            
-        } catch (error) {
-            console.error('Error getting SharePoint context:', error);
-            throw error;
-        }
-    }
 
 async function fetchReferrals(phone, email) {
   console.log('Triggering Power Automate flow...');
@@ -257,62 +226,6 @@ async function fetchReferrals(phone, email) {
         
         console.log(`Total referrals processed: ${referrals.length}`);
         return referrals;
-    }
-
-    // Test SharePoint connectivity
-    async function testSharePointConnection() {
-        console.log('=== Testing SharePoint Connection ===');
-        
-        try {
-            // Test candidate list
-            console.log('\n--- Testing Candidate List ---');
-            const candidateTest = await fetchSharePointData(
-                SHAREPOINT_CONFIG.candidateEndpoint, 
-                SHAREPOINT_CONFIG.candidateBaseUrl, 
-                { top: 1 }
-            );
-            console.log('✓ Candidate list accessible');
-            console.log('Sample candidate:', candidateTest[0]);
-            
-            // Test assessment list  
-            console.log('\n--- Testing Assessment List ---');
-            const assessmentTest = await fetchSharePointData(
-                SHAREPOINT_CONFIG.assessmentEndpoint, 
-                SHAREPOINT_CONFIG.assessmentBaseUrl, 
-                { top: 1 }
-            );
-            console.log('✓ Assessment list accessible');
-            console.log('Sample assessment:', assessmentTest[0]);
-            
-            console.log('\n✓ All SharePoint connections successful!');
-            return { success: true };
-            
-        } catch (error) {
-            console.error('✗ SharePoint connection failed:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Debug function to inspect list fields
-    async function debugListFields(listType = 'candidate') {
-        const endpoint = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateEndpoint : SHAREPOINT_CONFIG.assessmentEndpoint;
-        const baseUrl = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateBaseUrl : SHAREPOINT_CONFIG.assessmentBaseUrl;
-        
-        console.log(`=== Debugging ${listType} List Fields ===`);
-        
-        try {
-            // Get sample data
-            const sampleData = await fetchSharePointData(endpoint, baseUrl, { top: 1 });
-            if (sampleData.length > 0) {
-                console.log('\nSample Item Fields:');
-                Object.keys(sampleData[0]).forEach(key => {
-                    console.log(`  ${key}: ${sampleData[0][key]}`);
-                });
-            }
-            
-        } catch (error) {
-            console.error('Error debugging fields:', error);
-        }
     }
 
     // Public API
