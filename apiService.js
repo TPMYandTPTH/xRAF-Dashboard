@@ -1,21 +1,23 @@
 // API Service Module - SharePoint Integration
 const ApiService = (function() {
     // SharePoint Configuration
-    const SHAREPOINT_CONFIG = {
-        // Your actual SharePoint list URLs converted to REST API endpoints
-        candidateEndpoint: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment/_api/web/lists/getbytitle(\'ExRAF\')/items',
-        assessmentEndpoint: 'https://teleperformance.sharepoint.com/sites/TAteamautomations/_api/web/lists/getbytitle(\'Hallo%20AI\')/items',
-        
-        // Base URLs for context
-        candidateBaseUrl: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment',
-        assessmentBaseUrl: 'https://teleperformance.sharepoint.com/sites/TAteamautomations',
-        
-        // Headers for SharePoint REST API
-        headers: {
-            'Accept': 'application/json;odata=verbose',
-            'Content-Type': 'application/json;odata=verbose'
-        }
-    };
+const SHAREPOINT_CONFIG = {
+  candidateEndpoint: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment/_api/web/lists/getbytitle(\'ExRAF\')/items',
+  assessmentEndpoint: 'https://teleperformance.sharepoint.com/sites/TAteamautomations/_api/web/lists/getbytitle(\'Hallo%20AI\')/items',
+  
+  // Add authentication headers
+  headers: {
+    'Accept': 'application/json;odata=verbose',
+    'Content-Type': 'application/json;odata=verbose',
+    'Authorization': `Bearer ${getAccessToken()}`
+  }
+};
+
+// Add this function to get access token
+function getAccessToken() {
+  // This requires Azure AD app registration
+  return localStorage.getItem('sharepoint_access_token') || '';
+}
 
     // Get SharePoint context info for authentication
     async function getSharePointContext(siteUrl) {
