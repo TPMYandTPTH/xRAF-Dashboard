@@ -86,62 +86,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    async function handleFormSubmit() {
-        const phone = document.getElementById('dashboard-phone').value.trim();
-        const email = document.getElementById('dashboard-email').value.trim();
-        
-        // Validate inputs
-        if (!validateInputs(phone, email)) {
-            return;
-        }
-        
-        // Set loading state
-        setLoadingState(true);
-        
-        try {
-            let apiData = null;
-            
-            // Check if ApiService is available and use it
-            if (typeof ApiService !== 'undefined' && typeof ApiService.fetchReferrals === 'function') {
-                console.log('Using ApiService.fetchReferrals');
-                apiData = await ApiService.fetchReferrals(phone, email);
-            } else {
-                console.error('ApiService not available');
-                throw new Error('API Service not loaded');
-            }
-            
-            // Always treat the result as an array - even if empty
-            const referrals = Array.isArray(apiData) ? apiData : [];
-            
-            console.log(`Found ${referrals.length} referrals`);
-            
-            // Process referrals with status mapping
-            const processedReferrals = processReferrals(referrals);
-            
-            // Store in app state
-            AppState.currentReferralsData = processedReferrals;
-            
-            // ALWAYS show results - even if empty
-            showReferralResults(processedReferrals, phone, email);
-            
-        } catch (error) {
-            console.error('Error details:', error);
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-            
-            // Even on error, show the dashboard with empty data
-            AppState.currentReferralsData = [];
-            showReferralResults([], phone, email);
-            
-            // Show a non-blocking notification about the error
-            setTimeout(() => {
-                const errorMessage = getErrorMessage(error);
-                showNonBlockingError(errorMessage);
-            }, 500);
-        } finally {
-            setLoadingState(false);
-        }
-    }
+async function handleFormSubmit() {
+  const phone = document.getElementById('dashboard-phone').value.trim();
+  const email = document.getElementById('dashboard-email').value.trim();
+  
+  if (!validateInputs(phone, email)) {
+    return;
+  }
+
+  setLoadingState(true);
+
+  try {
+    // This will trigger the Power Automate flow
+    const referrals = await ApiService.fetchReferrals(phone, email);
+    AppState.currentReferralsData = processReferrals(referrals);
+    showReferralResults(AppState.currentReferralsData, phone, email);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showErrorModal(translations[AppState.currentLanguage].errorMessage);
+  } finally {
+    setLoadingState(false);
+  }
+}
     
     function processReferrals(referrals) {
         return referrals.map(referral => {
@@ -254,19 +221,18 @@ document.addEventListener('DOMContentLoaded', function() {
         input.classList.remove('is-invalid');
     }
     
-    function setLoadingState(isLoading) {
-        AppState.isLoading = isLoading;
-        const submitBtn = document.getElementById('dashboard-submit');
-        
-        if (isLoading) {
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + 
-                                 translations[AppState.currentLanguage].connectingMessage;
-            submitBtn.disabled = true;
-        } else {
-            submitBtn.innerHTML = translations[AppState.currentLanguage].viewStatusBtn;
-            submitBtn.disabled = false;
-        }
-    }
+function setLoadingState(isLoading) {
+  const submitBtn = document.getElementById('dashboard-submit');
+  
+  if (isLoading) {
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>' + 
+                         translations[AppState.currentLanguage].connectingMessage;
+    submitBtn.disabled = true;
+  } else {
+    submitBtn.innerHTML = translations[AppState.currentLanguage].viewStatusBtn;
+    submitBtn.disabled = false;
+  }
+}
     
     function showUserNotFoundModal() {
         const modal = new bootstrap.Modal(document.getElementById('userNotFoundModal'));
