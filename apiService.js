@@ -1,221 +1,344 @@
-// API Service Module - Power Automate Integration
+// API Service Module - SharePoint Integration
 const ApiService = (function() {
-    // Power Automate Configuration
-    const POWERAUTOMATE_CONFIG = {
-        // Replace this with your actual Power Automate HTTP trigger URL
-        flowUrl: 'https://YOUR-FLOW-URL-HERE.logic.azure.com/workflows/...',
-        timeout: 30000 // 30 seconds timeout
+    // SharePoint Configuration
+    const SHAREPOINT_CONFIG = {
+        // Your actual SharePoint list URLs converted to REST API endpoints
+        candidateEndpoint: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment/_api/web/lists/getbytitle(\'ExRAF\')/items',
+        assessmentEndpoint: 'https://teleperformance.sharepoint.com/sites/TAteamautomations/_api/web/lists/getbytitle(\'Hallo%20AI\')/items',
+        
+        // Base URLs for context
+        candidateBaseUrl: 'https://teleperformance.sharepoint.com/sites/TPMYHRRecruitment',
+        assessmentBaseUrl: 'https://teleperformance.sharepoint.com/sites/TAteamautomations',
+        
+        // Headers for SharePoint REST API
+        headers: {
+            'Accept': 'application/json;odata=verbose',
+            'Content-Type': 'application/json;odata=verbose'
+        }
     };
+
+    // Get SharePoint context info for authentication
+    async function getSharePointContext(siteUrl) {
+        try {
+            console.log('Getting SharePoint context for:', siteUrl);
+            
+            const response = await fetch(`${siteUrl}/_api/contextinfo`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'Content-Type': 'application/json;odata=verbose'
+                },
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Context info failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            return data.d.GetContextWebInformation.FormDigestValue;
+            
+        } catch (error) {
+            console.error('Error getting SharePoint context:', error);
+            throw error;
+        }
+    }
+
+    // Fetch data from SharePoint REST API
+    async function fetchSharePointData(endpoint, siteUrl, options = {}) {
+        try {
+            console.log(`Fetching from: ${endpoint}`);
+            
+            // Try without authentication first (for anonymous access)
+            let useAuth = false;
+            let formDigest = null;
+            
+            // Build query parameters
+            const queryParams = [];
+            if (options.select) queryParams.push(`$select=${encodeURIComponent(options.select)}`);
+            if (options.filter) queryParams.push(`$filter=${encodeURIComponent(options.filter)}`);
+            if (options.orderby) queryParams.push(`$orderby=${encodeURIComponent(options.orderby)}`);
+            if (options.top) queryParams.push(`$top=${options.top}`);
+            if (options.expand) queryParams.push(`$expand=${encodeURIComponent(options.expand)}`);
+            
+            const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
+            const fullUrl = endpoint + queryString;
+            
+            console.log(`Full URL: ${fullUrl}`);
+            
+            // First attempt without authentication
+            let response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: SHAREPOINT_CONFIG.headers,
+                credentials: 'include'
+            });
+            
+            // If unauthorized, try with authentication
+            if (response.status === 401 || response.status === 403) {
+                console.log('Attempting authenticated request...');
+                useAuth = true;
+                formDigest = await getSharePointContext(siteUrl);
+                
+                response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        ...SHAREPOINT_CONFIG.headers,
+                        'X-RequestDigest': formDigest
+                    },
+                    credentials: 'include'
+                });
+            }
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`SharePoint API Error: ${response.status} ${response.statusText}\nDetails: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log(`Retrieved ${data.d.results.length} items`);
+            return data.d.results;
+            
+        } catch (error) {
+            console.error('Error fetching SharePoint data:', error);
+            throw error;
+        }
+    }
 
     // Main function to fetch referrals
     async function fetchReferrals(phone, email) {
-        console.log('=== Starting fetchReferrals (Power Automate) ===');
+        console.log('=== Starting fetchReferrals ===');
         console.log('Phone:', phone);
         console.log('Email:', email);
         
         try {
-            // Call Power Automate flow
-            const response = await fetch(POWERAUTOMATE_CONFIG.flowUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    phone: phone,
-                    email: email
-                }),
-                signal: AbortSignal.timeout(POWERAUTOMATE_CONFIG.timeout)
-            });
+            // Step 1: Fetch candidate data from ExRAF list
+            console.log('\n--- Fetching Candidate Data ---');
+            const candidateOptions = {
+                select: 'ID,Title,Person_x0020_Full_x0020_Name,Person_x0020_Email,Default_x0020_Phone,Source_x0020_Name,Recent_x0020_Status,Created,Modified,Referrer_x0020_Phone,Referrer_x0020_Email,Nationality,Location',
+                filter: `(Referrer_x0020_Phone eq '${phone}' or Referrer_x0020_Email eq '${email}')`,
+                orderby: 'Created desc',
+                top: 1000
+            };
             
-            console.log('Response status:', response.status);
+            let candidateData = [];
+            let assessmentData = [];
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            try {
+                candidateData = await fetchSharePointData(
+                    SHAREPOINT_CONFIG.candidateEndpoint, 
+                    SHAREPOINT_CONFIG.candidateBaseUrl, 
+                    candidateOptions
+                );
+                console.log(`Found ${candidateData.length} candidate records`);
+            } catch (candidateError) {
+                console.error('Error fetching candidates:', candidateError);
+                // Continue anyway - we'll return empty array
             }
             
-            const data = await response.json();
-            console.log('Raw response:', data);
-            
-            // Handle different response formats from Power Automate
-            let referrals = [];
-            
-            if (Array.isArray(data)) {
-                // Direct array response
-                referrals = data;
-            } else if (data.referrals && Array.isArray(data.referrals)) {
-                // Wrapped in referrals property
-                referrals = data.referrals;
-            } else if (data.value && Array.isArray(data.value)) {
-                // SharePoint-style response
-                referrals = data.value;
+            if (candidateData.length === 0) {
+                console.log('No candidates found for this referrer');
+                return []; // Return empty array, not null
             }
             
-            console.log(`Found ${referrals.length} referrals`);
+            // Step 2: Try to fetch assessment data (but don't fail if it errors)
+            console.log('\n--- Fetching Assessment Data ---');
+            const assessmentOptions = {
+                select: 'ID,Title,Email,First_x0020_Name,Last_x0020_Name,Language,Score,English,CEFR,Created,Modified',
+                top: 5000
+            };
             
-            // Transform data to match expected format
-            return referrals.map(item => transformReferralData(item));
+            try {
+                assessmentData = await fetchSharePointData(
+                    SHAREPOINT_CONFIG.assessmentEndpoint, 
+                    SHAREPOINT_CONFIG.assessmentBaseUrl, 
+                    assessmentOptions
+                );
+                console.log(`Found ${assessmentData.length} assessment records`);
+            } catch (assessmentError) {
+                console.warn('Could not fetch assessment data:', assessmentError);
+                // Continue with empty assessment data
+            }
+            
+            // Step 3: Process and match the data
+            console.log('\n--- Processing Data ---');
+            const referrals = processReferralData(candidateData, assessmentData, phone, email);
+            
+            console.log(`Processed ${referrals.length} referrals`);
+            
+            return referrals; // Always return array
             
         } catch (error) {
             console.error('=== fetchReferrals Error ===');
             console.error('Error details:', error.message);
+            console.error('Stack trace:', error.stack);
             
-            if (error.name === 'AbortError') {
-                console.error('Request timed out');
-            }
-            
-            // Return empty array instead of throwing
+            // Don't throw - return empty array
             return [];
         }
     }
 
-    // Transform Power Automate data to match UI expectations
-    function transformReferralData(item) {
-        // Handle both SharePoint field names and simplified names
-        const getField = (fieldName, alternativeName) => {
-            return item[fieldName] || item[alternativeName] || '';
-        };
+    // Process the data from both lists
+    function processReferralData(candidateData, assessmentData, referrerPhone, referrerEmail) {
+        console.log('Processing referral data...');
         
-        // Get status - check multiple possible field names
-        const status = getField('Recent_x0020_Status', 'Status') || 
-                      getField('Recent_Status', 'CurrentStatus') || 
-                      'Application Received';
+        // Create assessment lookup map by email
+        const assessmentMap = new Map();
+        assessmentData.forEach(assessment => {
+            if (assessment.Email) {
+                assessmentMap.set(assessment.Email.toLowerCase(), {
+                    firstName: assessment.First_x0020_Name,
+                    lastName: assessment.Last_x0020_Name,
+                    email: assessment.Email,
+                    language: assessment.Language,
+                    score: assessment.Score,
+                    english: assessment.English,
+                    cefr: assessment.CEFR,
+                    created: assessment.Created,
+                    modified: assessment.Modified
+                });
+            }
+        });
         
-        // Calculate days in stage
-        const lastUpdate = getField('Modified', 'UpdatedDate') || 
-                          getField('Created', 'CreatedDate') || 
-                          new Date().toISOString();
-        const updatedDate = new Date(lastUpdate);
-        const today = new Date();
-        const daysInStage = Math.floor((today - updatedDate) / (1000 * 60 * 60 * 24));
+        console.log(`Created assessment lookup map with ${assessmentMap.size} entries`);
         
-        // Check if xRAF referral
-        const source = getField('Source_x0020_Name', 'Source') || 
-                      getField('Source_Name', 'SourceName') || '';
-        const isXRAF = source === 'xRAF' || source === 'Employee Referral';
-        const isPreviousCandidate = status === 'Previously Applied (No Payment)' || !isXRAF;
+        // Process each candidate
+        const referrals = [];
         
-        // Return transformed object
-        return {
-            // IDs
-            Person_system_id: getField('ID', 'PersonId') || getField('Id', 'SystemId') || '',
-            personId: getField('ID', 'PersonId') || getField('Id', 'SystemId') || '',
+        candidateData.forEach((candidate, index) => {
+            console.log(`Processing candidate ${index + 1}:`, candidate.Person_x0020_Full_x0020_Name);
             
-            // Names and contact
-            First_Name: getField('Person_x0020_Full_x0020_Name', 'FullName') || 
-                       getField('Person_Full_Name', 'Name') || 
-                       getField('Title', 'CandidateName') || 
-                       'Unknown',
-            name: getField('Person_x0020_Full_x0020_Name', 'FullName') || 
-                  getField('Person_Full_Name', 'Name') || 
-                  getField('Title', 'CandidateName') || 
-                  'Unknown',
-            
-            // Email
-            Email: getField('Person_x0020_Email', 'Email') || 
-                   getField('Person_Email', 'CandidateEmail') || '',
-            email: getField('Person_x0020_Email', 'Email') || 
-                   getField('Person_Email', 'CandidateEmail') || '',
-            
-            // Phone
-            Employee: getField('Default_x0020_Phone', 'Phone') || 
-                     getField('Default_Phone', 'EmployeePhone') || '',
-            employee: getField('Default_x0020_Phone', 'Phone') || 
-                     getField('Default_Phone', 'EmployeePhone') || '',
-            
-            // Status and stage
-            Status: status,
-            status: status,
-            statusType: StatusMapping ? StatusMapping.getSimplifiedStatusType(status) : 'received',
-            stage: StatusMapping ? StatusMapping.determineStage(StatusMapping.mapStatusToGroup(status)) : 'Application',
-            
-            // Location and nationality
-            Location: getField('Location', 'Office') || '',
-            location: getField('Location', 'Office') || '',
-            F_Nationality: getField('Nationality', 'Country') || '',
-            nationality: getField('Nationality', 'Country') || '',
-            
-            // Source
-            Source: source,
-            source: source,
-            SourceName: source,
-            sourceName: source,
-            
-            // Dates
-            CreatedDate: getField('Created', 'CreatedDate') || new Date().toISOString(),
-            createdDate: getField('Created', 'CreatedDate') || new Date().toISOString(),
-            UpdatedDate: lastUpdate,
-            updatedDate: lastUpdate,
-            applicationDate: getField('Created', 'CreatedDate') || new Date().toISOString(),
-            
-            // Calculated fields
-            daysInStage: daysInStage,
-            isPreviousCandidate: isPreviousCandidate,
-            needsAction: ['Assessment Stage', 'Interview Stage'].includes(status) && 
-                        daysInStage > 3 && !isPreviousCandidate,
-            
-            // Assessment data (if provided by Power Automate)
-            assessmentScore: getField('AssessmentScore', 'Score') || null,
-            assessmentCEFR: getField('AssessmentCEFR', 'CEFR') || null,
-            assessmentLanguage: getField('AssessmentLanguage', 'Language') || null,
-            assessmentDate: getField('AssessmentDate', 'AssessmentModified') || null
-        };
-    }
-
-    // Test Power Automate connectivity
-    async function testSharePointConnection() {
-        console.log('=== Testing Power Automate Connection ===');
-        
-        try {
-            // Test with dummy data
-            const response = await fetch(POWERAUTOMATE_CONFIG.flowUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    phone: 'test',
-                    email: 'test@test.com'
-                }),
-                signal: AbortSignal.timeout(10000) // 10 second timeout for test
-            });
-            
-            console.log('Test response status:', response.status);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✓ Power Automate connection successful');
-                console.log('Response structure:', Object.keys(data));
-                return { success: true, data: data };
-            } else {
-                throw new Error(`HTTP ${response.status}`);
+            const candidateEmail = candidate.Person_x0020_Email;
+            if (!candidateEmail) {
+                console.log('  - Skipping: No email address');
+                return;
             }
             
+            // Find matching assessment
+            const assessment = assessmentMap.get(candidateEmail.toLowerCase());
+            console.log(`  - Assessment found: ${assessment ? 'Yes' : 'No'}`);
+            
+            // Determine status and stage
+            let status = candidate.Recent_x0020_Status || 'Application Received';
+            
+            // Override status based on assessment if no recent status
+            if (!candidate.Recent_x0020_Status && assessment && assessment.cefr) {
+                const cefr = assessment.cefr;
+                if (['C2', 'C1', 'B2'].includes(cefr)) {
+                    status = 'Assessment Stage';
+                } else if (['B1', 'A2', 'A1'].includes(cefr)) {
+                    status = 'Eliminated - Assessment Results Did Not Meet Criteria';
+                }
+            }
+            
+            // Calculate days since last update
+            const lastUpdate = candidate.Modified || candidate.Created;
+            const updatedDate = new Date(lastUpdate);
+            const today = new Date();
+            const daysInStage = Math.floor((today - updatedDate) / (1000 * 60 * 60 * 24));
+            
+            // Check if this is an xRAF referral
+            const isXRAF = candidate.Source_x0020_Name === 'xRAF' || candidate.Source_x0020_Name === 'Employee Referral';
+            const isPreviousCandidate = status === 'Previously Applied (No Payment)' || !isXRAF;
+            
+            // Create referral object
+            const referral = {
+                // SharePoint fields
+                Person_system_id: candidate.ID?.toString() || '',
+                First_Name: candidate.Person_x0020_Full_x0020_Name || candidate.Title || 'Unknown',
+                Employee: candidate.Default_x0020_Phone || '',
+                Email: candidateEmail,
+                Source: candidate.Source_x0020_Name || 'Unknown',
+                Status: status,
+                Location: candidate.Location || '',
+                F_Nationality: candidate.Nationality || '',
+                CreatedDate: candidate.Created,
+                UpdatedDate: lastUpdate,
+                SourceName: candidate.Source_x0020_Name || 'Unknown',
+                
+                // Additional fields for UI
+                personId: candidate.ID?.toString() || '',
+                name: candidate.Person_x0020_Full_x0020_Name || candidate.Title || 'Unknown',
+                email: candidateEmail,
+                employee: candidate.Default_x0020_Phone || '',
+                status: status,
+                location: candidate.Location || '',
+                nationality: candidate.Nationality || '',
+                source: candidate.Source_x0020_Name || 'Unknown',
+                sourceName: candidate.Source_x0020_Name || 'Unknown',
+                createdDate: candidate.Created,
+                updatedDate: lastUpdate,
+                daysInStage: daysInStage,
+                isPreviousCandidate: isPreviousCandidate,
+                applicationDate: candidate.Created,
+                
+                // Assessment data
+                assessmentScore: assessment?.score || null,
+                assessmentCEFR: assessment?.cefr || null,
+                assessmentLanguage: assessment?.language || null,
+                assessmentDate: assessment?.modified || null
+            };
+            
+            referrals.push(referral);
+            console.log(`  - Added referral: ${referral.name}`);
+        });
+        
+        console.log(`Total referrals processed: ${referrals.length}`);
+        return referrals;
+    }
+
+    // Test SharePoint connectivity
+    async function testSharePointConnection() {
+        console.log('=== Testing SharePoint Connection ===');
+        
+        try {
+            // Test candidate list
+            console.log('\n--- Testing Candidate List ---');
+            const candidateTest = await fetchSharePointData(
+                SHAREPOINT_CONFIG.candidateEndpoint, 
+                SHAREPOINT_CONFIG.candidateBaseUrl, 
+                { top: 1 }
+            );
+            console.log('✓ Candidate list accessible');
+            console.log('Sample candidate:', candidateTest[0]);
+            
+            // Test assessment list  
+            console.log('\n--- Testing Assessment List ---');
+            const assessmentTest = await fetchSharePointData(
+                SHAREPOINT_CONFIG.assessmentEndpoint, 
+                SHAREPOINT_CONFIG.assessmentBaseUrl, 
+                { top: 1 }
+            );
+            console.log('✓ Assessment list accessible');
+            console.log('Sample assessment:', assessmentTest[0]);
+            
+            console.log('\n✓ All SharePoint connections successful!');
+            return { success: true };
+            
         } catch (error) {
-            console.error('✗ Power Automate connection failed:', error);
+            console.error('✗ SharePoint connection failed:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Debug function
-    async function debugListFields(listType) {
-        console.log(`=== Debug Information ===`);
-        console.log('Using Power Automate integration');
-        console.log('Flow URL:', POWERAUTOMATE_CONFIG.flowUrl);
-        console.log('To debug:');
-        console.log('1. Check Power Automate run history');
-        console.log('2. Ensure flow is turned on');
-        console.log('3. Verify HTTP trigger is configured correctly');
-        console.log('4. Check flow outputs match expected format');
-    }
-
-    // Update configuration
-    function updateApiConfig(config) {
-        if (config.flowUrl) {
-            POWERAUTOMATE_CONFIG.flowUrl = config.flowUrl;
-            console.log('Updated Power Automate URL:', config.flowUrl);
-        }
-        if (config.timeout) {
-            POWERAUTOMATE_CONFIG.timeout = config.timeout;
+    // Debug function to inspect list fields
+    async function debugListFields(listType = 'candidate') {
+        const endpoint = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateEndpoint : SHAREPOINT_CONFIG.assessmentEndpoint;
+        const baseUrl = listType === 'candidate' ? SHAREPOINT_CONFIG.candidateBaseUrl : SHAREPOINT_CONFIG.assessmentBaseUrl;
+        
+        console.log(`=== Debugging ${listType} List Fields ===`);
+        
+        try {
+            // Get sample data
+            const sampleData = await fetchSharePointData(endpoint, baseUrl, { top: 1 });
+            if (sampleData.length > 0) {
+                console.log('\nSample Item Fields:');
+                Object.keys(sampleData[0]).forEach(key => {
+                    console.log(`  ${key}: ${sampleData[0][key]}`);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error debugging fields:', error);
         }
     }
 
@@ -224,6 +347,8 @@ const ApiService = (function() {
         fetchReferrals: fetchReferrals,
         testSharePointConnection: testSharePointConnection,
         debugListFields: debugListFields,
-        updateApiConfig: updateApiConfig
+        updateApiConfig: function(config) {
+            Object.assign(SHAREPOINT_CONFIG, config);
+        }
     };
 })();
