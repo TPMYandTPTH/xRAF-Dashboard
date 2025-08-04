@@ -110,8 +110,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('API Service not loaded');
             }
             
-            // Ensure data is in array format - even if empty
+            // Always treat the result as an array - even if empty
             const referrals = Array.isArray(apiData) ? apiData : [];
+            
+            console.log(`Found ${referrals.length} referrals`);
             
             // Process referrals with status mapping
             const processedReferrals = processReferrals(referrals);
@@ -119,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store in app state
             AppState.currentReferralsData = processedReferrals;
             
-            // Show results - even if empty
+            // ALWAYS show results - even if empty
             showReferralResults(processedReferrals, phone, email);
             
         } catch (error) {
@@ -127,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
             
-            // Always show the dashboard, even on error
+            // Even on error, show the dashboard with empty data
             AppState.currentReferralsData = [];
             showReferralResults([], phone, email);
             
@@ -704,11 +706,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         
         if (friendsNeedingReminder.length === 0) {
-            friendsToRemind.innerHTML = `
-                <div class="col-12 text-center">
-                    <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
-                </div>
-            `;
+            // Check if there are any referrals at all
+            if (referrals.length === 0) {
+                friendsToRemind.innerHTML = `
+                    <div class="col-12 text-center">
+                        <p class="text-muted">No friends to remind yet. Start referring to see reminders here!</p>
+                    </div>
+                `;
+            } else {
+                friendsToRemind.innerHTML = `
+                    <div class="col-12 text-center">
+                        <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
+                    </div>
+                `;
+            }
             updateTranslations();
             return;
         }
@@ -749,8 +760,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (referrals.length === 0) {
             referralList.innerHTML = `
-                <div class="alert alert-info" data-translate="noReferrals">
-                    ${translations[AppState.currentLanguage].noReferrals}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 data-translate="noReferrals">No referrals found yet.</h5>
+                        <p class="text-muted">Start referring friends to see them appear here!</p>
+                        <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">
+                            <i class="fas fa-user-plus me-2"></i>Refer a Friend
+                        </a>
+                    </div>
                 </div>
             `;
             updateTranslations();
