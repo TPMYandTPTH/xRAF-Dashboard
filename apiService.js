@@ -46,65 +46,36 @@ function getAccessToken() {
         }
     }
 
-    // Fetch data from SharePoint REST API
-    async function fetchSharePointData(endpoint, siteUrl, options = {}) {
-        try {
-            console.log(`Fetching from: ${endpoint}`);
-            
-            // Try without authentication first (for anonymous access)
-            let useAuth = false;
-            let formDigest = null;
-            
-            // Build query parameters
-            const queryParams = [];
-            if (options.select) queryParams.push(`$select=${encodeURIComponent(options.select)}`);
-            if (options.filter) queryParams.push(`$filter=${encodeURIComponent(options.filter)}`);
-            if (options.orderby) queryParams.push(`$orderby=${encodeURIComponent(options.orderby)}`);
-            if (options.top) queryParams.push(`$top=${options.top}`);
-            if (options.expand) queryParams.push(`$expand=${encodeURIComponent(options.expand)}`);
-            
-            const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
-            const fullUrl = endpoint + queryString;
-            
-            console.log(`Full URL: ${fullUrl}`);
-            
-            // First attempt without authentication
-            let response = await fetch(fullUrl, {
-                method: 'GET',
-                headers: SHAREPOINT_CONFIG.headers,
-                credentials: 'include'
-            });
-            
-            // If unauthorized, try with authentication
-            if (response.status === 401 || response.status === 403) {
-                console.log('Attempting authenticated request...');
-                useAuth = true;
-                formDigest = await getSharePointContext(siteUrl);
-                
-                response = await fetch(fullUrl, {
-                    method: 'GET',
-                    headers: {
-                        ...SHAREPOINT_CONFIG.headers,
-                        'X-RequestDigest': formDigest
-                    },
-                    credentials: 'include'
-                });
-            }
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`SharePoint API Error: ${response.status} ${response.statusText}\nDetails: ${errorText}`);
-            }
-            
-            const data = await response.json();
-            console.log(`Retrieved ${data.d.results.length} items`);
-            return data.d.results;
-            
-        } catch (error) {
-            console.error('Error fetching SharePoint data:', error);
-            throw error;
-        }
+async function fetchReferrals(phone, email) {
+  console.log('Triggering Power Automate flow...');
+  const powerAutomateUrl = 'https://prod-77.southeastasia.logic.azure.com:443/workflows/3dcf20be6af641a4b49eb48727473a47/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=uVigg-lTLRaUgLgUdGUnqCt9-TWJC7E7c8ryTjLC0Hw';
+
+  try {
+    const response = await fetch(powerAutomateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        phone: phone,
+        email: email
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Power Automate Error: ${response.status} - ${errorText}`);
     }
+
+    const data = await response.json();
+    console.log('Data from Power Automate:', data);
+    return data.referrals || [];
+    
+  } catch (error) {
+    console.error('Power Automate request failed:', error);
+    return [];
+  }
+}
 
     // Main function to fetch referrals
     async function fetchReferrals(phone, email) {
