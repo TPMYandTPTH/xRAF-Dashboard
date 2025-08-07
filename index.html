@@ -10,6 +10,8 @@
     <link href="styles.css" rel="stylesheet">
 </head>
 <body>
+    <div id="alert-container"></div>
+    
     <div class="container py-4">
         <div class="text-center mb-4">
             <img src="TPLogo11.png" alt="TP Logo" class="logo">
@@ -92,58 +94,43 @@
 
     <!-- TnG Terms Modal -->
     <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" data-translate="paymentTermsTitle">Payment Terms & Conditions</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p data-translate="paymentTermsText1">Payments will be made to your TnG eWallet linked to your phone number.</p>
-                    <p data-translate="paymentTermsText2">RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.</p>
-                    <p data-translate="paymentTermsText3">All payments are subject to verification and may take up to 30 days after probation completion.</p>
-                    <p><strong data-translate="previouslyAppliedNote">Note:</strong> <span data-translate="previouslyAppliedNoteText">No payment will be made if the candidate had previously applied to TP</span></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Not Found Modal -->
-    <div class="modal fade" id="userNotFoundModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title" data-translate="userNotFoundTitle">No Referrals Found</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p data-translate="userNotFoundText1">We couldn't find any referrals with the provided email and phone number.</p>
-                    <p data-translate="userNotFoundText2">Please double-check your information or contact us for assistance.</p>
-                    <p><a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-translate="okBtn">OK</button>
-                    <a href="mailto:tpmycareers@teleperformance.com" class="btn btn-outline-primary">
-                        <i class="fas fa-envelope me-2"></i><span data-translate="contactUsBtn">Contact Us</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" data-translate="errorTitle">Error</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="error-message" data-translate="errorMessage">An error occurred. Please try again later.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Payment Structure</h6>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-2">
+                                    <div>
+                                        <strong>Assessment Passed</strong><br>
+                                        <small>Score ≥ 70%</small>
+                                    </div>
+                                    <span class="badge bg-success fs-6">RM50</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                    <div>
+                                        <strong>90-Day Probation</strong><br>
+                                        <small>Completed successfully</small>
+                                    </div>
+                                    <span class="badge bg-success fs-6">RM750</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Important Notes</h6>
+                            <ul class="small">
+                                <li>Payments via TnG eWallet only</li>
+                                <li>No payment for previously applied candidates</li>
+                                <li>Must not be a TP employee at any time</li>
+                                <li>Processing within 30 days after verification</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
