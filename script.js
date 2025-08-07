@@ -75,11 +75,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const updatedDate = parseDate(item.UpdatedDate);
             const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
             
+            // Get assessment result if available (this would come from a separate API call)
+            // For now, we'll simulate it - in real implementation, this would come from SharePoint
+            const assessmentResult = item.AssessmentResult || null;
+            
             // Get status (trim whitespace)
             const rawStatus = (item.Status || '').trim();
-            const mappedStatus = StatusMapping.mapStatusToGroup(rawStatus);
-            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus);
-            const stage = StatusMapping.determineStage(rawStatus);
+            const mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessmentResult);
+            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessmentResult);
+            const stage = StatusMapping.determineStage(rawStatus, assessmentResult);
             
             // Check if this is an xRAF referral
             const isXRAF = (item.Source || '').toLowerCase().includes('xraf') || 
@@ -101,11 +105,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusType,
                 stage,
                 isPreviousCandidate,
-                needsAction: (statusType === 'assessment' || statusType === 'talent') && 
-                            daysInStage > 3 && !isPreviousCandidate
+                needsAction: mappedStatus === 'Application Received' && item.Employee
             };
         });
     }
+    
     
     // Validate form inputs
     function validateInputs(phone, email) {
@@ -382,12 +386,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (totalEarningsEl) totalEarningsEl.textContent = `RM ${totalEarnings}`;
     }
     
-    // Update reminder section
     function updateReminderSection(referrals) {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
-        const friendsToRemind = referrals.filter(r => r.needsAction && r.phone);
+        // Filter ONLY Application Received status with phone
+        const friendsToRemind = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' && r.phone
+        );
         
         if (friendsToRemind.length === 0) {
             container.innerHTML = `
@@ -423,6 +429,167 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Create results HTML with new status guide section
+    function createResultsContent(referrals) {
+        const hiredCount = referrals.filter(r => r.mappedStatus.includes('Hired')).length;
+        const inProgressCount = referrals.filter(r => 
+            !r.mappedStatus.includes('Hired') && 
+            !r.mappedStatus.includes('Not Selected') && 
+            !r.mappedStatus.includes('Previously Applied')
+        ).length;
+        
+        return `
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h3>${document.getElementById('dashboard-email').value.split('@')[0]}</h3>
+                    <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
+                </div>
+                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </button>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
+                            <h3 class="text-primary">${referrals.length}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
+                            <h3 class="text-success">${hiredCount}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
+                            <h3 class="text-warning">${inProgressCount}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="earningsStage">Stage</th>
+                                    <th data-translate="earningsAmount">Amount (RM)</th>
+                                    <th data-translate="earningsCount">Count</th>
+                                    <th data-translate="earningsTotal">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="earnings-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th data-translate="earningsTotal">Total Earnings</th>
+                                    <th colspan="3" id="total-earnings" class="text-end">RM 0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+                            Payment Terms & Conditions
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
+                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
+                    <div id="friends-to-remind" class="row"></div>
+                </div>
+            </div>
+            
+            <div id="referral-list"></div>
+            
+            <!-- New Status Guide & Payment Info Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">Status Guide & Payment Information</h5>
+                    
+                    <div class="row">
+                        <!-- Status Examples -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Status Examples</h6>
+                            <div class="status-examples">
+                                ${statusExamples.map(example => `
+                                    <div class="status-example mb-3 p-3 rounded bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>${example.status}</strong>
+                                            <span class="badge bg-${StatusMapping.getSimplifiedStatusType(example.status)}">
+                                                ${example.status}
+                                            </span>
+                                        </div>
+                                        <p class="mb-1 mt-2">${example.description}</p>
+                                        <small class="text-muted">${example.action}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Conditions -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Payment Conditions</h6>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Stage</th>
+                                            <th>Condition</th>
+                                            <th>Payment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${Object.entries(earningsStructure).map(([key, value]) => `
+                                            <tr>
+                                                <td>${value.label}</td>
+                                                <td>${value.condition}</td>
+                                                <td><strong>${value.payment}</strong></td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr>
+                                            <td>Previously Applied</td>
+                                            <td>Candidate applied before referral</td>
+                                            <td><strong>No Payment</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="payment-notes mt-3">
+                                <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments are made via Touch 'n Go eWallet</p>
+                                <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days after verification</p>
+                                <p class="small"><i class="fas fa-info-circle me-2"></i>Referrer must be active TP employee at payment time</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+      
     // Update referral list
     function updateReferralList(referrals) {
         const container = document.getElementById('referral-list');
