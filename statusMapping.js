@@ -1,37 +1,37 @@
-// Simplified Status Mapping with New Rules
+// Status mapping with new rules
 const StatusMapping = {
     mapStatusToGroup: function(status, assessmentResult) {
         if (!status) return 'Application Received';
         
         const statusStr = status.toLowerCase();
         
-        // Previously Applied (No Payment) - if source is not xRAF
+        // 1. Previously Applied (No Payment) - if source is not xRAF
         if (!statusStr.includes('xraf')) {
             return 'Previously Applied (No Payment)';
         }
         
-        // Not Selected - if rejected
+        // 2. Not Selected - if rejected
         if (statusStr.includes('rejected') || statusStr.includes('eliminated') || 
             statusStr.includes('withdrew') || statusStr.includes('not selected')) {
             return 'Not Selected';
         }
         
-        // Hired (Confirmed) - 90+ days
+        // 3. Hired (Confirmed) - 90+ days
         if (statusStr.includes('hired') && assessmentResult && assessmentResult.days >= 90) {
             return 'Hired (Confirmed)';
         }
         
-        // Hired (Probation) - <90 days
+        // 4. Hired (Probation) - <90 days
         if (statusStr.includes('hired')) {
             return 'Hired (Probation)';
         }
         
-        // Assessment Stage - if assessment exists and is good
+        // 5. Assessment Stage - if assessment exists and is good (score >= 70)
         if (assessmentResult && assessmentResult.score >= 70) {
             return 'Assessment Stage';
         }
         
-        // Default status
+        // 6. Default status
         return 'Application Received';
     },
 
