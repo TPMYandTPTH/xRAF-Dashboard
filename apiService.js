@@ -1,163 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TP External RAF Dashboard</title>
-    <link rel="icon" href="TPLogo11.png" type="image/png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="styles.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container py-4">
-        <div class="text-center mb-4">
-            <img src="TPLogo11.png" alt="TP Logo" class="logo">
-        </div>
+const ApiService = (function() {
+    const POWER_AUTOMATE_URL = 'https://prod-77.southeastasia.logic.azure.com:443/workflows/3dcf20be6af641a4b49eb48727473a47/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=uVigg-lTLRaUgLgUdGUnqCt9-TWJC7E7c8ryTjLC0Hw';
 
-        <!-- Language Selection -->
-        <div class="row justify-content-end mb-3">
-            <div class="col-md-3">
-                <div class="mb-3">
-                    <label for="lang-select" class="form-label" data-translate="pageLangLabel">Choose Your Language:</label>
-                    <select class="form-select" id="lang-select">
-                        <option value="en">English</option>
-                        <option value="ja">日本語</option>
-                        <option value="ko">한국어</option>
-                        <option value="zh-CN">中文 (简体)</option>
-                        <option value="zh-HK">中文 (繁體)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+    async function fetchReferrals(phone, email) {
+        try {
+            const response = await fetch(POWER_AUTOMATE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, email })
+            });
 
-        <!-- Authentication Step -->
-        <div id="auth-step">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h2 class="card-title text-center" data-translate="dashboardTitle">TP External RAF Dashboard</h2>
-                    <p class="card-text text-center mb-4" data-translate="dashboardSubtitle">Enter your details to view your referral status</p>
-                    
-                    <form id="dashboard-form">
-                        <div class="mb-3">
-                            <label for="dashboard-phone" class="form-label" data-translate="phoneLabel">Phone Number:</label>
-                            <input type="tel" class="form-control" id="dashboard-phone" placeholder="Enter your phone number (01XXXXXXXX)" data-translate-placeholder="phonePlaceholder" required>
-                            <div class="invalid-feedback" data-translate="phoneError">Please provide a valid phone number (01XXXXXXXX).</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="dashboard-email" class="form-label" data-translate="emailLabel">Email Address:</label>
-                            <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" data-translate-placeholder="emailPlaceholder" required>
-                            <div class="invalid-feedback" data-translate="emailError">Please provide a valid email address.</div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="button" id="dashboard-submit" class="btn btn-primary" data-translate="viewStatusBtn">View Referral Status</button>
-                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">Back to Referral Form</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Power Automate Error: ${response.status} - ${errorText}`);
+            }
 
-            <!-- Email Contact Section -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <p class="mb-0">
-                        <span data-translate="contactUsText">Email us at:</span>
-                        <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a>
-                    </p>
-                </div>
-            </div>
-        </div>
+            return await response.json();
+            
+        } catch (error) {
+            console.error('Error fetching referrals:', error);
+            return [];
+        }
+    }
 
-        <!-- Results Step (initially hidden) -->
-        <div id="results-step" style="display: none;">
-            <!-- Content will be dynamically inserted here by JavaScript -->
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer mt-auto py-3 bg-dark text-white">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-1">© <span id="current-year"></span> TP. All rights reserved.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-1 small">Employee Referral Program</p>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- TnG Terms Modal -->
-    <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" data-translate="paymentTermsTitle">Payment Terms & Conditions</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p data-translate="paymentTermsText1">Payments will be made to your TnG eWallet linked to your phone number.</p>
-                    <p data-translate="paymentTermsText2">RM50 will be paid when candidate passes assessment. RM750 bonus will be paid only after your referred candidate successfully completes the 90-day probation period.</p>
-                    <p data-translate="paymentTermsText3">All payments are subject to verification and may take up to 30 days after probation completion.</p>
-                    <p><strong data-translate="previouslyAppliedNote">Note:</strong> <span data-translate="previouslyAppliedNoteText">No payment will be made if the candidate had previously applied to TP</span></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Not Found Modal -->
-    <div class="modal fade" id="userNotFoundModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title" data-translate="userNotFoundTitle">No Referrals Found</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p data-translate="userNotFoundText1">We couldn't find any referrals with the provided email and phone number.</p>
-                    <p data-translate="userNotFoundText2">Please double-check your information or contact us for assistance.</p>
-                    <p><a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-translate="okBtn">OK</button>
-                    <a href="mailto:tpmycareers@teleperformance.com" class="btn btn-outline-primary">
-                        <i class="fas fa-envelope me-2"></i><span data-translate="contactUsBtn">Contact Us</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" data-translate="errorTitle">Error</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="error-message" data-translate="errorMessage">An error occurred. Please try again later.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="translations.js"></script>
-    <script src="statusMapping.js"></script>
-    <script src="apiService.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    return { fetchReferrals };
+})();
