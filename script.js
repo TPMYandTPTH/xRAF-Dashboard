@@ -127,8 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
             const stage = StatusMapping.determineStage(rawStatus, assessment);
             
-            // Check if needs reminder (only Application Received status)
-            const needsAction = mappedStatus === 'Application Received' && daysInStage > 3;
+            // Check if needs reminder (Application Received status with phone)
+            const needsAction = mappedStatus === 'Application Received' && phone;
             
             return {
                 // IDs
@@ -557,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         earningsBody.innerHTML = `
             <tr>
-                <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
+                <td data-translate="statusAssessmentPassed">Assessment Passed</td>
                 <td>RM 50</td>
                 <td>${assessmentPassed}</td>
                 <td>RM ${assessmentEarnings}</td>
@@ -578,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
-        // Filter friends needing reminder (Application Received status only)
+        // Filter friends needing reminder (Application Received status with phone)
         const friendsToRemind = referrals.filter(r => 
             r.mappedStatus === 'Application Received' && r.phone
         );
@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p class="mb-1">${ref.daysInStage}</p>
                             </div>
                             <div class="col-md-3">
-                                ${ref.needsAction && ref.phone ? `
+                                ${(ref.mappedStatus === 'Application Received' && ref.phone) ? `
                                     <button class="btn btn-sm btn-success w-100 remind-btn" 
                                         data-name="${ref.name}" 
                                         data-phone="${ref.phone}">
@@ -755,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <tbody>
                                 <tr>
                                     <td>Assessment Passed</td>
-                                    <td>Candidate passes assessment with score ≥ 70%</td>
+                                    <td>Candidate passes assessment</td>
                                     <td><strong>RM50</strong></td>
                                 </tr>
                                 <tr>
