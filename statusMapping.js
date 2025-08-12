@@ -48,9 +48,9 @@ const StatusMapping = {
     getSimplifiedStatusType: function(status, assessmentResult) {
         const group = this.mapStatusToGroup(status, assessmentResult);
         switch (group) {
-            case 'Hired (Confirmed)': return 'passed';
+            case 'Hired (Confirmed)': return 'confirmed';
             case 'Hired (Probation)': return 'probation';
-            case 'Previously Applied (No Payment)': return 'previously-applied';
+            case 'Previously Applied (No Payment)': return 'previous';
             case 'Assessment Stage': return 'assessment';
             case 'Not Selected': return 'failed';
             default: return 'received';
@@ -94,31 +94,37 @@ const statusExamples = [
     {
         status: "Application Received",
         description: "Candidate has applied but not completed assessment",
-        action: "Send WhatsApp reminder"
+        action: "Send WhatsApp reminder",
+        color: "#0087FF"
     },
     {
         status: "Assessment Stage",
         description: "Candidate passed assessment (score ≥ 70%)",
-        action: "RM50 payment eligible"
+        action: "RM50 payment eligible",
+        color: "#00d769"
     },
     {
         status: "Hired (Probation)",
         description: "Candidate hired but in probation period (<90 days)",
-        action: "Monitor progress"
+        action: "Monitor progress",
+        color: "#f5d200"
     },
     {
         status: "Hired (Confirmed)",
         description: "Candidate completed 90-day probation",
-        action: "RM750 payment eligible"
+        action: "RM750 payment eligible",
+        color: "#28a745"
     },
     {
         status: "Previously Applied (No Payment)",
         description: "Candidate applied before referral program",
-        action: "No payment eligible"
+        action: "No payment eligible",
+        color: "#676767"
     },
     {
         status: "Not Selected",
         description: "Candidate rejected or withdrew application",
-        action: "No further action needed"
+        action: "No further action needed",
+        color: "#dc3545"
     }
-};
+];
