@@ -11,9 +11,10 @@
 </head>
 <body>
     <div id="alert-container"></div>
-    
+
     <div class="container py-4">
         <div class="text-center mb-4">
+            <!-- Centering the Logo -->
             <img src="TPLogo11.png" alt="TP Logo" class="logo mx-auto d-block">
         </div>
 
@@ -101,39 +102,31 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Payment Structure</h6>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-2">
-                                    <div>
-                                        <strong>Assessment Passed</strong><br>
-                                        <small>Score ≥ 70%</small>
-                                    </div>
-                                    <span class="badge bg-success fs-6">RM50</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                    <div>
-                                        <strong>90-Day Probation</strong><br>
-                                        <small>Completed successfully</small>
-                                    </div>
-                                    <span class="badge bg-success fs-6">RM750</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Important Notes</h6>
-                            <ul class="small">
-                                <li>Payments via TnG eWallet only</li>
-                                <li>No payment for previously applied candidates</li>
-                                <li>Must not be an active TP employee at anytime time</li>
-                                <li>Processing within 30 days after verification</li>
-                            </ul>
-                        </div>
+                    <h6>Milestones and Bonus Amounts</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Milestone</th>
+                                    <th>Bonus Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Candidate passes the assessment</td>
+                                    <td>RM50</td>
+                                </tr>
+                                <tr>
+                                    <td>Candidate completes probation (90 days)</td>
+                                    <td>RM750</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                    <p class="mt-3">Bonuses will be paid via Touch 'n Go e-wallet. Ensure the provided mobile number matches your linked Touch 'n Go account.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
