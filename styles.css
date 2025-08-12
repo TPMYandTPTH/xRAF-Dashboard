@@ -6,35 +6,35 @@
     --background-color: #ffffff;
     --text-color: #000000;
     --muted-color: #676767;
-
+    
     /* TP Brand Colors */
     --tp-blue: #3047b0;
     --tp-light-blue: #0087FF;
     --tp-turquoise: #00af9b;
     --tp-green-flash: #00d769;
-    --tp-green-light: #84c98b;
+    --tp-green-light: #28a745;
     --tp-yellow: #f5d200;
-
+    
     /* TP Secondary Colors */
     --tp-burgundy: #5f365e;
     --tp-carmine: #ab2c37;
     --tp-raspberry: #d53865;
     --tp-orange: #ff5c00;
-
+    
     /* TP Grays */
     --tp-dark-gray: #414141;
     --tp-gray: #676767;
     --tp-light-gray: #cccccc;
     --tp-pastel-gray: #f5f5f5;
-
+    
     /* Status Colors using TP Palette */
-    --status-received: var(--tp-light-blue);      /* Application Received - blue */
-    --status-assessment: var(--tp-green-flash);   /* Assessment Stage - green flash */
-    --status-probation: var(--tp-yellow);         /* Hired (Probation) - yellow */
-    --status-confirmed: var(--tp-green-light);    /* Hired (Confirmed) - green */
-    --status-previous: var(--tp-burgundy);        /* Previously Applied (No Payment) - grey */
-    --status-failed: var(--tp-carmine);           /* Not Selected - red */
-
+    --status-received: var(--tp-light-blue);
+    --status-assessment: var(--tp-green-flash);
+    --status-probation: var(--tp-yellow);
+    --status-confirmed: var(--tp-green-light);
+    --status-previous: var(--tp-gray);
+    --status-failed: var(--tp-carmine);
+    
     --border-radius: 8px;
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -62,18 +62,15 @@ body {
     max-width: 1000px;
     flex: 1;
     position: relative;
-    margin: 0 auto;
 }
 
-/* Logo */
+/* Logo - Centered */
 .logo {
     width: 180px;
     height: auto;
     transition: var(--transition);
-    margin-top: 20px;
+    margin: 20px auto;
     display: block;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 .logo:hover {
@@ -181,7 +178,19 @@ body {
     color: var(--light-color);
 }
 
-/* Status Badges */
+.btn-success {
+    background: var(--tp-green-flash);
+    color: var(--light-color);
+    border-color: var(--tp-green-flash);
+}
+
+.btn-success:hover {
+    background: var(--light-color);
+    color: var(--tp-green-flash);
+    border-color: var(--tp-green-flash);
+}
+
+/* Status Badges - Fixed Colors */
 .status-badge {
     font-size: 0.75rem;
     padding: 6px 14px;
@@ -209,12 +218,12 @@ body {
     color: black !important; 
 }
 
-.bg-passed { 
+.bg-passed, .bg-confirmed { 
     background-color: var(--status-confirmed) !important; 
-    color: black !important; 
+    color: white !important; 
 }
 
-.bg-previously-applied { 
+.bg-previously-applied, .bg-previous { 
     background-color: var(--status-previous) !important; 
     color: white !important; 
 }
@@ -320,24 +329,20 @@ body {
     background: var(--tp-yellow);
 }
 
-/* Reminder Button */
-.remind-btn {
-    background: var(--tp-green-flash);
-    color: black;
-    border: none;
-    padding: 8px 16px;
-    font-size: 0.875rem;
+/* Friend to Remind */
+.friend-to-remind {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+    background: var(--light-color);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--status-received);
 }
 
-.remind-btn:hover {
-    background: var(--tp-turquoise);
-    color: white;
-    transform: translateY(-1px);
-}
-
-.remind-btn.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+.friend-to-remind:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
 /* Social Icons */
@@ -392,11 +397,20 @@ body {
     font-size: 0.9rem;
 }
 
+/* User name display */
+.user-name-display {
+    color: var(--tp-dark-gray);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 /* Referral Cards */
 .referral-card {
     background: var(--light-color);
     border-radius: var(--border-radius);
-    padding: 0;
     margin-bottom: 1rem;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
@@ -409,7 +423,7 @@ body {
     transform: translateY(-2px);
 }
 
-.referral-card.status-passed {
+.referral-card.status-passed, .referral-card.status-confirmed {
     border-left: 4px solid var(--status-confirmed);
 }
 
@@ -429,8 +443,54 @@ body {
     border-left: 4px solid var(--status-failed);
 }
 
-.referral-card.status-previously-applied {
-    border-left: 4px solid var(--status-previous);
+.referral-card.status-previously-applied, .referral-card.status-previous {
+    border-left: 4px solid var(--tp-gray);
+}
+
+/* Assessment Score Display */
+.assessment-score {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--tp-green-flash);
+    color: black;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+.assessment-score.low {
+    background: var(--tp-orange);
+    color: white;
+}
+
+/* Alert Container */
+#alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+}
+
+/* Status Guide Table */
+.status-guide-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.status-guide-table th,
+.status-guide-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--tp-light-gray);
+}
+
+.status-guide-table th {
+    background: var(--tp-pastel-gray);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
 }
 
 /* Status Examples */
@@ -457,4 +517,118 @@ body {
 
 .payment-notes i {
     color: var(--tp-light-blue);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--muted-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state h4 {
+    color: var(--tp-dark-gray);
+    margin-bottom: 1rem;
+}
+
+/* Reminder Button */
+.remind-btn {
+    background: var(--tp-green-flash);
+    color: black;
+    border: none;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+.remind-btn:hover {
+    background: var(--tp-turquoise);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.remind-btn.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+/* Multiple Applications */
+.application-item {
+    background: var(--tp-pastel-gray);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--tp-light-blue);
+}
+
+.application-item.status-confirmed {
+    border-left-color: var(--status-confirmed);
+}
+
+.application-item.status-previous {
+    border-left-color: var(--tp-gray);
+}
+
+.application-item.status-assessment {
+    border-left-color: var(--status-assessment);
+}
+
+.application-item.status-probation {
+    border-left-color: var(--status-probation);
+}
+
+.application-item.status-failed {
+    border-left-color: var(--status-failed);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .logo {
+        width: 150px;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .stats-card {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .user-name-display {
+        font-size: 1.5rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+    
+    .earnings-table th, 
+    .earnings-table td {
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+    
+    .referral-card {
+        padding: 1rem;
+    }
+    
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
 }
