@@ -78,7 +78,7 @@ const earningsStructure = {
     assessment: {
         amount: 50,
         label: "Assessment Passed",
-        condition: "Candidate passes assessment with score ≥ 70%",
+        condition: "Candidate passes assessment",
         payment: "RM50"
     },
     probation: { 
@@ -99,7 +99,7 @@ const statusExamples = [
     },
     {
         status: "Assessment Stage",
-        description: "Candidate passed assessment (score ≥ 70%)",
+        description: "Candidate passed assessment",
         action: "RM50 payment eligible",
         color: "#00d769"
     },
