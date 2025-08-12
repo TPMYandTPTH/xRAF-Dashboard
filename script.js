@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', function () {
+// Main Application Script with Updated Logic
+document.addEventListener('DOMContentLoaded', function() {
     // Application State
     const AppState = {
         currentLanguage: 'en',
@@ -7,32 +8,32 @@ document.addEventListener('DOMContentLoaded', function () {
         isLoading: false,
         debugMode: false // Set to true for debugging
     };
-
+    
     // Initialize application
     function initializeApp() {
         document.getElementById('current-year').textContent = new Date().getFullYear();
         updateTranslations();
         setupEventListeners();
         document.getElementById('dashboard-phone').focus();
-
+        
         // Test connection if in debug mode
         if (AppState.debugMode) {
             ApiService.testConnection();
         }
     }
-
+    
     // Set up event listeners
     function setupEventListeners() {
         document.getElementById('lang-select').addEventListener('change', handleLanguageChange);
         document.getElementById('dashboard-submit').addEventListener('click', handleFormSubmit);
-
+        
         // Phone number validation - only numbers
-        document.getElementById('dashboard-phone').addEventListener('input', function (e) {
+        document.getElementById('dashboard-phone').addEventListener('input', function(e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
-
+        
         // Delegate event handling for dynamic content
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             if (e.target.closest('.remind-btn')) {
                 handleReminderClick(e);
             }
@@ -40,177 +41,221 @@ document.addEventListener('DOMContentLoaded', function () {
                 handleBackButton();
             }
         });
-
+        
         // Enter key support
-        document.getElementById('dashboard-form').addEventListener('keypress', function (e) {
+        document.getElementById('dashboard-form').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleFormSubmit();
             }
         });
     }
-
+    
     // Handle form submission
     async function handleFormSubmit() {
         const phone = document.getElementById('dashboard-phone').value.trim();
         const email = document.getElementById('dashboard-email').value.trim();
-
+        
         if (!validateInputs(phone, email)) return;
-
+        
         setLoadingState(true);
-
+        
         try {
             // Fetch referrals from API
             const apiData = await ApiService.fetchReferrals(phone, email);
-
+            
             // Process and store referrals
             AppState.currentReferralsData = processReferrals(apiData);
-
+            
             // Always show dashboard
             showReferralResults(AppState.currentReferralsData);
-
+            
         } catch (error) {
             console.error('Error:', error);
             // Still show dashboard with empty data
             AppState.currentReferralsData = [];
             showReferralResults([]);
-            showNonBlockingError("There was an error fetching your referral data.");
+            showNonBlockingError(translations[AppState.currentLanguage].errorMessage);
         } finally {
             setLoadingState(false);
         }
     }
-
-    // Process API response with new logic
+    
+    // Process API response with consolidated duplicates
     function processReferrals(apiData) {
         if (!Array.isArray(apiData)) return [];
-
-        return apiData.map(item => {
+        
+        const processed = apiData.map(item => {
             // Parse dates
             const parseDate = (dateStr) => {
                 if (!dateStr) return new Date();
+                // Handle various date formats
                 if (dateStr.includes('/')) {
                     const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
                     return new Date(year, month - 1, day);
                 }
                 return new Date(dateStr);
             };
-
+            
             const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
             const createdDate = parseDate(item.CreatedDate || item.createdDate);
             const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
-
+            
             // Get status and source
             const rawStatus = (item.Status || item.status || 'Application Received').trim();
             const source = (item.Source || item.source || item.SourceName || '').toLowerCase();
-
+            
             // Check if xRAF referral
             const isXRAF = source.includes('xraf') || source.includes('employee referral');
-
+            
             // Get assessment result if available
             const assessment = item.assessment || null;
-
+            
             // Map status based on new rules
             let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment);
-
+            
             // Override if not xRAF
             if (!isXRAF) {
                 mappedStatus = 'Previously Applied (No Payment)';
             }
-
+            
             // Special case: if status indicates hired and has been more than 90 days
             if (mappedStatus === 'Hired (Probation)' && daysInStage >= 90) {
                 mappedStatus = 'Hired (Confirmed)';
             }
-
+            
             const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
             const stage = StatusMapping.determineStage(rawStatus, assessment);
-
+            
             // Check if needs reminder (only Application Received status)
             const needsAction = mappedStatus === 'Application Received' && daysInStage > 3;
-
+            
             return {
+                // IDs
                 id: item.Person_system_id || item.personId || item.ID,
                 personId: item.Person_system_id || item.personId || item.ID,
+                
+                // Contact info
                 name: item.First_Name || item.name || 'Unknown',
                 email: item.Email || item.email || '',
                 phone: item.Employee || item.phone || '',
+                
+                // Status info
                 status: rawStatus,
                 mappedStatus: mappedStatus,
                 statusType: statusType,
                 stage: stage,
+                
+                // Source and eligibility
                 source: item.Source || item.source || '',
                 isXRAF: isXRAF,
                 isPreviousCandidate: !isXRAF,
+                
+                // Assessment info
                 assessment: assessment,
                 hasPassedAssessment: assessment && assessment.score >= 70,
                 assessmentScore: assessment ? assessment.score : null,
                 assessmentDate: assessment ? assessment.date : null,
+                
+                // Location info
                 location: item.Location || item.location || '',
                 nationality: item.F_Nationality || item.nationality || '',
+                
+                // Dates
                 createdDate: createdDate,
                 updatedDate: updatedDate,
                 daysInStage: daysInStage,
+                
+                // Action flags
                 needsAction: needsAction,
+                
+                // Payment eligibility (without assessment data, base on status only)
                 isEligibleForAssessmentPayment: isXRAF && (
                     mappedStatus === 'Assessment Stage' || 
                     mappedStatus === 'Hired (Probation)' || 
                     mappedStatus === 'Hired (Confirmed)'
                 ),
                 isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+                
+                // Original data
                 _original: item
             };
         });
+        
+        // Consolidate duplicates by email
+        const consolidated = {};
+        processed.forEach(ref => {
+            if (!ref.email) return;
+            
+            if (!consolidated[ref.email]) {
+                consolidated[ref.email] = {
+                    ...ref,
+                    applications: [ref]
+                };
+            } else {
+                consolidated[ref.email].applications.push(ref);
+                // Update main record with latest info
+                if (ref.updatedDate > consolidated[ref.email].updatedDate) {
+                    Object.assign(consolidated[ref.email], ref);
+                    consolidated[ref.email].applications = consolidated[ref.email].applications || [];
+                }
+            }
+        });
+        
+        return Object.values(consolidated);
     }
-
+    
     // Validate form inputs
     function validateInputs(phone, email) {
         let isValid = true;
-
+        
         if (!validatePhone(phone)) {
-            showError(document.getElementById('dashboard-phone'), "Please provide a valid phone number (01XXXXXXXX).");
+            showError(document.getElementById('dashboard-phone'), 
+                     translations[AppState.currentLanguage].phoneError);
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-phone'));
         }
-
+        
         if (!validateEmail(email)) {
-            showError(document.getElementById('dashboard-email'), "Please provide a valid email address.");
+            showError(document.getElementById('dashboard-email'), 
+                     translations[AppState.currentLanguage].emailError);
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-email'));
         }
-
+        
         return isValid;
     }
-
+    
     function validatePhone(phone) {
         return /^01\d{8,9}$/.test(phone);
     }
-
+    
     function validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-
+    
     function showError(input, message) {
         const formControl = input.closest('.mb-3');
         const error = formControl.querySelector('.invalid-feedback');
         error.textContent = message;
         input.classList.add('is-invalid');
     }
-
+    
     function clearError(input) {
         input.classList.remove('is-invalid');
     }
-
+    
     // Set loading state
     function setLoadingState(isLoading) {
         const submitBtn = document.getElementById('dashboard-submit');
         submitBtn.disabled = isLoading;
         submitBtn.innerHTML = isLoading ? 
-            `<span class="spinner-border spinner-border-sm me-2"></span>Connecting...` :
-            "View Referral Status";
+            `<span class="spinner-border spinner-border-sm me-2"></span>${translations[AppState.currentLanguage].connectingMessage}` :
+            translations[AppState.currentLanguage].viewStatusBtn;
     }
-
+    
     // Handle language change
     function handleLanguageChange(e) {
         AppState.currentLanguage = e.target.value;
@@ -219,16 +264,16 @@ document.addEventListener('DOMContentLoaded', function () {
             showReferralResults(AppState.currentReferralsData);
         }
     }
-
+    
     // Show results dashboard
     function showReferralResults(referrals) {
         document.getElementById('auth-step').style.display = 'none';
         const resultsStep = document.getElementById('results-step');
         resultsStep.style.display = 'block';
-
+        
         // Create results content
         resultsStep.innerHTML = createResultsContent(referrals);
-
+        
         // Initialize dashboard components
         updateChart(referrals);
         updateEarningsTable(referrals);
@@ -237,30 +282,37 @@ document.addEventListener('DOMContentLoaded', function () {
         updateStatusGuide();
         updateTranslations();
     }
-
-    // Create results HTML with new sections
+    
+    // Create results HTML content
     function createResultsContent(referrals) {
-        const hiredCount = referrals.filter(r => r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)').length;
-        const inProgressCount = referrals.filter(r => r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage').length;
-
+        const hiredCount = referrals.filter(r => 
+            r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
+        ).length;
+        
+        const inProgressCount = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' || 
+            r.mappedStatus === 'Assessment Stage'
+        ).length;
+        
         const userName = document.getElementById('dashboard-email').value.split('@')[0];
-
+        
         return `
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
                     <h3 class="user-name-display">${userName}</h3>
-                    <h4>Your Referrals</h4>
+                    <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
                 </div>
-                <button id="dashboard-back" class="btn btn-outline-secondary">
+                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
                     <i class="fas fa-arrow-left me-2"></i> Back
                 </button>
             </div>
+            
             <!-- Stats Cards -->
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
                     <div class="card stats-card">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Total Referrals</h5>
+                            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
                             <h3 class="text-primary">${referrals.length}</h3>
                         </div>
                     </div>
@@ -268,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="col-md-4 mb-3">
                     <div class="card stats-card hired">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Hired</h5>
+                            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
                             <h3 class="text-success">${hiredCount}</h3>
                         </div>
                     </div>
@@ -276,19 +328,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="col-md-4 mb-3">
                     <div class="card stats-card progress">
                         <div class="card-body text-center">
-                            <h5 class="card-title">In Progress</h5>
+                            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
                             <h3 class="text-warning">${inProgressCount}</h3>
                         </div>
                     </div>
                 </div>
             </div>
-
+            
             <!-- Status Distribution Chart -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-3">Status Distribution</h5>
+                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
                     <div class="chart-container">
                         <canvas id="statusChart"></canvas>
+                        <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
                     </div>
                 </div>
             </div>
@@ -296,115 +349,162 @@ document.addEventListener('DOMContentLoaded', function () {
             <!-- Earnings Table -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-3">Your Earnings</h5>
+                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
                     <div class="table-responsive">
                         <table class="earnings-table">
                             <thead>
                                 <tr>
-                                    <th>Stage</th>
-                                    <th>Amount (RM)</th>
-                                    <th>Count</th>
-                                    <th>Total</th>
+                                    <th data-translate="earningsStage">Stage</th>
+                                    <th data-translate="earningsAmount">Amount (RM)</th>
+                                    <th data-translate="earningsCount">Count</th>
+                                    <th data-translate="earningsTotal">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="earnings-body"></tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="3">Total Earnings</th>
+                                    <th colspan="3" data-translate="earningsTotal">Total Earnings</th>
                                     <th id="total-earnings">RM 0</th>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+                            Payment Terms & Conditions
+                        </button>
+                    </div>
                 </div>
             </div>
-
+            
             <!-- Reminder Section -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-3">Remind Your Friends</h5>
+                    <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
+                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
                     <div id="friends-to-remind" class="row"></div>
                 </div>
             </div>
-
+            
             <!-- Referral List -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="mb-3">All Referrals</h5>
+                    <h5 class="card-title mb-3" data-translate="allReferralsTitle">All Referrals</h5>
                     <div id="referral-list"></div>
                 </div>
             </div>
-
-            <!-- Status Guide moved to end -->
+            
+            <!-- Status Guide -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-4">Status Guide & Payment Information</h5>
+                    <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
                     <div id="status-guide-content"></div>
+                </div>
+            </div>
+            
+            <!-- Social Media -->
+            <div class="mt-4">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="tpGlobal">TP Global</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
+                            <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followMalaysia">TP Malaysia</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h5 data-translate="followThailand">TP Thailand</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
     }
-
-// Handle WhatsApp reminders with professional message
-function handleReminderClick(e) {
-    const button = e.target.closest('.remind-btn');
-    if (!button) return;
-
-    const name = button.dataset.name;
-    const phone = button.dataset.phone;
-    const lang = button.dataset.lang || AppState.currentLanguage;
-    if (!phone) return;
-
-    // Format phone for WhatsApp
-    const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
-
-    // Professional messages in different languages
-    const messages = {
-        en: `Hello ${name},\n\nI hope this message finds you well. This is a friendly reminder regarding your application to tp.\n\nWe noticed that you haven't completed your assessment yet. Please check your personal email for the assessment link that was sent to you.\n\nCompleting the assessment is an important step in your application process. If you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTP Recruitment Team`,
+    
+    // Handle back button
+    function handleBackButton() {
+        document.getElementById('auth-step').style.display = 'block';
+        document.getElementById('results-step').style.display = 'none';
+        document.getElementById('dashboard-phone').value = '';
+        document.getElementById('dashboard-email').value = '';
+        document.getElementById('dashboard-phone').focus();
+        AppState.currentReferralsData = [];
+    }
+    
+    // Handle WhatsApp reminders with professional message
+    function handleReminderClick(e) {
+        const button = e.target.closest('.remind-btn');
+        if (!button) return;
         
-        ja: `${name}様\n\nお世話になっております。テレパフォーマンスへのご応募に関するリマインダーです。\n\nまだアセスメントを完了されていないようです。個人のメールアドレスに送信されたアセスメントのリンクをご確認ください。\n\nアセスメントの完了は、応募プロセスの重要なステップです。ご不明な点がございましたら、お気軽にお問い合わせください。\n\nよろしくお願いいたします。\nTP採用チーム`,
-
-        ko: `안녕하세요 ${name}님,\n\n텔레퍼포먼스 지원과 관련하여 안내 드립니다.\n\n아직 평가를 완료하지 않으신 것으로 확인됩니다. 개인 이메일로 발송된 평가 링크를 확인해 주시기 바랍니다.\n\n평가 완료는 지원 과정에서 중요한 단계입니다. 궁금한 점이 있으시면 언제든지 문의해 주세요.\n\n감사합니다.\nTP 채용팀`,
-
-        "zh-CN": `${name} 您好，\n\n这是关于您申请tp的友好提醒。\n\n我们注意到您还没有完成评估。请查看您的个人邮箱中发送的评估链接。\n\n完成评估是申请过程中的重要步骤。如果您有任何问题或需要帮助，请随时与我们联系。\n\n祝好，\nTP招聘团队`,
-
-        "zh-HK": `${name} 您好，\n\n這是關於您申請tp的友好提醒。\n\n我們注意到您還沒有完成評估。請查看您的個人郵箱中發送的評估鏈接。\n\n完成評估是申請過程中的重要步驟。如果您有任何問題或需要幫助，請隨時與我們聯繫。\n\n祝好，\nTP招聘團隊`
-    };
-
-    // Get the message for the selected language or fallback to English
-    const message = messages[lang] || messages.en;
-
-    // Open WhatsApp with the formatted phone number and message
-    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
-}
+        const name = button.dataset.name;
+        const phone = button.dataset.phone;
+        const lang = button.dataset.lang || AppState.currentLanguage;
+        if (!phone) return;
+        
+        // Format phone for WhatsApp
+        const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
+        
+        // Professional messages in different languages
+        const messages = {
+            en: `Hello ${name},\n\nI hope this message finds you well. This is a friendly reminder regarding your application to Teleperformance.\n\nWe noticed that you haven't completed your assessment yet. Please check your personal email for the assessment link that was sent to you.\n\nCompleting the assessment is an important step in your application process. If you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTP Recruitment Team`,
+            
+            ja: `${name}様\n\nお世話になっております。テレパフォーマンスへのご応募に関するリマインダーです。\n\nまだアセスメントを完了されていないようです。個人のメールアドレスに送信されたアセスメントのリンクをご確認ください。\n\nアセスメントの完了は、応募プロセスの重要なステップです。ご不明な点がございましたら、お気軽にお問い合わせください。\n\nよろしくお願いいたします。\nTP採用チーム`,
+            
+            ko: `안녕하세요 ${name}님,\n\n텔레퍼포먼스 지원과 관련하여 안내 드립니다.\n\n아직 평가를 완료하지 않으신 것으로 확인됩니다. 개인 이메일로 발송된 평가 링크를 확인해 주시기 바랍니다.\n\n평가 완료는 지원 과정에서 중요한 단계입니다. 궁금한 점이 있으시면 언제든지 문의해 주세요.\n\n감사합니다.\nTP 채용팀`,
+            
+            "zh-CN": `${name} 您好，\n\n这是关于您申请Teleperformance的友好提醒。\n\n我们注意到您还没有完成评估。请查看您的个人邮箱中发送的评估链接。\n\n完成评估是申请过程中的重要步骤。如果您有任何问题或需要帮助，请随时与我们联系。\n\n祝好，\nTP招聘团队`,
+            
+            "zh-HK": `${name} 您好，\n\n這是關於您申請Teleperformance的友好提醒。\n\n我們注意到您還沒有完成評估。請查看您的個人郵箱中發送的評估鏈接。\n\n完成評估是申請過程中的重要步驟。如果您有任何問題或需要幫助，請隨時與我們聯繫。\n\n祝好，\nTP招聘團隊`
+        };
+        
+        const message = messages[lang] || messages.en;
+        window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+    
     // Update status chart
     function updateChart(referrals) {
         const ctx = document.getElementById('statusChart')?.getContext('2d');
         if (!ctx) return;
-
+        
         // Destroy previous chart
         if (AppState.statusChart) {
             AppState.statusChart.destroy();
         }
-
+        
+        // Count statuses
         const counts = {};
         StatusMapping.displayOrder.forEach(status => {
             counts[status] = referrals.filter(r => r.mappedStatus === status).length;
         });
-
+        
+        // Chart colors - updated to use green for Hired (Confirmed) and gray for Previously Applied
         const colors = [
-            '#0087FF', // Application Received - blue
-            '#00d769', // Assessment Stage - green flash
-            '#f5d200', // Hired (Probation) - yellow
-            '#84c98b', // Hired (Confirmed) - green
-            '#676767', // Previously Applied (No Payment) - gray
-            '#dc3545'  // Not Selected - red
+            '#0087FF',  // Application Received - blue
+            '#00d769',  // Assessment Stage - green flash
+            '#f5d200',  // Hired (Probation) - yellow
+            '#28a745',  // Hired (Confirmed) - green
+            '#676767',  // Previously Applied (No Payment) - gray
+            '#dc3545'   // Not Selected - red
         ];
-
+        
+        // Create new chart
         AppState.statusChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: StatusMapping.displayOrder,
+                labels: StatusMapping.displayOrder.map(status => 
+                    translations[AppState.currentLanguage][`status${status.replace(/[\s()]/g, '')}`] || status
+                ),
                 datasets: [{
                     data: StatusMapping.displayOrder.map(status => counts[status] || 0),
                     backgroundColor: colors,
@@ -418,11 +518,16 @@ function handleReminderClick(e) {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { padding: 15, font: { size: 12 } }
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 const label = context.label || '';
                                 const value = context.raw || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -435,218 +540,232 @@ function handleReminderClick(e) {
             }
         });
     }
-
+    
     // Update earnings table with new logic
     function updateEarningsTable(referrals) {
         const earningsBody = document.getElementById('earnings-body');
         if (!earningsBody) return;
-
+        
         // Calculate eligible candidates
         const assessmentPassed = referrals.filter(r => r.isEligibleForAssessmentPayment).length;
         const probationCompleted = referrals.filter(r => r.isEligibleForProbationPayment).length;
-
+        
         // Calculate earnings
         const assessmentEarnings = assessmentPassed * 50;
         const probationEarnings = probationCompleted * 750;
         const totalEarnings = assessmentEarnings + probationEarnings;
-
+        
         earningsBody.innerHTML = `
             <tr>
-                <td>Assessment Passed (Score ≥ 70%)</td>
+                <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
                 <td>RM 50</td>
                 <td>${assessmentPassed}</td>
                 <td>RM ${assessmentEarnings}</td>
             </tr>
             <tr>
-                <td>Probation Completed (90 days)</td>
+                <td data-translate="statusProbationPassed">Probation Completed (90 days)</td>
                 <td>RM 750</td>
                 <td>${probationCompleted}</td>
                 <td>RM ${probationEarnings}</td>
             </tr>
         `;
+        
         document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
     }
-
+    
     // Update reminder section
     function updateReminderSection(referrals) {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
-
-        const friendsToRemind = referrals.filter(r => r.mappedStatus === 'Application Received' && r.phone);
-
+        
+        // Filter friends needing reminder (Application Received status only)
+        const friendsToRemind = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' && r.phone
+        );
+        
         if (friendsToRemind.length === 0) {
             container.innerHTML = `
                 <div class="col-12 text-center">
-                    <p class="text-muted">All your friends are on track!</p>
+                    <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
                 </div>
             `;
             return;
         }
-
-        container.innerHTML = '';
-        friendsToRemind.forEach(friend => {
-            container.innerHTML += `
-                <div class="col-md-6 mb-3">
-                    <div class="friend-to-remind">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5>${friend.name}</h5>
-                            <span class="badge bg-${friend.statusType}">${friend.mappedStatus}</span>
-                        </div>
-                        <p class="small mb-1">${friend.email}</p>
-                        <p class="small mb-2">Days in Stage: ${friend.daysInStage}</p>
-                        <button class="btn btn-primary w-100 remind-btn" 
-                            data-name="${friend.name}" 
-                            data-phone="${friend.phone}" 
-                            data-lang="${AppState.currentLanguage}">
-                            <i class="fab fa-whatsapp me-2"></i>Send Reminder
-                        </button>
+        
+        container.innerHTML = friendsToRemind.map(friend => `
+            <div class="col-md-6 mb-3">
+                <div class="friend-to-remind">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5>${friend.name}</h5>
+                        <span class="badge bg-${friend.statusType} status-badge">${friend.mappedStatus}</span>
                     </div>
+                    <p class="small mb-1">${friend.email}</p>
+                    <p class="small mb-2"><span data-translate="referralDays">Days in Stage</span>: ${friend.daysInStage}</p>
+                    <button class="btn btn-primary w-100 remind-btn" 
+                        data-name="${friend.name}" 
+                        data-phone="${friend.phone}"
+                        data-lang="${AppState.currentLanguage}">
+                        <i class="fab fa-whatsapp me-2"></i>
+                        <span data-translate="remindBtn">Send Reminder</span>
+                    </button>
                 </div>
-            `;
-        });
+            </div>
+        `).join('');
     }
-
-    // Update referral list
+    
+    // Update referral list with consolidated duplicates
     function updateReferralList(referrals) {
         const container = document.getElementById('referral-list');
         if (!container) return;
-
+        
         if (referrals.length === 0) {
             container.innerHTML = `
                 <div class="card">
                     <div class="card-body text-center py-5 empty-state">
                         <i class="fas fa-users empty-state-icon"></i>
-                        <h4>No referrals found yet</h4>
-                        <p>Start referring friends to see them appear here!</p>
-                        <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">Refer a Friend</a>
+                        <h4 data-translate="noReferrals">No referrals found yet</h4>
+                        <p data-translate="startReferring">Start referring friends to see them appear here!</p>
+                        <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">
+                            <i class="fas fa-user-plus me-2"></i><span data-translate="referFriend">Refer a Friend</span>
+                        </a>
                     </div>
                 </div>
             `;
             return;
         }
-
-        container.innerHTML = '<h5 class="mb-3">All Referrals</h5>';
-
+        
         // Sort referrals by status order
         const sortedReferrals = [...referrals].sort((a, b) => {
             const aIndex = StatusMapping.displayOrder.indexOf(a.mappedStatus);
             const bIndex = StatusMapping.displayOrder.indexOf(b.mappedStatus);
             return aIndex - bIndex;
         });
-
-        sortedReferrals.forEach(ref => {
-            const assessmentInfo = ref.assessment ? 
-                `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">
-                    Score: ${ref.assessmentScore}%
-                </span>` : '';
-
-            container.innerHTML += `
+        
+        container.innerHTML = sortedReferrals.map(ref => {
+            const hasMultipleApplications = ref.applications && ref.applications.length > 1;
+            
+            return `
                 <div class="card referral-card status-${ref.statusType} mb-3">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
                                 <h5>${ref.name}</h5>
                                 <p class="small text-muted mb-1">${ref.email}</p>
                                 ${ref.personId ? `<p class="small text-muted">ID: ${ref.personId}</p>` : ''}
+                                ${hasMultipleApplications ? `<p class="small text-primary"><i class="fas fa-copy me-1"></i><span data-translate="multipleApplications">Multiple Applications</span> (${ref.applications.length})</p>` : ''}
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-${ref.statusType}">${ref.mappedStatus}</span>
-                                ${assessmentInfo}
+                                <span class="badge bg-${ref.statusType} status-badge">${ref.mappedStatus}</span>
+                                ${ref.assessmentScore ? `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">Score: ${ref.assessmentScore}%</span>` : ''}
                             </div>
                         </div>
-                        <div class="row mt-3">
+                        
+                        ${hasMultipleApplications ? `
+                            <div class="mb-3">
+                                <h6 class="small text-muted mb-2">Applications:</h6>
+                                ${ref.applications.map(app => `
+                                    <div class="application-item status-${app.statusType}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>${app.status}</strong>
+                                                <br><small class="text-muted">${app.location || 'N/A'} • ${app.daysInStage} days</small>
+                                            </div>
+                                            <span class="badge bg-${app.statusType} status-badge">${app.mappedStatus}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="row">
                             <div class="col-md-3">
-                                <small class="text-muted">Stage</small>
-                                <p>${ref.stage}</p>
+                                <small class="text-muted" data-translate="referralStage">Stage</small>
+                                <p class="mb-1">${ref.stage}</p>
                             </div>
                             <div class="col-md-3">
-                                <small class="text-muted">Location</small>
-                                <p>${ref.location || 'N/A'}</p>
+                                <small class="text-muted" data-translate="location">Location</small>
+                                <p class="mb-1">${ref.location || 'N/A'}</p>
                             </div>
                             <div class="col-md-3">
-                                <small class="text-muted">Days in Stage</small>
-                                <p>${ref.daysInStage}</p>
+                                <small class="text-muted" data-translate="referralDays">Days in Stage</small>
+                                <p class="mb-1">${ref.daysInStage}</p>
                             </div>
                             <div class="col-md-3">
                                 ${ref.needsAction && ref.phone ? `
                                     <button class="btn btn-sm btn-success w-100 remind-btn" 
                                         data-name="${ref.name}" 
                                         data-phone="${ref.phone}">
-                                        <i class="fab fa-whatsapp me-2"></i> Remind
+                                        <i class="fab fa-whatsapp me-1"></i>
+                                        <span data-translate="remindBtn">Remind</span>
                                     </button>
                                 ` : ''}
                             </div>
                         </div>
+                        
                         <div class="mt-2">
                             <small class="text-muted">
-                                <span>Source</span>: ${ref.source || 'N/A'} |
-                                <span>Status Details</span>: ${ref.status}
+                                <span data-translate="source">Source</span>: ${ref.source || 'N/A'} | 
+                                <span data-translate="statusDetails">Status Details</span>: ${ref.status}
                             </small>
                         </div>
                     </div>
                 </div>
             `;
-        });
+        }).join('');
     }
-
+    
     // Update status guide section
     function updateStatusGuide() {
         const container = document.getElementById('status-guide-content');
         if (!container) return;
-
-        const t = translations[AppState.currentLanguage];
-
+        
         container.innerHTML = `
             <div class="row">
                 <!-- Status Examples -->
                 <div class="col-md-6">
-                    <h6 class="mb-3">Status Examples</h6>
+                    <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
                     <div class="status-examples">
-                        ${statusExamples.map(example => {
-                            // Get the correct status type for coloring
-                            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
-                            if (example.status === "Hired (Confirmed)") statusType = 'passed';
-                            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
-
-                            return `
-                                <div class="status-example">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
-                                        <span class="badge bg-${statusType}">
-                                            ${example.status}
-                                        </span>
-                                    </div>
-                                    <p class="mb-1 mt-2 small">${example.description}</p>
-                                    <small class="text-muted">${example.action}</small>
+                        ${statusExamples.map(example => `
+                            <div class="status-example">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>${example.status}</strong>
+                                    <span class="badge" style="background-color: ${example.color}; color: ${example.color === '#f5d200' || example.color === '#00d769' ? 'black' : 'white'};">
+                                        ${example.status}
+                                    </span>
                                 </div>
-                            `;
-                        }).join('')}
+                                <p class="mb-1 mt-2 small">${example.description}</p>
+                                <small class="text-muted">${example.action}</small>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
-
+                
                 <!-- Payment Conditions -->
                 <div class="col-md-6">
-                    <h6 class="mb-3">Payment Conditions</h6>
+                    <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
                     <div class="table-responsive">
                         <table class="table status-guide-table">
                             <thead>
                                 <tr>
-                                    <th>Stage</th>
-                                    <th>Condition</th>
-                                    <th>Payment</th>
+                                    <th data-translate="stage">Stage</th>
+                                    <th data-translate="condition">Condition</th>
+                                    <th data-translate="payment">Payment</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${Object.entries(earningsStructure).map(([key, value]) => `
-                                    <tr>
-                                        <td>${value.label}</td>
-                                        <td>${value.condition}</td>
-                                        <td><strong>${value.payment}</strong></td>
-                                    </tr>
-                                `).join('')}
+                                <tr>
+                                    <td>Assessment Passed</td>
+                                    <td>Candidate passes assessment with score ≥ 70%</td>
+                                    <td><strong>RM50</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Probation Completed</td>
+                                    <td>Candidate completes 90-day probation period</td>
+                                    <td><strong>RM750</strong></td>
+                                </tr>
                                 <tr>
                                     <td>Previously Applied</td>
-                                    <td>No payment eligible</td>
+                                    <td data-translate="noPaymentNote">Candidate applied before referral</td>
                                     <td><strong>No Payment</strong></td>
                                 </tr>
                             </tbody>
@@ -661,10 +780,57 @@ function handleReminderClick(e) {
             </div>
         `;
     }
-
+    
+    // Update translations
+    function updateTranslations() {
+        const lang = AppState.currentLanguage;
+        const t = translations[lang] || translations.en;
+        
+        document.querySelectorAll('[data-translate]').forEach(el => {
+            const key = el.getAttribute('data-translate');
+            if (t[key]) {
+                el.textContent = t[key];
+            }
+        });
+        
+        document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-translate-placeholder');
+            if (t[key]) {
+                el.placeholder = t[key];
+            }
+        });
+    }
+    
+    // Show non-blocking error
+    function showNonBlockingError(message) {
+        const alertContainer = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+        
+        const alert = document.createElement('div');
+        alert.id = alertId;
+        alert.className = 'alert alert-warning alert-dismissible fade show';
+        alert.setAttribute('role', 'alert');
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        alertContainer.appendChild(alert);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alertEl = document.getElementById(alertId);
+            if (alertEl) {
+                alertEl.classList.remove('show');
+                setTimeout(() => alertEl.remove(), 150);
+            }
+        }, 5000);
+    }
+    
     // Initialize the app
     initializeApp();
-
+    
     // Expose state for debugging
     window.AppState = AppState;
 });
