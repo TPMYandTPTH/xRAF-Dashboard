@@ -284,13 +284,14 @@ body {
 
 .chart-logo {
     position: absolute;
-    top: 50%;
+    top: 47%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 60px;
     height: auto;
     opacity: 0.1;
     pointer-events: none;
+    z-index: 1;
 }
 
 /* Stats Cards */
@@ -538,16 +539,18 @@ body {
 
 /* Reminder Button */
 .remind-btn {
-    background: var(--tp-green-flash);
-    color: black;
-    border: none;
+    background: var(--tp-green-flash) !important;
+    color: black !important;
+    border: none !important;
     padding: 8px 16px;
     font-size: 0.875rem;
+    text-transform: none !important;
+    letter-spacing: normal !important;
 }
 
 .remind-btn:hover {
-    background: var(--tp-turquoise);
-    color: white;
+    background: var(--tp-turquoise) !important;
+    color: white !important;
     transform: translateY(-1px);
 }
 
