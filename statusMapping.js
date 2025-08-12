@@ -1,26 +1,31 @@
+// Simplified Status Mapping with New Rules
 const StatusMapping = {
     // Map status to simplified group based on rules
-    mapStatusToGroup: function (status, assessmentResult) {
+    mapStatusToGroup: function(status, assessmentResult) {
         if (!status) return 'Application Received';
-
+        
         const statusStr = status.toLowerCase();
-
+        
+        // Check source first - if not xRAF, it's previously applied
+        // This should be checked in the main processing logic using the source field
+        
         // Not Selected - if rejected, eliminated, withdrew
-        if (statusStr.includes('rejected') ||
-            statusStr.includes('eliminated') ||
-            statusStr.includes('withdrew') ||
+        if (statusStr.includes('rejected') || 
+            statusStr.includes('eliminated') || 
+            statusStr.includes('withdrew') || 
             statusStr.includes('not selected') ||
             statusStr.includes('legacy')) {
             return 'Not Selected';
         }
-
+        
         // Hired (Confirmed) - hired status with 90+ days
         if (statusStr.includes('hired') || statusStr.includes('graduate')) {
+            // Without assessment data, we can't check days, so default to probation
             return 'Hired (Probation)';
         }
-
+        
         // Interview/Final Review stages - candidate passed assessment
-        if (statusStr.includes('interview') ||
+        if (statusStr.includes('interview') || 
             statusStr.includes('final review') ||
             statusStr.includes('ready to offer') ||
             statusStr.includes('job offer') ||
@@ -28,24 +33,19 @@ const StatusMapping = {
             statusStr.includes('cleared to start')) {
             return 'Assessment Stage';
         }
-
+        
         // Assessment/SHL stages
-        if (statusStr.includes('assessment') ||
+        if (statusStr.includes('assessment') || 
             statusStr.includes('shl')) {
             return 'Assessment Stage';
         }
-
-        // Previously Applied (No Payment) - ex-TP or re-applied candidates
-        if (statusStr.includes('previously applied') || statusStr.includes('ex-tp')) {
-            return 'Previously Applied (No Payment)';
-        }
-
+        
         // Default status - application received
         return 'Application Received';
     },
-
+    
     // Get simplified status type for styling
-    getSimplifiedStatusType: function (status, assessmentResult) {
+    getSimplifiedStatusType: function(status, assessmentResult) {
         const group = this.mapStatusToGroup(status, assessmentResult);
         switch (group) {
             case 'Hired (Confirmed)': return 'passed';
@@ -56,12 +56,12 @@ const StatusMapping = {
             default: return 'received';
         }
     },
-
+    
     // Determine stage for display
-    determineStage: function (status, assessmentResult) {
+    determineStage: function(status, assessmentResult) {
         return this.mapStatusToGroup(status, assessmentResult);
     },
-
+    
     // Display order for charts and lists
     displayOrder: [
         'Application Received',
@@ -70,36 +70,55 @@ const StatusMapping = {
         'Hired (Confirmed)',
         'Previously Applied (No Payment)',
         'Not Selected'
-    ],
+    ]
+};
 
-    // Status colors for display
-    statusColors: {
-        'Application Received': '#0087FF',  // Blue
-        'Assessment Stage': '#00d769',  // Green Flash
-        'Hired (Probation)': '#f5d200',  // Yellow
-        'Hired (Confirmed)': '#84c98b',  // Green Light
-        'Previously Applied (No Payment)': '#676767',  // Grey
-        'Not Selected': '#dc3545'  // Red
+// Earnings structure with conditions
+const earningsStructure = {
+    assessment: {
+        amount: 50,
+        label: "Assessment Passed",
+        condition: "Candidate passes assessment with score ≥ 70%",
+        payment: "RM50"
     },
-
-    // Earnings structure with conditions for payments
-    earningsStructure: {
-        assessment: {
-            amount: 50,
-            label: "Assessment Passed",
-            condition: "Candidate passes assessment with score ≥ 70%",
-            payment: "RM50"
-        },
-        probation: {
-            amount: 750,
-            label: "Probation Completed",
-            condition: "Candidate completes 90-day probation period",
-            payment: "RM750"
-        }
+    probation: { 
+        amount: 750, 
+        label: "Probation Completed",
+        condition: "Candidate completes 90-day probation period",
+        payment: "RM750"
     }
 };
 
-// Example usage to map a status:
-const exampleStatus = "Hired (Confirmed)";
-console.log(StatusMapping.mapStatusToGroup(exampleStatus)); // Expected: "Hired (Confirmed)"
-console.log(StatusMapping.getSimplifiedStatusType(exampleStatus)); // Expected: "passed"
+// Status examples for guide
+const statusExamples = [
+    {
+        status: "Application Received",
+        description: "Candidate has applied but not completed assessment",
+        action: "Send WhatsApp reminder"
+    },
+    {
+        status: "Assessment Stage",
+        description: "Candidate passed assessment (score ≥ 70%)",
+        action: "RM50 payment eligible"
+    },
+    {
+        status: "Hired (Probation)",
+        description: "Candidate hired but in probation period (<90 days)",
+        action: "Monitor progress"
+    },
+    {
+        status: "Hired (Confirmed)",
+        description: "Candidate completed 90-day probation",
+        action: "RM750 payment eligible"
+    },
+    {
+        status: "Previously Applied (No Payment)",
+        description: "Candidate applied before referral program",
+        action: "No payment eligible"
+    },
+    {
+        status: "Not Selected",
+        description: "Candidate rejected or withdrew application",
+        action: "No further action needed"
+    }
+};
