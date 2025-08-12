@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateTranslations();
         setupEventListeners();
         document.getElementById('dashboard-phone').focus();
-        
+
         // Test connection if in debug mode
         if (AppState.debugMode) {
             ApiService.testConnection();
@@ -25,19 +25,22 @@ document.addEventListener('DOMContentLoaded', function () {
     function setupEventListeners() {
         document.getElementById('lang-select').addEventListener('change', handleLanguageChange);
         document.getElementById('dashboard-submit').addEventListener('click', handleFormSubmit);
-        
+
         // Phone number validation - only numbers
         document.getElementById('dashboard-phone').addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
-        
+
         // Delegate event handling for dynamic content
         document.addEventListener('click', function (e) {
             if (e.target.closest('.remind-btn')) {
                 handleReminderClick(e);
             }
+            if (e.target.id === 'dashboard-back') {
+                handleBackButton();
+            }
         });
-        
+
         // Enter key support
         document.getElementById('dashboard-form').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
@@ -71,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Still show dashboard with empty data
             AppState.currentReferralsData = [];
             showReferralResults([]);
-            showNonBlockingError('Error fetching referral data.');
+            showNonBlockingError("There was an error fetching your referral data.");
         } finally {
             setLoadingState(false);
         }
@@ -81,24 +84,80 @@ document.addEventListener('DOMContentLoaded', function () {
     function processReferrals(apiData) {
         if (!Array.isArray(apiData)) return [];
 
-        const groupedReferrals = {};
+        return apiData.map(item => {
+            // Parse dates
+            const parseDate = (dateStr) => {
+                if (!dateStr) return new Date();
+                if (dateStr.includes('/')) {
+                    const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
+                    return new Date(year, month - 1, day);
+                }
+                return new Date(dateStr);
+            };
 
-        apiData.forEach(item => {
-            // Combine referrals by email (if duplicated)
-            if (!groupedReferrals[item.email]) {
-                groupedReferrals[item.email] = [];
+            const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
+            const createdDate = parseDate(item.CreatedDate || item.createdDate);
+            const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
+
+            // Get status and source
+            const rawStatus = (item.Status || item.status || 'Application Received').trim();
+            const source = (item.Source || item.source || item.SourceName || '').toLowerCase();
+
+            // Check if xRAF referral
+            const isXRAF = source.includes('xraf') || source.includes('employee referral');
+
+            // Get assessment result if available
+            const assessment = item.assessment || null;
+
+            // Map status based on new rules
+            let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment);
+
+            // Override if not xRAF
+            if (!isXRAF) {
+                mappedStatus = 'Previously Applied (No Payment)';
             }
-            groupedReferrals[item.email].push(item);
-        });
 
-        return Object.values(groupedReferrals).map(group => {
-            const firstReferral = group[0]; // Display the first name and other info
+            // Special case: if status indicates hired and has been more than 90 days
+            if (mappedStatus === 'Hired (Probation)' && daysInStage >= 90) {
+                mappedStatus = 'Hired (Confirmed)';
+            }
+
+            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
+            const stage = StatusMapping.determineStage(rawStatus, assessment);
+
+            // Check if needs reminder (only Application Received status)
+            const needsAction = mappedStatus === 'Application Received' && daysInStage > 3;
+
             return {
-                email: firstReferral.email,
-                name: firstReferral.name,
-                status: firstReferral.status,
-                phone: firstReferral.phone,
-                referrals: group // All referrals under this email
+                id: item.Person_system_id || item.personId || item.ID,
+                personId: item.Person_system_id || item.personId || item.ID,
+                name: item.First_Name || item.name || 'Unknown',
+                email: item.Email || item.email || '',
+                phone: item.Employee || item.phone || '',
+                status: rawStatus,
+                mappedStatus: mappedStatus,
+                statusType: statusType,
+                stage: stage,
+                source: item.Source || item.source || '',
+                isXRAF: isXRAF,
+                isPreviousCandidate: !isXRAF,
+                assessment: assessment,
+                hasPassedAssessment: assessment && assessment.score >= 70,
+                assessmentScore: assessment ? assessment.score : null,
+                assessmentDate: assessment ? assessment.date : null,
+                location: item.Location || item.location || '',
+                nationality: item.F_Nationality || item.nationality || '',
+                createdDate: createdDate,
+                updatedDate: updatedDate,
+                daysInStage: daysInStage,
+                needsAction: needsAction,
+                isEligibleForAssessmentPayment: isXRAF && (
+                    mappedStatus === 'Assessment Stage' || 
+                    mappedStatus === 'Hired (Probation)' || 
+                    mappedStatus === 'Hired (Confirmed)'
+                ),
+                isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+                _original: item
             };
         });
     }
@@ -108,14 +167,14 @@ document.addEventListener('DOMContentLoaded', function () {
         let isValid = true;
 
         if (!validatePhone(phone)) {
-            showError(document.getElementById('dashboard-phone'), 'Please provide a valid phone number (01XXXXXXXX).');
+            showError(document.getElementById('dashboard-phone'), "Please provide a valid phone number (01XXXXXXXX).");
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-phone'));
         }
 
         if (!validateEmail(email)) {
-            showError(document.getElementById('dashboard-email'), 'Please provide a valid email address.');
+            showError(document.getElementById('dashboard-email'), "Please provide a valid email address.");
             isValid = false;
         } else {
             clearError(document.getElementById('dashboard-email'));
@@ -147,7 +206,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function setLoadingState(isLoading) {
         const submitBtn = document.getElementById('dashboard-submit');
         submitBtn.disabled = isLoading;
-        submitBtn.innerHTML = isLoading ? 'Connecting...' : 'View Referral Status';
+        submitBtn.innerHTML = isLoading ? 
+            `<span class="spinner-border spinner-border-sm me-2"></span>Connecting...` :
+            "View Referral Status";
     }
 
     // Handle language change
@@ -167,91 +228,443 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Create results content
         resultsStep.innerHTML = createResultsContent(referrals);
+
+        // Initialize dashboard components
+        updateChart(referrals);
+        updateEarningsTable(referrals);
+        updateReminderSection(referrals);
+        updateReferralList(referrals);
+        updateStatusGuide();
+        updateTranslations();
     }
 
     // Create results HTML with new sections
     function createResultsContent(referrals) {
+        const hiredCount = referrals.filter(r => r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)').length;
+        const inProgressCount = referrals.filter(r => r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage').length;
+
+        const userName = document.getElementById('dashboard-email').value.split('@')[0];
+
         return `
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
-                    <h3>${AppState.currentLanguage === 'en' ? 'Your Referrals' : 'あなたの紹介'}</h3>
+                    <h3 class="user-name-display">${userName}</h3>
+                    <h4>Your Referrals</h4>
                 </div>
                 <button id="dashboard-back" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i> Back
                 </button>
             </div>
-            <div class="row">
-                ${referrals.map(referral => `
-                    <div class="col-md-12 mb-3">
-                        <div class="card referral-card">
-                            <div class="card-body">
-                                <h5>${referral.name}</h5>
-                                <p>Email: ${referral.email}</p>
-                                <p>Status: ${referral.status}</p>
-                                <p>Phone: ${referral.phone}</p>
-                                ${referral.referrals.length > 1 ? `<p>Multiple Applications</p>` : ''}
-                                <button class="btn btn-primary remind-btn" data-phone="${referral.phone}" data-name="${referral.name}">
-                                    <i class="fab fa-whatsapp me-2"></i> Send Reminder
-                                </button>
-                            </div>
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Referrals</h5>
+                            <h3 class="text-primary">${referrals.length}</h3>
                         </div>
                     </div>
-                `).join('')}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card hired">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Hired</h5>
+                            <h3 class="text-success">${hiredCount}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card progress">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">In Progress</h5>
+                            <h3 class="text-warning">${inProgressCount}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Distribution Chart -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3">Status Distribution</h5>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Earnings Table -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3">Your Earnings</h5>
+                    <div class="table-responsive">
+                        <table class="earnings-table">
+                            <thead>
+                                <tr>
+                                    <th>Stage</th>
+                                    <th>Amount (RM)</th>
+                                    <th>Count</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="earnings-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">Total Earnings</th>
+                                    <th id="total-earnings">RM 0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reminder Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3">Remind Your Friends</h5>
+                    <div id="friends-to-remind" class="row"></div>
+                </div>
+            </div>
+
+            <!-- Referral List -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">All Referrals</h5>
+                    <div id="referral-list"></div>
+                </div>
+            </div>
+
+            <!-- Status Guide moved to end -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">Status Guide & Payment Information</h5>
+                    <div id="status-guide-content"></div>
+                </div>
             </div>
         `;
     }
 
-    // Handle WhatsApp reminder functionality
-    function handleReminderClick(e) {
-        const button = e.target.closest('.remind-btn');
-        const phone = button.dataset.phone;
-        const name = button.dataset.name;
-        const lang = AppState.currentLanguage;
-        const message = `Hi ${name}, please complete your assessment for TP by clicking the link in your email.`;
+// Handle WhatsApp reminders with professional message
+function handleReminderClick(e) {
+    const button = e.target.closest('.remind-btn');
+    if (!button) return;
 
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
-    }
+    const name = button.dataset.name;
+    const phone = button.dataset.phone;
+    const lang = button.dataset.lang || AppState.currentLanguage;
+    if (!phone) return;
 
-    // Update translations
-    function updateTranslations() {
-        const lang = AppState.currentLanguage;
-        const t = translations[lang] || translations.en;
+    // Format phone for WhatsApp
+    const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
 
-        document.querySelectorAll('[data-translate]').forEach(el => {
-            const key = el.getAttribute('data-translate');
-            if (t[key]) {
-                el.textContent = t[key];
+    // Professional messages in different languages
+    const messages = {
+        en: `Hello ${name},\n\nI hope this message finds you well. This is a friendly reminder regarding your application to tp.\n\nWe noticed that you haven't completed your assessment yet. Please check your personal email for the assessment link that was sent to you.\n\nCompleting the assessment is an important step in your application process. If you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTP Recruitment Team`,
+        
+        ja: `${name}様\n\nお世話になっております。テレパフォーマンスへのご応募に関するリマインダーです。\n\nまだアセスメントを完了されていないようです。個人のメールアドレスに送信されたアセスメントのリンクをご確認ください。\n\nアセスメントの完了は、応募プロセスの重要なステップです。ご不明な点がございましたら、お気軽にお問い合わせください。\n\nよろしくお願いいたします。\nTP採用チーム`,
+
+        ko: `안녕하세요 ${name}님,\n\n텔레퍼포먼스 지원과 관련하여 안내 드립니다.\n\n아직 평가를 완료하지 않으신 것으로 확인됩니다. 개인 이메일로 발송된 평가 링크를 확인해 주시기 바랍니다.\n\n평가 완료는 지원 과정에서 중요한 단계입니다. 궁금한 점이 있으시면 언제든지 문의해 주세요.\n\n감사합니다.\nTP 채용팀`,
+
+        "zh-CN": `${name} 您好，\n\n这是关于您申请tp的友好提醒。\n\n我们注意到您还没有完成评估。请查看您的个人邮箱中发送的评估链接。\n\n完成评估是申请过程中的重要步骤。如果您有任何问题或需要帮助，请随时与我们联系。\n\n祝好，\nTP招聘团队`,
+
+        "zh-HK": `${name} 您好，\n\n這是關於您申請tp的友好提醒。\n\n我們注意到您還沒有完成評估。請查看您的個人郵箱中發送的評估鏈接。\n\n完成評估是申請過程中的重要步驟。如果您有任何問題或需要幫助，請隨時與我們聯繫。\n\n祝好，\nTP招聘團隊`
+    };
+
+    // Get the message for the selected language or fallback to English
+    const message = messages[lang] || messages.en;
+
+    // Open WhatsApp with the formatted phone number and message
+    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+}
+    // Update status chart
+    function updateChart(referrals) {
+        const ctx = document.getElementById('statusChart')?.getContext('2d');
+        if (!ctx) return;
+
+        // Destroy previous chart
+        if (AppState.statusChart) {
+            AppState.statusChart.destroy();
+        }
+
+        const counts = {};
+        StatusMapping.displayOrder.forEach(status => {
+            counts[status] = referrals.filter(r => r.mappedStatus === status).length;
+        });
+
+        const colors = [
+            '#0087FF', // Application Received - blue
+            '#00d769', // Assessment Stage - green flash
+            '#f5d200', // Hired (Probation) - yellow
+            '#84c98b', // Hired (Confirmed) - green
+            '#676767', // Previously Applied (No Payment) - gray
+            '#dc3545'  // Not Selected - red
+        ];
+
+        AppState.statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: StatusMapping.displayOrder,
+                datasets: [{
+                    data: StatusMapping.displayOrder.map(status => counts[status] || 0),
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
-    // Show non-blocking error
-    function showNonBlockingError(message) {
-        const alertContainer = document.getElementById('alert-container');
-        const alertId = 'alert-' + Date.now();
+    // Update earnings table with new logic
+    function updateEarningsTable(referrals) {
+        const earningsBody = document.getElementById('earnings-body');
+        if (!earningsBody) return;
 
-        const alert = document.createElement('div');
-        alert.id = alertId;
-        alert.className = 'alert alert-warning alert-dismissible fade show';
-        alert.setAttribute('role', 'alert');
-        alert.innerHTML = `
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        // Calculate eligible candidates
+        const assessmentPassed = referrals.filter(r => r.isEligibleForAssessmentPayment).length;
+        const probationCompleted = referrals.filter(r => r.isEligibleForProbationPayment).length;
+
+        // Calculate earnings
+        const assessmentEarnings = assessmentPassed * 50;
+        const probationEarnings = probationCompleted * 750;
+        const totalEarnings = assessmentEarnings + probationEarnings;
+
+        earningsBody.innerHTML = `
+            <tr>
+                <td>Assessment Passed (Score ≥ 70%)</td>
+                <td>RM 50</td>
+                <td>${assessmentPassed}</td>
+                <td>RM ${assessmentEarnings}</td>
+            </tr>
+            <tr>
+                <td>Probation Completed (90 days)</td>
+                <td>RM 750</td>
+                <td>${probationCompleted}</td>
+                <td>RM ${probationEarnings}</td>
+            </tr>
         `;
+        document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
+    }
 
-        alertContainer.appendChild(alert);
+    // Update reminder section
+    function updateReminderSection(referrals) {
+        const container = document.getElementById('friends-to-remind');
+        if (!container) return;
 
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            const alertEl = document.getElementById(alertId);
-            if (alertEl) {
-                alertEl.classList.remove('show');
-                setTimeout(() => alertEl.remove(), 150);
-            }
-        }, 5000);
+        const friendsToRemind = referrals.filter(r => r.mappedStatus === 'Application Received' && r.phone);
+
+        if (friendsToRemind.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <p class="text-muted">All your friends are on track!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = '';
+        friendsToRemind.forEach(friend => {
+            container.innerHTML += `
+                <div class="col-md-6 mb-3">
+                    <div class="friend-to-remind">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5>${friend.name}</h5>
+                            <span class="badge bg-${friend.statusType}">${friend.mappedStatus}</span>
+                        </div>
+                        <p class="small mb-1">${friend.email}</p>
+                        <p class="small mb-2">Days in Stage: ${friend.daysInStage}</p>
+                        <button class="btn btn-primary w-100 remind-btn" 
+                            data-name="${friend.name}" 
+                            data-phone="${friend.phone}" 
+                            data-lang="${AppState.currentLanguage}">
+                            <i class="fab fa-whatsapp me-2"></i>Send Reminder
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // Update referral list
+    function updateReferralList(referrals) {
+        const container = document.getElementById('referral-list');
+        if (!container) return;
+
+        if (referrals.length === 0) {
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-body text-center py-5 empty-state">
+                        <i class="fas fa-users empty-state-icon"></i>
+                        <h4>No referrals found yet</h4>
+                        <p>Start referring friends to see them appear here!</p>
+                        <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">Refer a Friend</a>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = '<h5 class="mb-3">All Referrals</h5>';
+
+        // Sort referrals by status order
+        const sortedReferrals = [...referrals].sort((a, b) => {
+            const aIndex = StatusMapping.displayOrder.indexOf(a.mappedStatus);
+            const bIndex = StatusMapping.displayOrder.indexOf(b.mappedStatus);
+            return aIndex - bIndex;
+        });
+
+        sortedReferrals.forEach(ref => {
+            const assessmentInfo = ref.assessment ? 
+                `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">
+                    Score: ${ref.assessmentScore}%
+                </span>` : '';
+
+            container.innerHTML += `
+                <div class="card referral-card status-${ref.statusType} mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5>${ref.name}</h5>
+                                <p class="small text-muted mb-1">${ref.email}</p>
+                                ${ref.personId ? `<p class="small text-muted">ID: ${ref.personId}</p>` : ''}
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${ref.statusType}">${ref.mappedStatus}</span>
+                                ${assessmentInfo}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <small class="text-muted">Stage</small>
+                                <p>${ref.stage}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Location</small>
+                                <p>${ref.location || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Days in Stage</small>
+                                <p>${ref.daysInStage}</p>
+                            </div>
+                            <div class="col-md-3">
+                                ${ref.needsAction && ref.phone ? `
+                                    <button class="btn btn-sm btn-success w-100 remind-btn" 
+                                        data-name="${ref.name}" 
+                                        data-phone="${ref.phone}">
+                                        <i class="fab fa-whatsapp me-2"></i> Remind
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <span>Source</span>: ${ref.source || 'N/A'} |
+                                <span>Status Details</span>: ${ref.status}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // Update status guide section
+    function updateStatusGuide() {
+        const container = document.getElementById('status-guide-content');
+        if (!container) return;
+
+        const t = translations[AppState.currentLanguage];
+
+        container.innerHTML = `
+            <div class="row">
+                <!-- Status Examples -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Status Examples</h6>
+                    <div class="status-examples">
+                        ${statusExamples.map(example => {
+                            // Get the correct status type for coloring
+                            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
+                            if (example.status === "Hired (Confirmed)") statusType = 'passed';
+                            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
+
+                            return `
+                                <div class="status-example">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+                                        <span class="badge bg-${statusType}">
+                                            ${example.status}
+                                        </span>
+                                    </div>
+                                    <p class="mb-1 mt-2 small">${example.description}</p>
+                                    <small class="text-muted">${example.action}</small>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Payment Conditions -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Payment Conditions</h6>
+                    <div class="table-responsive">
+                        <table class="table status-guide-table">
+                            <thead>
+                                <tr>
+                                    <th>Stage</th>
+                                    <th>Condition</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(earningsStructure).map(([key, value]) => `
+                                    <tr>
+                                        <td>${value.label}</td>
+                                        <td>${value.condition}</td>
+                                        <td><strong>${value.payment}</strong></td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td>Previously Applied</td>
+                                    <td>No payment eligible</td>
+                                    <td><strong>No Payment</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="payment-notes mt-3">
+                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
+                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
+                        <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     // Initialize the app
     initializeApp();
+
+    // Expose state for debugging
+    window.AppState = AppState;
 });
