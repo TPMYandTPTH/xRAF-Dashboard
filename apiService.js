@@ -1,5 +1,4 @@
-// API Service Module - Power Automate Integration
-const ApiService = (function() {
+const ApiService = (function () {
     const POWER_AUTOMATE_URL = 'https://prod-77.southeastasia.logic.azure.com:443/workflows/3dcf20be6af641a4b49eb48727473a47/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=uVigg-lTLRaUgLgUdGUnqCt9-TWJC7E7c8ryTjLC0Hw';
 
     // Field mappings for SharePoint data
@@ -30,6 +29,7 @@ const ApiService = (function() {
 
     // Process individual referral data
     function processReferralData(item) {
+        // Extract all fields using mappings
         const id = getFieldValue(item, FIELD_MAPPINGS.id);
         const name = getFieldValue(item, FIELD_MAPPINGS.name) || 'Unknown';
         const email = getFieldValue(item, FIELD_MAPPINGS.email);
@@ -42,93 +42,130 @@ const ApiService = (function() {
         const referrerEmail = getFieldValue(item, FIELD_MAPPINGS.referrerEmail);
         const created = getFieldValue(item, FIELD_MAPPINGS.created) || new Date().toISOString();
         const modified = getFieldValue(item, FIELD_MAPPINGS.modified) || created;
-        
+
+        // Return standardized referral object
         return {
-            Person_system_id: id.toString(),
-            personId: id.toString(),
-            First_Name: name,
+            id: id.toString(),
             name: name,
-            Email: email,
             email: email,
-            Employee: phone,
-            employee: phone,
             phone: phone,
-            Status: status,
             status: status,
-            Location: location,
             location: location,
-            F_Nationality: nationality,
             nationality: nationality,
-            Source: source,
             source: source,
-            SourceName: source,
-            sourceName: source,
             referrerPhone: referrerPhone,
             referrerEmail: referrerEmail,
-            CreatedDate: created,
             createdDate: created,
-            UpdatedDate: modified,
             updatedDate: modified,
-            applicationDate: created,
-            assessment: null,
-            _original: item
+            _original: item // Keep original item data for debugging
         };
     }
 
     // Extract referrals from various possible response formats
     function extractReferralsFromResponse(data) {
         if (Array.isArray(data)) {
+            console.log('Response is direct array');
             return data;
         }
+
         if (data.referrals && Array.isArray(data.referrals)) {
+            console.log('Response has referrals property');
             return data.referrals;
         }
+
         if (data.value && Array.isArray(data.value)) {
+            console.log('Response has value property (SharePoint style)');
             return data.value;
         }
+
         if (data.d && data.d.results && Array.isArray(data.d.results)) {
+            console.log('Response has d.results property (SharePoint odata style)');
             return data.d.results;
         }
+
         if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+            console.log('Response is single object, wrapping in array');
             return [data];
         }
+
+        console.log('Could not extract referrals from response format');
         return [];
     }
 
     // Main function to fetch referrals
     async function fetchReferrals(phone, email) {
+        console.log('=== Starting fetchReferrals ===');
+        console.log('Phone:', phone);
+        console.log('Email:', email);
+
         try {
             const response = await fetch(POWER_AUTOMATE_URL, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({ phone, email })
             });
-            
+
             if (!response.ok) {
-                throw new Error(`Power Automate Error: ${response.status}`);
+                const errorText = await response.text();
+                console.error(`Power Automate Error: ${response.status} - ${errorText}`);
+                throw new Error(`Power Automate Error: ${response.status} - ${errorText}`);
             }
 
             const responseText = await response.text();
+            console.log('Raw response:', responseText.substring(0, 200) + '...');
+
             let data;
             try {
                 data = JSON.parse(responseText);
             } catch (parseError) {
+                console.error('Failed to parse JSON:', parseError);
                 throw new Error('Invalid JSON response from Power Automate');
             }
 
+            // Extract referrals from response
             let referrals = extractReferralsFromResponse(data);
-            const processedReferrals = referrals.map((item, index) => processReferralData(item));
+            console.log(`Found ${referrals.length} referrals`);
 
-            return processedReferrals;
+            // Process each referral
+            return referrals.map((item, index) => processReferralData(item));
         } catch (error) {
+            console.error('Error fetching referrals:', error);
             return [];
         }
     }
 
-    return { 
-        fetchReferrals
+    // Test connectivity
+    async function testConnection() {
+        console.log('=== Testing Power Automate Connection ===');
+
+        try {
+            const response = await fetch(POWER_AUTOMATE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: 'test', email: 'test@test.com' })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Test connection failed:', errorText);
+                throw new Error('Connection failed');
+            }
+
+            const data = await response.json();
+            console.log('Connection successful:', data);
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Test connection error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Public API
+    return {
+        fetchReferrals,
+        testConnection
     };
 })();
