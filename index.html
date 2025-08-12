@@ -11,18 +11,17 @@
 </head>
 <body>
     <div id="alert-container"></div>
-
+    
     <div class="container py-4">
-        <!-- Logo Centered -->
         <div class="text-center mb-4">
-            <img src="TPLogo11.png" alt="TP Logo" class="logo mx-auto d-block">
+            <img src="TPLogo11.png" alt="TP Logo" class="logo">
         </div>
 
         <!-- Language Selection -->
         <div class="row justify-content-end mb-3">
             <div class="col-md-3">
                 <div class="mb-3">
-                    <label for="lang-select" class="form-label">Choose Your Language:</label>
+                    <label for="lang-select" class="form-label" data-translate="pageLangLabel">Choose Your Language:</label>
                     <select class="form-select" id="lang-select">
                         <option value="en">English</option>
                         <option value="ja">日本語</option>
@@ -38,25 +37,25 @@
         <div id="auth-step">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="card-title text-center">TP External RAF Dashboard</h2>
-                    <p class="card-text text-center mb-4">Enter your details to view your referral status</p>
-
+                    <h2 class="card-title text-center" data-translate="dashboardTitle">TP External RAF Dashboard</h2>
+                    <p class="card-text text-center mb-4" data-translate="dashboardSubtitle">Enter your details to view your referral status</p>
+                    
                     <form id="dashboard-form">
                         <div class="mb-3">
-                            <label for="dashboard-phone" class="form-label">Phone Number:</label>
-                            <input type="tel" class="form-control" id="dashboard-phone" placeholder="Enter your phone number (01XXXXXXXX)" required>
-                            <div class="invalid-feedback">Please provide a valid phone number (01XXXXXXXX).</div>
+                            <label for="dashboard-phone" class="form-label" data-translate="phoneLabel">Phone Number:</label>
+                            <input type="tel" class="form-control" id="dashboard-phone" placeholder="Enter your phone number (01XXXXXXXX)" data-translate-placeholder="phonePlaceholder" required>
+                            <div class="invalid-feedback" data-translate="phoneError">Please provide a valid phone number (01XXXXXXXX).</div>
                         </div>
-
+                        
                         <div class="mb-3">
-                            <label for="dashboard-email" class="form-label">Email Address:</label>
-                            <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" required>
-                            <div class="invalid-feedback">Please provide a valid email address.</div>
+                            <label for="dashboard-email" class="form-label" data-translate="emailLabel">Email Address:</label>
+                            <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" data-translate-placeholder="emailPlaceholder" required>
+                            <div class="invalid-feedback" data-translate="emailError">Please provide a valid email address.</div>
                         </div>
-
+                        
                         <div class="d-grid gap-2">
-                            <button type="button" id="dashboard-submit" class="btn btn-primary">View Referral Status</button>
-                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary">Back to Referral Form</a>
+                            <button type="button" id="dashboard-submit" class="btn btn-primary" data-translate="viewStatusBtn">View Referral Status</button>
+                            <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">Back to Referral Form</a>
                         </div>
                     </form>
                 </div>
@@ -65,7 +64,10 @@
             <!-- Email Contact Section -->
             <div class="card mb-4">
                 <div class="card-body text-center">
-                    <p class="mb-0">Email us at: <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a></p>
+                    <p class="mb-0">
+                        <span data-translate="contactUsText">Email us at:</span>
+                        <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a>
+                    </p>
                 </div>
             </div>
         </div>
@@ -95,7 +97,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Payment Terms & Conditions</h5>
+                    <h5 class="modal-title" data-translate="paymentTermsTitle">Payment Terms & Conditions</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -124,14 +126,14 @@
                             <ul class="small">
                                 <li>Payments via TnG eWallet only</li>
                                 <li>No payment for previously applied candidates</li>
-                                <li>Must NOT be an active TP employee</li>
+                                <li>Must be active TP employee at payment time</li>
                                 <li>Processing within 30 days after verification</li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="closeBtn">Close</button>
                 </div>
             </div>
         </div>
