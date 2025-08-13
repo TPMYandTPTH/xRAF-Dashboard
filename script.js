@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('API returned:', apiData);
             
             // Process and store referrals
-            AppState.currentReferralsData = processReferrals(apiData);
+            AppState.currentReferralsData = (apiData);
             console.log('Processed referrals:', AppState.currentReferralsData);
             
             // Always show dashboard
@@ -85,163 +85,163 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Process API response with consolidated duplicates
-    function processReferrals(apiData) {
-        console.log('Processing referrals data:', apiData);
-        if (!Array.isArray(apiData)) {
-            console.log('API data is not an array:', typeof apiData);
-            return [];
+function processReferrals(apiData) {
+    console.log('Processing referrals data:', apiData);
+    if (!Array.isArray(apiData)) {
+        console.log('API data is not an array:', typeof apiData);
+        return [];
+    }
+    
+    console.log(`Processing ${apiData.length} referrals`);
+    
+    const processed = apiData.map(item => {
+        // Parse dates
+        const parseDate = (dateStr) => {
+            if (!dateStr) return new Date();
+            // Handle various date formats
+            if (dateStr.includes('/')) {
+                const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
+                return new Date(year, month - 1, day);
+            }
+            return new Date(dateStr);
+        };
+        
+        const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
+        const createdDate = parseDate(item.CreatedDate || item.createdDate);
+        const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
+        
+        // Get status and source
+        const rawStatus = (item.Status || item.status || 'Application Received').trim();
+        const source = (item.Source || item.source || item.SourceName || '').toLowerCase();
+        
+        console.log('Processing item:', {
+            rawStatus,
+            source,
+            name: item.First_Name || item.name,
+            phone: item.Employee || item.phone
+        });
+        
+        // Check if xRAF referral
+        const isXRAF = source.includes('xraf') || source.includes('employee referral');
+        
+        // Get assessment result if available
+        const assessment = item.assessment || null;
+        
+        // Map status based on comprehensive lists
+        let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment);
+        
+        console.log('Mapped status result:', {
+            rawStatus,
+            mappedStatus,
+            isXRAF
+        });
+        
+        // Override if not xRAF
+        if (!isXRAF) {
+            mappedStatus = 'Previously Applied (No Payment)';
+            console.log('Overridden to Previously Applied (not xRAF)');
         }
         
-        console.log(`Processing ${apiData.length} referrals`);
+        // Special case: if status indicates hired and has been more than 90 days
+        if (mappedStatus === 'Hired (Probation)' && daysInStage >= 90) {
+            mappedStatus = 'Hired (Confirmed)';
+        }
         
-        const processed = apiData.map(item => {
-            // Parse dates
-            const parseDate = (dateStr) => {
-                if (!dateStr) return new Date();
-                // Handle various date formats
-                if (dateStr.includes('/')) {
-                    const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
-                    return new Date(year, month - 1, day);
-                }
-                return new Date(dateStr);
+        if (mappedStatus === 'Previously Applied (No Payment)') {
+            statusType = 'previous';
+        } else {
+            statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
+        }
+        const stage = StatusMapping.determineStage(rawStatus, assessment);
+        
+        // WhatsApp FIX: Only for "Application Received" status with phone
+        const needsAction = rawStatus === 'Application Received' && (item.Employee || item.phone);
+        
+        return {
+            // IDs
+            id: item.Person_system_id || item.personId || item.ID,
+            personId: item.Person_system_id || item.personId || item.ID,
+            
+            // Contact info
+            name: item.First_Name || item.name || 'Unknown',
+            email: item.Email || item.email || '',
+            phone: item.Employee || item.phone || '',
+            
+            // Status info
+            status: rawStatus, // Keep original status for WhatsApp check
+            mappedStatus: mappedStatus,
+            statusType: statusType,
+            stage: stage,
+            
+            // Source and eligibility
+            source: item.Source || item.source || '',
+            isXRAF: isXRAF,
+            isPreviousCandidate: !isXRAF,
+            
+            // Assessment info
+            assessment: assessment,
+            hasPassedAssessment: assessment && assessment.score >= 70,
+            assessmentScore: assessment ? assessment.score : null,
+            assessmentDate: assessment ? assessment.date : null,
+            
+            // Location info
+            location: item.Location || item.location || '',
+            nationality: item.F_Nationality || item.nationality || '',
+            
+            // Dates
+            createdDate: createdDate,
+            updatedDate: updatedDate,
+            daysInStage: daysInStage,
+            
+            // ACTION FLAG CORRECTED: Use raw status and phone presence
+            needsAction: needsAction,
+            
+            // Payment eligibility (without assessment data, base on status only)
+            isEligibleForAssessmentPayment: isXRAF && (
+                mappedStatus === 'Assessment Stage' || 
+                mappedStatus === 'Hired (Probation)' || 
+                mappedStatus === 'Hired (Confirmed)'
+            ),
+            isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+            
+            // Original data
+            _original: item
+        };
+    });
+    
+    // Consolidate duplicates by email
+    const consolidated = {};
+    processed.forEach(ref => {
+        if (!ref.email) {
+            // Handle cases without email - create unique key
+            const uniqueKey = ref.id || `${ref.name}-${Date.now()}-${Math.random()}`;
+            consolidated[uniqueKey] = {
+                ...ref,
+                applications: [ref]
             };
-            
-            const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
-            const createdDate = parseDate(item.CreatedDate || item.createdDate);
-            const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
-            
-            // Get status and source
-            const rawStatus = (item.Status || item.status || 'Application Received').trim();
-            const source = (item.Source || item.source || item.SourceName || '').toLowerCase();
-            
-            console.log('Processing item:', {
-                rawStatus,
-                source,
-                name: item.First_Name || item.name,
-                phone: item.Employee || item.phone
-            });
-            
-            // Check if xRAF referral
-            const isXRAF = source.includes('xraf') || source.includes('employee referral');
-            
-            // Get assessment result if available
-            const assessment = item.assessment || null;
-            
-            // Map status based on comprehensive lists
-            let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment);
-            
-            console.log('Mapped status result:', {
-                rawStatus,
-                mappedStatus,
-                isXRAF
-            });
-            
-            // Override if not xRAF
-            if (!isXRAF) {
-                mappedStatus = 'Previously Applied (No Payment)';
-                console.log('Overridden to Previously Applied (not xRAF)');
-            }
-            
-            // Special case: if status indicates hired and has been more than 90 days
-            if (mappedStatus === 'Hired (Probation)' && daysInStage >= 90) {
-                mappedStatus = 'Hired (Confirmed)';
-            }
-            
-            if (mappedStatus === 'Previously Applied (No Payment)') {
-                statusType = 'previous';
-            } else {
-                statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
-            }
-            const stage = StatusMapping.determineStage(rawStatus, assessment);
-            
-            // Check if needs reminder (only Application Received status)
-            const needsAction = mappedStatus === 'Application Received' && daysInStage > 3;
-            
-            return {
-                // IDs
-                id: item.Person_system_id || item.personId || item.ID,
-                personId: item.Person_system_id || item.personId || item.ID,
-                
-                // Contact info
-                name: item.First_Name || item.name || 'Unknown',
-                email: item.Email || item.email || '',
-                phone: item.Employee || item.phone || '',
-                
-                // Status info
-                status: rawStatus,
-                mappedStatus: mappedStatus,
-                statusType: statusType,
-                stage: stage,
-                
-                // Source and eligibility
-                source: item.Source || item.source || '',
-                isXRAF: isXRAF,
-                isPreviousCandidate: !isXRAF,
-                
-                // Assessment info
-                assessment: assessment,
-                hasPassedAssessment: assessment && assessment.score >= 70,
-                assessmentScore: assessment ? assessment.score : null,
-                assessmentDate: assessment ? assessment.date : null,
-                
-                // Location info
-                location: item.Location || item.location || '',
-                nationality: item.F_Nationality || item.nationality || '',
-                
-                // Dates
-                createdDate: createdDate,
-                updatedDate: updatedDate,
-                daysInStage: daysInStage,
-                
-                // Action flags
-                needsAction: needsAction,
-                
-                // Payment eligibility (without assessment data, base on status only)
-                isEligibleForAssessmentPayment: isXRAF && (
-                    mappedStatus === 'Assessment Stage' || 
-                    mappedStatus === 'Hired (Probation)' || 
-                    mappedStatus === 'Hired (Confirmed)'
-                ),
-                isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
-                
-                // Original data
-                _original: item
+            return;
+        }
+        
+        if (!consolidated[ref.email]) {
+            consolidated[ref.email] = {
+                ...ref,
+                applications: [ref]
             };
-        });
-        
-        // Consolidate duplicates by email
-        const consolidated = {};
-        processed.forEach(ref => {
-            if (!ref.email) {
-                // Handle cases without email - create unique key
-                const uniqueKey = ref.id || `${ref.name}-${Date.now()}-${Math.random()}`;
-                consolidated[uniqueKey] = {
-                    ...ref,
-                    applications: [ref]
-                };
-                return;
+        } else {
+            consolidated[ref.email].applications.push(ref);
+            // Update main record with latest info
+            if (ref.updatedDate > consolidated[ref.email].updatedDate) {
+                const existingApplications = consolidated[ref.email].applications;
+                Object.assign(consolidated[ref.email], ref);
+                consolidated[ref.email].applications = existingApplications;
             }
-            
-            if (!consolidated[ref.email]) {
-                consolidated[ref.email] = {
-                    ...ref,
-                    applications: [ref]
-                };
-            } else {
-                consolidated[ref.email].applications.push(ref);
-                // Update main record with latest info
-                if (ref.updatedDate > consolidated[ref.email].updatedDate) {
-                    const existingApplications = consolidated[ref.email].applications;
-                    Object.assign(consolidated[ref.email], ref);
-                    consolidated[ref.email].applications = existingApplications;
-                }
-            }
-        });
-        
-        const result = Object.values(consolidated);
-        console.log(`Returning ${result.length} consolidated referrals:`, result);
-        return result;
-    }
+        }
+    });
+    
+    const result = Object.values(consolidated);
+    console.log(`Returning ${result.length} consolidated referrals:`, result);
+    return result;
+}
     
     // Validate form inputs
     function validateInputs(phone, email) {
@@ -628,57 +628,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Update reminder section
-    function updateReminderSection(referrals) {
-        const container = document.getElementById('friends-to-remind');
-        if (!container) return;
-        
-        console.log('Updating reminder section with referrals:', referrals);
-        
-        // Filter friends needing reminder (Application Received status with phone - no day limit)
-        const friendsToRemind = referrals.filter(r => {
-            const shouldRemind = r.mappedStatus === 'Application Received' && r.phone;
-            console.log('Checking reminder for:', {
-                name: r.name,
-                mappedStatus: r.mappedStatus,
-                phone: r.phone,
-                shouldRemind
-            });
-            return shouldRemind;
-        });
-        
-        console.log('Friends to remind:', friendsToRemind);
-        
-        if (friendsToRemind.length === 0) {
-            container.innerHTML = `
-                <div class="col-12 text-center">
-                    <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = friendsToRemind.map(friend => `
-            <div class="col-md-6 mb-3">
-                <div class="friend-to-remind">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5>${friend.name}</h5>
-                        <span class="badge bg-${friend.statusType} status-badge">${friend.mappedStatus}</span>
-                    </div>
-                    <p class="small mb-1">${friend.email}</p>
-                    <p class="small mb-2"><span data-translate="referralDays">Days in Stage</span>: ${friend.daysInStage}</p>
-                    <button class="btn btn-primary w-100 remind-btn" 
-                        data-name="${friend.name}" 
-                        data-phone="${friend.phone}"
-                        data-lang="${AppState.currentLanguage}">
-                        <i class="fab fa-whatsapp me-2"></i>
-                        <span data-translate="remindBtn">Send Reminder</span>
-                    </button>
-                </div>
+function updateReminderSection(referrals) {
+    const container = document.getElementById('friends-to-remind');
+    if (!container) return;
+    
+    console.log('Updating reminder section with referrals:', referrals);
+    
+    // CORRECTED FILTER: Use needsAction flag which is based on raw status
+    const friendsToRemind = referrals.filter(r => r.needsAction);
+    
+    console.log('Friends to remind:', friendsToRemind);
+    
+    if (friendsToRemind.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center">
+                <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
             </div>
-        `).join('');
-        
-        console.log('Reminder section HTML updated');
+        `;
+        return;
     }
+    
+    container.innerHTML = friendsToRemind.map(friend => `
+        <div class="col-md-6 mb-3">
+            <div class="friend-to-remind">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5>${friend.name}</h5>
+                    <span class="badge bg-${friend.statusType} status-badge">${friend.mappedStatus}</span>
+                </div>
+                <p class="small mb-1">${friend.email}</p>
+                <p class="small mb-2"><span data-translate="referralDays">Days in Stage</span>: ${friend.daysInStage}</p>
+                <button class="btn btn-primary w-100 remind-btn" 
+                    data-name="${friend.name}" 
+                    data-phone="${friend.phone}"
+                    data-lang="${AppState.currentLanguage}">
+                    <i class="fab fa-whatsapp me-2"></i>
+                    <span data-translate="remindBtn">Send Reminder</span>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    console.log('Reminder section HTML updated');
+}        
     
     // Update referral list with consolidated duplicates
     function updateReferralList(referrals) {
