@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        debugMode: false // Set to true for debugging
+        debugMode: true // Set to true for debugging
     };
     
     // Initialize application
@@ -62,10 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Fetch referrals from API
+            console.log('Fetching referrals for:', phone, email);
             const apiData = await ApiService.fetchReferrals(phone, email);
+            console.log('API returned:', apiData);
             
             // Process and store referrals
             AppState.currentReferralsData = processReferrals(apiData);
+            console.log('Processed referrals:', AppState.currentReferralsData);
             
             // Always show dashboard
             showReferralResults(AppState.currentReferralsData);
@@ -83,7 +86,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Process API response with consolidated duplicates
     function processReferrals(apiData) {
-        if (!Array.isArray(apiData)) return [];
+        console.log('Processing referrals data:', apiData);
+        if (!Array.isArray(apiData)) {
+            console.log('API data is not an array:', typeof apiData);
+            return [];
+        }
+        
+        console.log(`Processing ${apiData.length} referrals`);
         
         const processed = apiData.map(item => {
             // Parse dates
@@ -124,11 +133,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 mappedStatus = 'Hired (Confirmed)';
             }
             
-            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
+            if (mappedStatus === 'Previously Applied (No Payment)') {
+                statusType = 'previous';
+            } else {
+                statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
+            }
             const stage = StatusMapping.determineStage(rawStatus, assessment);
             
-            // Check if needs reminder (Application Received status with phone)
-            const needsAction = mappedStatus === 'Application Received' && phone;
+            // Check if needs reminder (only Application Received status)
+            const needsAction = mappedStatus === 'Application Received' && daysInStage > 3;
             
             return {
                 // IDs
@@ -185,7 +198,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Consolidate duplicates by email
         const consolidated = {};
         processed.forEach(ref => {
-            if (!ref.email) return;
+            if (!ref.email) {
+                // Handle cases without email - create unique key
+                const uniqueKey = ref.id || `${ref.name}-${Date.now()}-${Math.random()}`;
+                consolidated[uniqueKey] = {
+                    ...ref,
+                    applications: [ref]
+                };
+                return;
+            }
             
             if (!consolidated[ref.email]) {
                 consolidated[ref.email] = {
@@ -196,13 +217,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 consolidated[ref.email].applications.push(ref);
                 // Update main record with latest info
                 if (ref.updatedDate > consolidated[ref.email].updatedDate) {
+                    const existingApplications = consolidated[ref.email].applications;
                     Object.assign(consolidated[ref.email], ref);
-                    consolidated[ref.email].applications = consolidated[ref.email].applications || [];
+                    consolidated[ref.email].applications = existingApplications;
                 }
             }
         });
         
-        return Object.values(consolidated);
+        const result = Object.values(consolidated);
+        console.log(`Returning ${result.length} consolidated referrals:`, result);
+        return result;
     }
     
     // Validate form inputs
@@ -267,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show results dashboard
     function showReferralResults(referrals) {
+        console.log('Showing results for referrals:', referrals);
         document.getElementById('auth-step').style.display = 'none';
         const resultsStep = document.getElementById('results-step');
         resultsStep.style.display = 'block';
@@ -578,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
-        // Filter friends needing reminder (Application Received status with phone)
+        // Filter friends needing reminder (Application Received status with phone - no day limit)
         const friendsToRemind = referrals.filter(r => 
             r.mappedStatus === 'Application Received' && r.phone
         );
@@ -691,10 +716,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p class="mb-1">${ref.daysInStage}</p>
                             </div>
                             <div class="col-md-3">
-                                ${(ref.mappedStatus === 'Application Received' && ref.phone) ? `
+                                ${ref.mappedStatus === 'Application Received' && ref.phone ? `
                                     <button class="btn btn-sm btn-success w-100 remind-btn" 
                                         data-name="${ref.name}" 
-                                        data-phone="${ref.phone}">
+                                        data-phone="${ref.phone}"
+                                        data-lang="${AppState.currentLanguage}">
                                         <i class="fab fa-whatsapp me-1"></i>
                                         <span data-translate="remindBtn">Remind</span>
                                     </button>
