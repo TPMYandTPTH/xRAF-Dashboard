@@ -312,9 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const inProgressCount = referrals.filter(r => 
             r.mappedStatus === 'Application Received' || 
-            r.mappedStatus === 'Assessment Stage' ||
-            r.mappedStatus === 'Interview Stage' ||
-            r.mappedStatus === 'Final Review'
+            r.mappedStatus === 'Pass Assessment'
         ).length;
         
         const userName = document.getElementById('dashboard-email').value.split('@')[0];
@@ -511,12 +509,10 @@ document.addEventListener('DOMContentLoaded', function() {
             counts[status] = referrals.filter(r => r.mappedStatus === status).length;
         });
         
-        // Chart colors - matching the 8 status categories
+        // Chart colors - updated for 6 status structure
         const colors = [
             '#0087FF',  // Application Received - blue
-            '#00d769',  // Assessment Stage - green flash  
-            '#00d769',  // Interview Stage - green flash
-            '#00d769',  // Final Review - green flash
+            '#00d769',  // Pass Assessment - green flash
             '#f5d200',  // Hired (Probation) - yellow
             '#28a745',  // Hired (Confirmed) - green
             '#676767',  // Previously Applied (No Payment) - gray
