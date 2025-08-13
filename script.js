@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Contact info
                 name: item.First_Name || item.name || 'Unknown',
                 email: item.Email || item.email || '',
-                phone: item.Employee || item.phone || '',
+                phone: phone,
                 
                 // Status info
                 status: rawStatus,
@@ -181,10 +181,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Action flags
                 needsAction: needsAction,
+                canRemind: canRemind,
                 
-                // Payment eligibility (without assessment data, base on status only)
+                // Payment eligibility (with new assessment logic)
                 isEligibleForAssessmentPayment: isXRAF && (
                     mappedStatus === 'Assessment Stage' || 
+                    mappedStatus === 'Interview Stage' ||
+                    mappedStatus === 'Final Review' ||
                     mappedStatus === 'Hired (Probation)' || 
                     mappedStatus === 'Hired (Confirmed)'
                 ),
@@ -316,7 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const inProgressCount = referrals.filter(r => 
             r.mappedStatus === 'Application Received' || 
-            r.mappedStatus === 'Assessment Stage'
+            r.mappedStatus === 'Assessment Stage' ||
+            r.mappedStatus === 'Interview Stage' ||
+            r.mappedStatus === 'Final Review'
         ).length;
         
         const userName = document.getElementById('dashboard-email').value.split('@')[0];
@@ -513,10 +518,12 @@ document.addEventListener('DOMContentLoaded', function() {
             counts[status] = referrals.filter(r => r.mappedStatus === status).length;
         });
         
-        // Chart colors - updated to use green for Hired (Confirmed) and gray for Previously Applied
+        // Chart colors - updated to match new status order
         const colors = [
             '#0087FF',  // Application Received - blue
-            '#00d769',  // Assessment Stage - green flash
+            '#00d769',  // Assessment Stage - green flash  
+            '#00d769',  // Interview Stage - green flash
+            '#00d769',  // Final Review - green flash
             '#f5d200',  // Hired (Probation) - yellow
             '#28a745',  // Hired (Confirmed) - green
             '#676767',  // Previously Applied (No Payment) - gray
@@ -603,10 +610,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
+        console.log('=== UPDATING REMINDER SECTION ===');
+        console.log('Total referrals:', referrals.length);
+        
         // Filter friends needing reminder (Application Received status with phone - no day limit)
-        const friendsToRemind = referrals.filter(r => 
-            r.mappedStatus === 'Application Received' && r.phone
-        );
+        const friendsToRemind = referrals.filter(r => {
+            const shouldShow = r.mappedStatus === 'Application Received' && r.phone;
+            console.log(`Candidate ${r.name}:`);
+            console.log(`- Mapped Status: "${r.mappedStatus}"`);
+            console.log(`- Phone: "${r.phone}"`);
+            console.log(`- Can Remind: ${r.canRemind}`);
+            console.log(`- Should Show Reminder: ${shouldShow}`);
+            return shouldShow;
+        });
+        
+        console.log('Friends to remind:', friendsToRemind.length);
+        console.log('===========================');
         
         if (friendsToRemind.length === 0) {
             container.innerHTML = `
@@ -724,7 +743,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <i class="fab fa-whatsapp me-1"></i>
                                         <span data-translate="remindBtn">Remind</span>
                                     </button>
-                                ` : ''}
+                                ` : `
+                                    <small class="text-muted">
+                                        ${!ref.phone ? 'No phone' : ref.mappedStatus !== 'Application Received' ? 'Status: ' + ref.mappedStatus : ''}
+                                    </small>
+                                `}
                             </div>
                         </div>
                         
