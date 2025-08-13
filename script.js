@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        debugMode: false // Set to true for debugging
+        debugMode: true // Set to true for debugging
     };
     
     // Initialize application
@@ -61,11 +61,17 @@ document.addEventListener('DOMContentLoaded', function() {
         setLoadingState(true);
         
         try {
+            console.log('=== Starting API Call ===');
+            console.log('Phone:', phone);
+            console.log('Email:', email);
+            
             // Fetch referrals from API
             const apiData = await ApiService.fetchReferrals(phone, email);
+            console.log('API Response:', apiData);
             
             // Process and store referrals
             AppState.currentReferralsData = processReferrals(apiData);
+            console.log('Processed Data:', AppState.currentReferralsData);
             
             // Always show dashboard
             showReferralResults(AppState.currentReferralsData);
