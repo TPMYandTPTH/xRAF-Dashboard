@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        debugMode: true // Set to true for debugging
+        debugMode: false // Set to true for debugging
     };
     
     // Initialize application
@@ -62,13 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Fetch referrals from API
-            console.log('Fetching referrals for:', phone, email);
             const apiData = await ApiService.fetchReferrals(phone, email);
-            console.log('API returned:', apiData);
             
             // Process and store referrals
             AppState.currentReferralsData = processReferrals(apiData);
-            console.log('Processed referrals:', AppState.currentReferralsData);
             
             // Always show dashboard
             showReferralResults(AppState.currentReferralsData);
@@ -86,13 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Process API response with consolidated duplicates
     function processReferrals(apiData) {
-        console.log('Processing referrals data:', apiData);
-        if (!Array.isArray(apiData)) {
-            console.log('API data is not an array:', typeof apiData);
-            return [];
-        }
-        
-        console.log(`Processing ${apiData.length} referrals`);
+        if (!Array.isArray(apiData)) return [];
         
         const processed = apiData.map(item => {
             // Parse dates
@@ -181,7 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Action flags
                 needsAction: needsAction,
-                canRemind: canRemind,
                 
                 // Payment eligibility (with new assessment logic)
                 isEligibleForAssessmentPayment: isXRAF && (
@@ -227,9 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        const result = Object.values(consolidated);
-        console.log(`Returning ${result.length} consolidated referrals:`, result);
-        return result;
+        return Object.values(consolidated);
     }
     
     // Validate form inputs
@@ -294,7 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show results dashboard
     function showReferralResults(referrals) {
-        console.log('Showing results for referrals:', referrals);
         document.getElementById('auth-step').style.display = 'none';
         const resultsStep = document.getElementById('results-step');
         resultsStep.style.display = 'block';
@@ -518,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
             counts[status] = referrals.filter(r => r.mappedStatus === status).length;
         });
         
-        // Chart colors - updated to match new status order
+        // Chart colors - matching the 8 status categories
         const colors = [
             '#0087FF',  // Application Received - blue
             '#00d769',  // Assessment Stage - green flash  
@@ -610,22 +597,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
-        console.log('=== UPDATING REMINDER SECTION ===');
-        console.log('Total referrals:', referrals.length);
-        
-        // Filter friends needing reminder (Application Received status with phone - no day limit)
-        const friendsToRemind = referrals.filter(r => {
-            const shouldShow = r.mappedStatus === 'Application Received' && r.phone;
-            console.log(`Candidate ${r.name}:`);
-            console.log(`- Mapped Status: "${r.mappedStatus}"`);
-            console.log(`- Phone: "${r.phone}"`);
-            console.log(`- Can Remind: ${r.canRemind}`);
-            console.log(`- Should Show Reminder: ${shouldShow}`);
-            return shouldShow;
-        });
-        
-        console.log('Friends to remind:', friendsToRemind.length);
-        console.log('===========================');
+        // Filter friends needing reminder (Application Received status with phone)
+        const friendsToRemind = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' && r.phone
+        );
         
         if (friendsToRemind.length === 0) {
             container.innerHTML = `
@@ -743,11 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <i class="fab fa-whatsapp me-1"></i>
                                         <span data-translate="remindBtn">Remind</span>
                                     </button>
-                                ` : `
-                                    <small class="text-muted">
-                                        ${!ref.phone ? 'No phone' : ref.mappedStatus !== 'Application Received' ? 'Status: ' + ref.mappedStatus : ''}
-                                    </small>
-                                `}
+                                ` : ''}
                             </div>
                         </div>
                         
