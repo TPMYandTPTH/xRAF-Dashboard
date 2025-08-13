@@ -1,99 +1,94 @@
-// Simplified Status Mapping with Comprehensive Status Lists
+// Simplified Status Mapping with Comprehensive Status Lists - WORKING VERSION
 const StatusMapping = {
-    // Comprehensive status mappings
-    statusLists: {
-        "Application Received": [
-            "Application Received",
-            "TextApply",
-            "External Portal", 
-            "Internal Portal",
-            "Recruiter Submitted",
-            "Agency Submissions",
-            "Employee Referral",
-            "Contact Attempt 1",
-            "Contact Attempt 2", 
-            "Contact Attempt 3"
-        ],
-        
-        "Pass Assessment": [
-            // Assessment Stage statuses
-            "Assessment Stage",
-            "SHL Assessment: Conversational Multichat ENG",
-            "SHL Assessment: Sales Competency ENG", 
-            "SHL Assessment: System Diagnostic ENG",
-            "SHL Assessment: Typing ENG",
-            "SHL Assessment: WriteX E-mail ENG",
-            // Interview Stage statuses
-            "Interview Stage",
-            "Interview Scheduled",
-            "Interview Complete / Offer Requested",
-            "Second Interview Scheduled", 
-            "Second Interview Complete / Offer Requested",
-            "Third Interview Scheduled",
-            "Third Interview Complete / Offer Requested",
-            // Final Review statuses
-            "Final Review",
-            "Ready to Offer",
-            "Job Offer Presented",
-            "Onboarding Started",
-            "Cleared to Start"
-        ],
-        
-        "Hired (Probation)": [
-            "Hired (Probation)",
-            "New Starter (Hired)"
-        ],
-        
-        "Hired (Confirmed)": [
-            "Hired (Confirmed)", 
-            "Graduate"
-        ],
-        
-        "Not Selected": [
-            "Eliminated - Age", "Eliminated - Availability", "Eliminated - CV/Resume Analysis", "Eliminated - Did not start Assessment", 
-            "Eliminated - Incomplete Assessment", "Eliminated - Language", "Eliminated - Location/Country", "Eliminated - No Hire List/Not Rehireable", 
-            "Eliminated - Processed on another Requisition", "Eliminated - Unprocessed Candidate", "Eliminated - Unreachable/Unresponsive", 
-            "Eliminated - WAH - Connectivity Requirements", "Eliminated - WAH - Technical Requirements", "Eliminated - Assessment Results Did Not Meet Criteria",
-            "Eliminated - No Show", "Eliminated - No Show (Interview 1)", "Eliminated - No Show (Interview 2)", "Eliminated - No Show (Interview 3)",
-            "Eliminated - Interview 1 Complete (Reject)", "Eliminated - Interview 2 Complete (Reject)", "Eliminated - Interview 3 Complete (Reject)",
-            "Eliminated - Availability (Interview 1)", "Eliminated - Age (Pre-Offer)", "Eliminated - Age (Post Offer)", 
-            "Eliminated - Employment Eligibility Verification", "Eliminated - Falsified Application", "Eliminated - Ineligible (Background)", 
-            "Eliminated - Ineligible (Drug Test)", "Eliminated - Offer Rescinded (Pre-Offer)", "Eliminated - Offer Rescinded (Post Offer)", 
-            "Eliminated - Unreachable/Unresponsive (Pre-Offer)", "Eliminated - Unreachable/Unresponsive (Post Offer)",
-            "Withdrew - Country", "Withdrew - Location", "Withdrew - Long-Term Commitment", "Withdrew - No Reason Given", 
-            "Withdrew - Other Job Offer", "Withdrew - Salary", "Withdrew - Schedule", "Withdrew - Job Fit (Interview 1)", 
-            "Withdrew - Job Fit (Interview 2)", "Withdrew - Job Fit (Interview 3)", "Withdrew - Other Job Offer (Interview 1)", 
-            "Withdrew - Other Job Offer (Interview 2)", "Withdrew - Other Job Offer (Interview 3)", "Withdrew - Personal/Family (Interview 1)",
-            "Withdrew - Personal/Family (Interview 2)", "Withdrew - Personal/Family (Interview 3)", "Withdrew - Salary (Interview 1)",
-            "Withdrew - Salary (Interview 2)", "Withdrew - Salary (Interview 3)", "Withdrew - Schedule (Interview 1)",
-            "Withdrew - Schedule (Interview 2)", "Withdrew - Schedule (Interview 3)", "Withdrew - Medical (Pre-Offer)",
-            "Withdrew - Medical (Post Offer)", "Withdrew - Offer Declined/Rejected", "Withdrew - Onboarding Incomplete",
-            "Withdrew - Other Job Offer (Pre-Offer)", "Withdrew - Other Job Offer (Post Offer)", "Withdrew - Personal/Family (Pre-Offer)",
-            "Withdrew - Personal/Family (Post Offer)", "Withdrew - Role (Pre-Offer)", "Withdrew - Role (Post Offer)",
-            "Withdrew - Salary (Pre-Offer)", "Withdrew - Salary (Post Offer)", "Withdrew - Schedule (Pre-Offer)",
-            "Withdrew - Schedule (Post Offer)", "Legacy - Age", "Legacy - Anonymous by GDPR", "Legacy - Availability",
-            "Legacy - Behavior", "Legacy - Communication Skills", "Legacy - Criminal Record", "Legacy - CV Analysis",
-            "Legacy - Education", "Legacy - Falsified Application", "Legacy - Invalid Phone Number", "Legacy - Language",
-            "Legacy - Long-term Commitment", "Legacy - Motivation", "Legacy - No Hire List", "Legacy - No Show",
-            "Legacy - Not Re-hirable", "Legacy - Recording Denied", "Legacy - Reference Check", "Legacy - Salary Expectation",
-            "Legacy - Soft Skills", "Legacy - Unreachable", "Legacy - WAH - Connectivity Requirements", "Legacy - WAH - Contract",
-            "Legacy - WAH - Technical Requirements", "Legacy - Work Permit", "Legacy - Country", "Legacy - Did Not Apply",
-            "Legacy - Incomplete Assessment", "Legacy - Location", "Legacy - Medical", "Legacy - Negative Review of TP",
-            "Legacy - No Reason Given", "Legacy - Other Job Offer", "Legacy - Personal/Family", "Legacy - Project",
-            "Legacy - Role", "Legacy - Salary Conditions", "Legacy - Schedule", "Legacy - Security Condition",
-            "Self-Withdrew (Recruiter)", "Self-Withdrew (Portal)"
-        ]
-    },
-
-    // Map status to simplified group based on comprehensive rules
+    // Map status to simplified group based on rules
     mapStatusToGroup: function(status, assessmentResult) {
         if (!status) return 'Application Received';
         
-        // Search through all status lists to find a match
-        for (const [groupName, statusList] of Object.entries(this.statusLists)) {
-            if (statusList.includes(status)) {
-                return groupName;
-            }
+        const statusStr = status.toLowerCase();
+        
+        // Check comprehensive status lists
+        
+        // Application Received statuses
+        const applicationReceived = [
+            "application received", "textapply", "external portal", "internal portal",
+            "recruiter submitted", "agency submissions", "employee referral",
+            "contact attempt 1", "contact attempt 2", "contact attempt 3"
+        ];
+        
+        // Assessment Stage statuses (RM50 eligible)
+        const assessmentStage = [
+            "assessment stage", "shl assessment: conversational multichat eng",
+            "shl assessment: sales competency eng", "shl assessment: system diagnostic eng",
+            "shl assessment: typing eng", "shl assessment: writex e-mail eng",
+            "interview stage", "interview scheduled", "interview complete / offer requested",
+            "second interview scheduled", "second interview complete / offer requested",
+            "third interview scheduled", "third interview complete / offer requested",
+            "final review", "ready to offer", "job offer presented", "onboarding started", "cleared to start"
+        ];
+        
+        // Hired (Probation) statuses
+        const hiredProbation = ["hired (probation)", "new starter (hired)"];
+        
+        // Hired (Confirmed) statuses (RM750 eligible)
+        const hiredConfirmed = ["hired (confirmed)", "graduate"];
+        
+        // Not Selected statuses (comprehensive list)
+        const notSelected = [
+            // All Eliminated statuses
+            "eliminated - age", "eliminated - availability", "eliminated - cv/resume analysis",
+            "eliminated - did not start assessment", "eliminated - incomplete assessment", "eliminated - language",
+            "eliminated - location/country", "eliminated - no hire list/not rehireable", "eliminated - processed on another requisition",
+            "eliminated - unprocessed candidate", "eliminated - unreachable/unresponsive", "eliminated - wah - connectivity requirements",
+            "eliminated - wah - technical requirements", "eliminated - assessment results did not meet criteria",
+            "eliminated - no show", "eliminated - no show (interview 1)", "eliminated - no show (interview 2)", "eliminated - no show (interview 3)",
+            "eliminated - interview 1 complete (reject)", "eliminated - interview 2 complete (reject)", "eliminated - interview 3 complete (reject)",
+            "eliminated - availability (interview 1)", "eliminated - age (pre-offer)", "eliminated - age (post offer)",
+            "eliminated - employment eligibility verification", "eliminated - falsified application", "eliminated - ineligible (background)",
+            "eliminated - ineligible (drug test)", "eliminated - offer rescinded (pre-offer)", "eliminated - offer rescinded (post offer)",
+            "eliminated - unreachable/unresponsive (pre-offer)", "eliminated - unreachable/unresponsive (post offer)",
+            
+            // All Withdrew statuses
+            "withdrew - country", "withdrew - location", "withdrew - long-term commitment", "withdrew - no reason given",
+            "withdrew - other job offer", "withdrew - salary", "withdrew - schedule", "withdrew - job fit (interview 1)",
+            "withdrew - job fit (interview 2)", "withdrew - job fit (interview 3)", "withdrew - other job offer (interview 1)",
+            "withdrew - other job offer (interview 2)", "withdrew - other job offer (interview 3)", "withdrew - personal/family (interview 1)",
+            "withdrew - personal/family (interview 2)", "withdrew - personal/family (interview 3)", "withdrew - salary (interview 1)",
+            "withdrew - salary (interview 2)", "withdrew - salary (interview 3)", "withdrew - schedule (interview 1)",
+            "withdrew - schedule (interview 2)", "withdrew - schedule (interview 3)", "withdrew - medical (pre-offer)",
+            "withdrew - medical (post offer)", "withdrew - offer declined/rejected", "withdrew - onboarding incomplete",
+            "withdrew - other job offer (pre-offer)", "withdrew - other job offer (post offer)", "withdrew - personal/family (pre-offer)",
+            "withdrew - personal/family (post offer)", "withdrew - role (pre-offer)", "withdrew - role (post offer)",
+            "withdrew - salary (pre-offer)", "withdrew - salary (post offer)", "withdrew - schedule (pre-offer)", "withdrew - schedule (post offer)",
+            
+            // All Legacy statuses
+            "legacy - age", "legacy - anonymous by gdpr", "legacy - availability", "legacy - behavior", "legacy - communication skills",
+            "legacy - criminal record", "legacy - cv analysis", "legacy - education", "legacy - falsified application", "legacy - invalid phone number",
+            "legacy - language", "legacy - long-term commitment", "legacy - motivation", "legacy - no hire list", "legacy - no show",
+            "legacy - not re-hirable", "legacy - recording denied", "legacy - reference check", "legacy - salary expectation", "legacy - soft skills",
+            "legacy - unreachable", "legacy - wah - connectivity requirements", "legacy - wah - contract", "legacy - wah - technical requirements",
+            "legacy - work permit", "legacy - country", "legacy - did not apply", "legacy - incomplete assessment", "legacy - location",
+            "legacy - medical", "legacy - negative review of tp", "legacy - no reason given", "legacy - other job offer", "legacy - personal/family",
+            "legacy - project", "legacy - role", "legacy - salary conditions", "legacy - schedule", "legacy - security condition",
+            
+            // Self withdrew
+            "self-withdrew (recruiter)", "self-withdrew (portal)"
+        ];
+        
+        // Check which category the status belongs to
+        if (hiredConfirmed.includes(statusStr)) {
+            return 'Hired (Confirmed)';
+        }
+        if (hiredProbation.includes(statusStr)) {
+            return 'Hired (Probation)';
+        }
+        if (assessmentStage.includes(statusStr)) {
+            return 'Assessment Stage';
+        }
+        if (notSelected.includes(statusStr)) {
+            return 'Not Selected';
+        }
+        if (applicationReceived.includes(statusStr)) {
+            return 'Application Received';
         }
         
         // Default fallback
@@ -107,7 +102,7 @@ const StatusMapping = {
             case 'Hired (Confirmed)': return 'confirmed';
             case 'Hired (Probation)': return 'probation';
             case 'Previously Applied (No Payment)': return 'previous';
-            case 'Pass Assessment': return 'assessment';
+            case 'Assessment Stage': return 'assessment';
             case 'Not Selected': return 'failed';
             default: return 'received';
         }
@@ -121,7 +116,7 @@ const StatusMapping = {
     // Display order for charts and lists
     displayOrder: [
         'Application Received',
-        'Pass Assessment',
+        'Assessment Stage',
         'Hired (Probation)',
         'Hired (Confirmed)',
         'Previously Applied (No Payment)',
@@ -145,7 +140,7 @@ const earningsStructure = {
     }
 };
 
-// Status examples for guide with correct colors
+// Status examples for guide
 const statusExamples = [
     {
         status: "Application Received",
@@ -154,8 +149,8 @@ const statusExamples = [
         color: "#0087FF"
     },
     {
-        status: "Pass Assessment",
-        description: "Candidate passed assessment and in interview/review process",
+        status: "Assessment Stage",
+        description: "Candidate passed assessment",
         action: "RM50 payment eligible",
         color: "#00d769"
     },
