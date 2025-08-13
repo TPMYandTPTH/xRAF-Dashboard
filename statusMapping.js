@@ -15,26 +15,23 @@ const StatusMapping = {
             "Contact Attempt 3"
         ],
         
-        "Assessment Stage": [
+        "Pass Assessment": [
+            // Assessment Stage statuses
             "Assessment Stage",
             "SHL Assessment: Conversational Multichat ENG",
             "SHL Assessment: Sales Competency ENG", 
             "SHL Assessment: System Diagnostic ENG",
             "SHL Assessment: Typing ENG",
-            "SHL Assessment: WriteX E-mail ENG"
-        ],
-        
-        "Interview Stage": [
+            "SHL Assessment: WriteX E-mail ENG",
+            // Interview Stage statuses
             "Interview Stage",
             "Interview Scheduled",
             "Interview Complete / Offer Requested",
             "Second Interview Scheduled", 
             "Second Interview Complete / Offer Requested",
             "Third Interview Scheduled",
-            "Third Interview Complete / Offer Requested"
-        ],
-        
-        "Final Review": [
+            "Third Interview Complete / Offer Requested",
+            // Final Review statuses
             "Final Review",
             "Ready to Offer",
             "Job Offer Presented",
@@ -110,9 +107,7 @@ const StatusMapping = {
             case 'Hired (Confirmed)': return 'confirmed';
             case 'Hired (Probation)': return 'probation';
             case 'Previously Applied (No Payment)': return 'previous';
-            case 'Final Review': return 'assessment';
-            case 'Interview Stage': return 'assessment';
-            case 'Assessment Stage': return 'assessment';
+            case 'Pass Assessment': return 'assessment';
             case 'Not Selected': return 'failed';
             default: return 'received';
         }
@@ -126,9 +121,7 @@ const StatusMapping = {
     // Display order for charts and lists
     displayOrder: [
         'Application Received',
-        'Assessment Stage',
-        'Interview Stage', 
-        'Final Review',
+        'Pass Assessment',
         'Hired (Probation)',
         'Hired (Confirmed)',
         'Previously Applied (No Payment)',
@@ -161,20 +154,8 @@ const statusExamples = [
         color: "#0087FF"
     },
     {
-        status: "Assessment Stage",
-        description: "Candidate passed assessment",
-        action: "RM50 payment eligible",
-        color: "#00d769"
-    },
-    {
-        status: "Interview Stage",
-        description: "Candidate in interview process",
-        action: "RM50 payment eligible", 
-        color: "#00d769"
-    },
-    {
-        status: "Final Review",
-        description: "Candidate in final review stage",
+        status: "Pass Assessment",
+        description: "Candidate passed assessment and in interview/review process",
         action: "RM50 payment eligible",
         color: "#00d769"
     },
