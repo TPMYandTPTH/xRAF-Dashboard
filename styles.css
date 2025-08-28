@@ -322,6 +322,10 @@ section { margin-top: 28px; }
     box-shadow: 0 16px 50px rgba(0,0,0,0.2);
 }
 
+.stats-card.total {
+    border-left: 4px solid var(--primary-color);
+}
+
 .stats-card.hired {
     border-left: 4px solid var(--success-color);
 }
