@@ -293,8 +293,8 @@ section { margin-top: 28px; }
   background: #fff; border: 1px solid var(--line);
   border-radius: 14px; box-shadow: var(--shadow-sm); padding: 18px;
   border: none;
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   margin-bottom: 1.5rem;
 }
 
@@ -312,14 +312,14 @@ section { margin-top: 28px; }
 /* Dashboard Stats Cards */
 .stats-card {
     background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.2);
 }
 
 .stats-card.hired {
@@ -442,6 +442,9 @@ section { margin-top: 28px; }
     height: 300px;
     width: 100%;
     padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chart-logo {
@@ -449,10 +452,16 @@ section { margin-top: 28px; }
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    opacity: 0.1;
+    width: 80px;
+    height: 80px;
+    opacity: 0.15;
     pointer-events: none;
+    z-index: 0;
+}
+
+#statusChart {
+    position: relative;
+    z-index: 1;
 }
 
 /* --------------------------------------------------------------------------
@@ -1127,11 +1136,3 @@ form .hint { font-size: 12px; color: var(--muted); }
     height: clamp(46px, 13cqw, 58px);
   }
 }
-/* Heavier shadow specifically for the Social media card if you wrap it in a .social-card */
-.social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); }
-
-/* Make sure 'In Progress' has a left accent and doesn't clash with Bootstrap .progress */
-.stats-card.in-progress { border-left: 4px solid var(--warning-color); }
-
-/* Perfect center for chart watermark */
-.chart-logo { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; opacity: .12; pointer-events: none; }
