@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Email: 'sarah.lee@hotmail.com',
                 Employee: '0187654321',
                 Status: 'Contact Attempt 1',
-                Source: 'Employee Referral',
+                Source: 'xRAF',  // Changed to xRAF
                 Location: 'Penang',
                 F_Nationality: 'Malaysian',
                 CreatedDate: new Date(today - 5 * 86400000).toISOString(),
@@ -167,13 +167,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 CreatedDate: new Date(today - 45 * 86400000).toISOString(),
                 UpdatedDate: new Date(today - 30 * 86400000).toISOString()
             },
+            // Lisa Chen - Hired Probation (not xRAF, so won't get payment)
             {
                 Person_system_id: 'TP006',
                 First_Name: 'Lisa Chen',
                 Email: 'lisa.chen@gmail.com',
                 Employee: '0143210987',
                 Status: 'Onboarding Started',
-                Source: 'Employee Referral',
+                Source: 'xRAF',  // Changed to xRAF for payment eligibility
                 Location: 'Petaling Jaya',
                 F_Nationality: 'Chinese',
                 CreatedDate: new Date(today - 60 * 86400000).toISOString(),
@@ -248,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Email: 'angela.low@yahoo.com',
                 Employee: '0187654321',
                 Status: 'Withdrew - Other Job Offer',
-                Source: 'Employee Referral',
+                Source: 'xRAF',  // Changed to xRAF
                 Location: 'Melaka',
                 F_Nationality: 'Malaysian',
                 CreatedDate: new Date(today - 35 * 86400000).toISOString(),
@@ -305,16 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const rawStatus = (item.Status || item.status || 'Application Received').trim();
             const source = (item.Source || item.source || item.SourceName || '').trim();
             
-            // Check if xRAF referral (improved logic)
+            // Check if xRAF referral (only xRAF is accepted for payment)
             const sourceL = source.toLowerCase();
-            const isXRAF = sourceL.includes('xraf') || 
-                           sourceL.includes('employee referral') || 
-                           sourceL.includes('employee_referral') ||
-                           sourceL.includes('raf') ||
-                           sourceL === '' ||  // Empty source might be xRAF
-                           source === 'xRAF' ||
-                           source === 'RAF' ||
-                           source === 'Employee Referral';
+            const isXRAF = sourceL === 'xraf';
             
             // Get assessment result if available
             const assessment = item.assessment || null;
@@ -482,9 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const inProgressCount = referrals.filter(r => 
             r.mappedStatus === 'Application Received' || 
-            r.mappedStatus === 'Assessment Stage' ||
-            r.mappedStatus === 'Interview Scheduled' ||
-            r.mappedStatus === 'Interview Complete / Offer Requested'
+            r.mappedStatus === 'Assessment Stage'
         ).length;
         
         const userName = document.getElementById('dashboard-email').value.split('@')[0];
@@ -503,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Stats Cards -->
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
-                    <div class="card stats-card">
+                    <div class="card stats-card total">
                         <div class="card-body text-center">
                             <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
                             <h3 class="text-primary">${referrals.length}</h3>
