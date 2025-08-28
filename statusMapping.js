@@ -6,8 +6,12 @@
 // 2) Assessment Stage
 // 3) Hired (Probation)
 // 4) Hired (Confirmed)  <-- same as Probation but daysInStage ≥ 90
-// 5) Previously Applied (No Payment)  <-- source must be xRAF; anything else is not accepted
+// 5) Previously Applied (No Payment)  <-- ONLY when source is NOT xRAF
 // 6) Not Selected
+//
+// IMPORTANT SOURCE RULE:
+// - Only the source value "xRAF" (any case, extra spaces ignored) is accepted as a referral.
+// - If source is anything else (LinkedIn, JobStreet, Employee Referral, etc.) => "Previously Applied (No Payment)".
 
 (function (global) {
   // ---------- helpers ----------
@@ -15,10 +19,9 @@
     return (s || '').toString().trim().toLowerCase();
   }
 
-  // Only "xRAF" (case-insensitive) is accepted as a referral source.
-  // Anything else -> Previously Applied (No Payment)
+  // Only a strict "xraf" (ignoring case & spaces) is accepted.
   function isXRafSource(source) {
-    const s = norm(source);
+    const s = norm((source || '').replace(/\s+/g, ''));
     return s === 'xraf';
   }
 
@@ -27,7 +30,7 @@
   const APP_RECEIVED_LIST = [
     'application received',
 
-    // SHL blocks (lives under "Application Received")
+    // SHL blocks (live under "Application Received")
     'shl assessment: conversational multichat eng',
     'shl assessment: sales competency eng',
     'shl assessment: system diagnostic eng',
@@ -68,7 +71,7 @@
     'class start date re-assigned'
   ].map(norm);
 
-  // 3) Hired (Probation/Confirmed)
+  // 3) Hired (Probation / Confirmed)
   const HIRED_LIST = [
     'credit check initiated',
     'onboarding started',
@@ -148,7 +151,7 @@
     'withdrew - personal/family (post offer)',
     'withdrew - role (pre-offer)',
     'withdrew - role (post offer)',
-    'withdrew - salary (p re-offen',
+    'withdrew - salary (p re-offen', // as provided
     'withdrew - salary (post offer)',
     'withdrew - schedule (pre-offer)',
     'withdrew - schedule (post offer)',
@@ -202,10 +205,21 @@
     'self-withdrew (portal)'
   ].map(norm);
 
-  // For Plan B: statuses that imply the AI assessment has been passed
+  // Plan-B inference: statuses that strongly imply AI assessment PASS
   const INFER_ASSESS_PASS = new Set([
+    'interview scheduled',
+    'interview complete / offer requested',
     'second interview scheduled',
-    'second interview complete / offer requested'
+    'second interview complete / offer requested',
+    'third interview scheduled',
+    'third interview complete / offer requested',
+    'ready to offer',
+    'job offer presented',
+    'onboarding started',
+    'new starter (hired)',
+    'graduate',
+    'cleared to start',
+    'contract presented'
   ]);
 
   // Convert to Sets for O(1) checks
@@ -227,6 +241,7 @@
 
     /**
      * Core mapping: raw status + context -> display group
+     * Source gating is applied FIRST: only xRAF is accepted; anything else -> Previously Applied (No Payment)
      * @param {string} status
      * @param {{score?:number,date?:string}|null} assessment
      * @param {string} source
@@ -235,14 +250,13 @@
     mapStatusToGroup(status, assessment, source, daysInStage) {
       const s = norm(status);
 
-      // 0) Source gate first: only xRAF is accepted
+      // 0) SOURCE GATE — strict xRAF only
       if (!isXRafSource(source)) {
         return 'Previously Applied (No Payment)';
       }
 
-      // 1) Not Selected (exact list first)
+      // 1) NOT SELECTED: exact list & common heuristics
       if (NOT_SELECTED.has(s)) return 'Not Selected';
-      // Not Selected heuristics (covers variants)
       if (
         s.startsWith('eliminated') ||
         s.startsWith('withdrew') ||
@@ -256,15 +270,21 @@
         return 'Not Selected';
       }
 
-      // 2) Hired buckets
-      if (HIRED.has(s) || s.includes('new starter') || s.includes('hired') || s.includes('cleared to start') || s.includes('onboard')) {
+      // 2) HIRED buckets
+      if (
+        HIRED.has(s) ||
+        s.includes('new starter') ||
+        s.includes('hired') ||
+        s.includes('cleared to start') ||
+        s.includes('onboard')
+      ) {
         if (typeof daysInStage === 'number' && daysInStage >= 90) {
           return 'Hired (Confirmed)';
         }
         return 'Hired (Probation)';
       }
 
-      // 3) Assessment Stage
+      // 3) ASSESSMENT STAGE
       if (
         ASSESSMENT_STAGE.has(s) ||
         s.startsWith('screen:') ||
@@ -278,7 +298,7 @@
         return 'Assessment Stage';
       }
 
-      // 4) Application Received
+      // 4) APPLICATION RECEIVED
       if (APP_RECEIVED.has(s) || s.startsWith('shl assessment:')) {
         return 'Application Received';
       }
@@ -306,15 +326,15 @@
       }
     },
 
-    // For display
+    // For display (alias)
     determineStage(status, assessment, source, daysInStage) {
       return this.mapStatusToGroup(status, assessment, source, daysInStage);
     },
 
     /**
-     * Plan B + explicit score:
-     * - Returns true if assessment.score ≥ 70
-     * - Or if status implies pass via INFER_ASSESS_PASS (Second Interview scheduled/complete)
+     * AI-Assessment pass:
+     * - true if assessment.score ≥ 70
+     * - OR if status implies pass via INFER_ASSESS_PASS (interviews/offer/hired signals)
      */
     hasPassedAIAssessment(status, assessment) {
       if (assessment && typeof assessment.score === 'number' && assessment.score >= 70) return true;
