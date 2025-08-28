@@ -18,14 +18,32 @@ const ApiService = (function() {
         modified: ['Modified', 'UpdatedDate', 'LastModified']
     };
 
-    // --- DEMO DATA SWITCH (use these credentials to load mock data) ---
+    // --- DEMO DATA SWITCH: use these creds or ?demo=1 to load mock data ---
     const DEMO_PHONE = '0123456789';
     const DEMO_EMAIL = 'amr@tp.com';
+
+    // Helpers for demo matching
+    function normalizeEmail(e) {
+      return (e || '').toString().trim().toLowerCase();
+    }
+    function normalizePhoneLocal(p) {
+      // Keep only digits; allow "0123456789" or "60123456789" to match the same local number
+      const digits = (p || '').toString().replace(/\D+/g, '');
+      if (!digits) return '';
+      if (digits.startsWith('60')) return digits.slice(2);
+      return digits;
+    }
+    function urlForcesDemo() {
+      try {
+        return /(?:^|[?&])demo=1(?:&|$)/.test(window.location.search);
+      } catch {
+        return false;
+      }
+    }
 
     // Build mock referrals (2 per display group)
     function getMockReferrals() {
       // NOTE: Provide SharePoint-like field names so FIELD_MAPPINGS can pick them up
-      // Dates are ISO strings; today is assumed ~2025-08-28 for "90-day" logic
       return [
         // -----------------------------
         // 1) Application Received (x2)
@@ -36,7 +54,7 @@ const ApiService = (function() {
           Person_x0020_Email: 'tarek@tp.com',
           Default_x0020_Phone: '0182708243',
           Recent_x0020_Status: 'Application Received',
-          Source_x0020_Name: 'xRAF',              // accepted source
+          Source_x0020_Name: 'xRAF',
           Location: 'Kuala Lumpur',
           F_Nationality: 'Malaysia',
           Created: '2025-08-18T09:00:00Z',
@@ -47,8 +65,8 @@ const ApiService = (function() {
           Person_x0020_Full_x0020_Name: 'Loai',
           Person_x0020_Email: 'loai@tp.com',
           Default_x0020_Phone: '0174669871',
-          Recent_x0020_Status: 'SHL Assessment: Typing ENG', // sits under Application Received per your table
-          Source_x0020_Name: 'xRAF', // accepted source
+          Recent_x0020_Status: 'SHL Assessment: Typing ENG',
+          Source_x0020_Name: 'xRAF',
           Location: 'Penang',
           F_Nationality: 'Malaysia',
           Created: '2025-08-12T09:00:00Z',
@@ -96,7 +114,7 @@ const ApiService = (function() {
           Location: 'Kuala Lumpur',
           F_Nationality: 'Malaysia',
           Created: '2025-08-05T09:00:00Z',
-          Modified: '2025-08-15T09:00:00Z' // < 90 days in stage
+          Modified: '2025-08-15T09:00:00Z'
         },
         {
           ID: 1006,
@@ -108,7 +126,7 @@ const ApiService = (function() {
           Location: 'Cyberjaya',
           F_Nationality: 'Malaysia',
           Created: '2025-07-20T09:00:00Z',
-          Modified: '2025-08-10T09:00:00Z' // < 90 days in stage
+          Modified: '2025-08-10T09:00:00Z'
         },
 
         // -----------------------------
@@ -123,8 +141,8 @@ const ApiService = (function() {
           Source_x0020_Name: 'xRAF',
           Location: 'Kuala Lumpur',
           F_Nationality: 'Malaysia',
-          Created: '2025-04-10T09:00:00Z', // > 90 days ago
-          Modified: '2025-04-20T09:00:00Z'  // daysInStage >= 90 ensures Confirmed
+          Created: '2025-04-10T09:00:00Z',
+          Modified: '2025-04-20T09:00:00Z'
         },
         {
           ID: 1008,
@@ -136,11 +154,11 @@ const ApiService = (function() {
           Location: 'Penang',
           F_Nationality: 'Malaysia',
           Created: '2025-05-01T09:00:00Z',
-          Modified: '2025-05-15T09:00:00Z'  // daysInStage >= 90
+          Modified: '2025-05-15T09:00:00Z'
         },
 
         // -----------------------------
-        // 5) Previously Applied (No Payment) (x2) — non-xRAF source
+        // 5) Previously Applied (No Payment) (x2)
         // -----------------------------
         {
           ID: 1009,
@@ -148,7 +166,7 @@ const ApiService = (function() {
           Person_x0020_Email: 'david@tp.com',
           Default_x0020_Phone: '0114455667',
           Recent_x0020_Status: 'Application Received',
-          Source_x0020_Name: 'LinkedIn',       // NOT accepted => Previously Applied
+          Source_x0020_Name: 'LinkedIn',
           Location: 'Kuching',
           F_Nationality: 'Malaysia',
           Created: '2025-08-17T09:00:00Z',
@@ -160,7 +178,7 @@ const ApiService = (function() {
           Person_x0020_Email: 'chloe@tp.com',
           Default_x0020_Phone: '0173344556',
           Recent_x0020_Status: 'Screened',
-          Source_x0020_Name: 'JobStreet',      // NOT accepted => Previously Applied
+          Source_x0020_Name: 'JobStreet',
           Location: 'Kota Kinabalu',
           F_Nationality: 'Malaysia',
           Created: '2025-08-02T09:00:00Z',
@@ -197,19 +215,6 @@ const ApiService = (function() {
       ];
     }
 
-    // --- Helpers for demo matching ---
-    function normalizeEmail(e) {
-      return (e || '').toString().trim().toLowerCase();
-    }
-    function normalizePhoneLocal(p) {
-      // Keep only digits; allow "0123456789" or "60123456789" to match the same local number
-      const digits = (p || '').toString().replace(/\D+/g, '');
-      if (!digits) return '';
-      // If it starts with 60, strip it for comparison to local format
-      if (digits.startsWith('60')) return digits.slice(2);
-      return digits;
-    }
-
     // Utility function to extract field value with multiple possible names
     function getFieldValue(item, fieldMappings) {
         for (const fieldName of fieldMappings) {
@@ -222,7 +227,6 @@ const ApiService = (function() {
 
     // Process individual referral data
     function processReferralData(item) {
-        // Extract all fields using mappings
         const id = getFieldValue(item, FIELD_MAPPINGS.id);
         const name = getFieldValue(item, FIELD_MAPPINGS.name) || 'Unknown';
         const email = getFieldValue(item, FIELD_MAPPINGS.email);
@@ -236,11 +240,10 @@ const ApiService = (function() {
         const created = getFieldValue(item, FIELD_MAPPINGS.created) || new Date().toISOString();
         const modified = getFieldValue(item, FIELD_MAPPINGS.modified) || created;
 
-        // Return standardized referral object
         return {
             // IDs
-            Person_system_id: id.toString(),
-            personId: id.toString(),
+            Person_system_id: (id !== undefined && id !== null) ? id.toString() : '',
+            personId: (id !== undefined && id !== null) ? id.toString() : '',
 
             // Names and contact
             First_Name: name,
@@ -261,7 +264,7 @@ const ApiService = (function() {
             F_Nationality: nationality,
             nationality: nationality,
 
-            // Source fields - CRITICAL for payment eligibility
+            // Source fields
             Source: source,
             source: source,
             SourceName: source,
@@ -278,70 +281,44 @@ const ApiService = (function() {
             updatedDate: modified,
             applicationDate: created,
 
-            // Assessment data - will be null unless added from SharePoint
+            // Assessment data
             assessment: null,
 
-            // Keep original item data for debugging
+            // Original row
             _original: item
         };
     }
 
     // Extract referrals from various possible response formats
     function extractReferralsFromResponse(data) {
-        // Direct array
-        if (Array.isArray(data)) {
-            console.log('Response is direct array');
-            return data;
-        }
-
-        // Wrapped in 'referrals' property
-        if (data.referrals && Array.isArray(data.referrals)) {
-            console.log('Response has referrals property');
-            return data.referrals;
-        }
-
-        // SharePoint style 'value' property
-        if (data.value && Array.isArray(data.value)) {
-            console.log('Response has value property (SharePoint style)');
-            return data.value;
-        }
-
-        // SharePoint style 'd.results' property
-        if (data.d && data.d.results && Array.isArray(data.d.results)) {
-            console.log('Response has d.results property (SharePoint odata style)');
-            return data.d.results;
-        }
-
-        // Single object - wrap in array
-        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-            console.log('Response is single object, wrapping in array');
-            return [data];
-        }
-
-        console.log('Could not extract referrals from response format');
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.referrals)) return data.referrals;
+        if (data && Array.isArray(data.value)) return data.value;
+        if (data && data.d && Array.isArray(data.d.results)) return data.d.results;
+        if (data && typeof data === 'object') return [data];
         return [];
     }
 
     // Main function to fetch referrals
     async function fetchReferrals(phone, email) {
-        // DEMO: return mock referrals if the demo login is used (robust normalization)
+        // DEMO gate
         const phoneNorm = normalizePhoneLocal(phone);
         const emailNorm = normalizeEmail(email);
         const demoPhoneNorm = normalizePhoneLocal(DEMO_PHONE);
         const demoEmailNorm = normalizeEmail(DEMO_EMAIL);
+        const demoMatch = (phoneNorm === demoPhoneNorm && emailNorm === demoEmailNorm) || urlForcesDemo();
 
-        console.log('[DEMO CHECK] phoneNorm:', phoneNorm, 'emailNorm:', emailNorm);
+        console.log('[DEMO CHECK]', { phoneNorm, emailNorm, demoPhoneNorm, demoEmailNorm, demoMatch });
 
-        if (phoneNorm === demoPhoneNorm && emailNorm === demoEmailNorm) {
-            console.log('DEMO DATA ACTIVE — returning mock referrals');
+        if (demoMatch) {
+            console.log('DEMO MODE ACTIVE — returning mock referrals');
             const mock = getMockReferrals().map(processReferralData);
             console.log('DEMO records:', mock.length);
             return mock;
         }
 
-        console.log('=== Starting fetchReferrals (LIVE) ===');
-        console.log('Phone (raw):', phone);
-        console.log('Email (raw):', email);
+        // LIVE path
+        console.log('=== Starting fetchReferrals (LIVE) ===', { phone, email });
 
         try {
             const response = await fetch(POWER_AUTOMATE_URL, {
@@ -361,9 +338,8 @@ const ApiService = (function() {
                 throw new Error(`Power Automate Error: ${response.status} - ${errorText}`);
             }
 
-            // Parse response
             const responseText = await response.text();
-            console.log('Raw response:', responseText.substring(0, 200) + '...');
+            console.log('Raw response (first 200):', responseText.substring(0, 200) + '...');
 
             let data;
             try {
@@ -373,22 +349,38 @@ const ApiService = (function() {
                 throw new Error('Invalid JSON response from Power Automate');
             }
 
-            // Extract referrals from response
             let referrals = extractReferralsFromResponse(data);
-            console.log(`Found ${referrals.length} referrals`);
+            console.log(`Found ${referrals.length} referrals (raw)`);
 
-            // Process each referral and add assessment results
             const processedReferrals = referrals.map((item, index) => {
-                console.log(`Processing referral ${index + 1}:`, item);
-                return processReferralData(item);
+                const row = processReferralData(item);
+                // Defensive logging (optional)
+                if (index < 3) console.log('Sample processed row', index + 1, row);
+                return row;
             });
 
-            console.log('Processing complete. Returning referrals.');
+            console.log('Processing complete. Returning referrals:', processedReferrals.length);
+
+            // Safety net for demos: if user typed demo creds but API returned 0, fall back to mock
+            const typedDemoCreds = (phoneNorm === demoPhoneNorm && emailNorm === demoEmailNorm);
+            if (typedDemoCreds && processedReferrals.length === 0) {
+                console.warn('Live returned 0 for demo creds — falling back to mock dataset for presentation.');
+                return getMockReferrals().map(processReferralData);
+            }
+
             return processedReferrals;
 
         } catch (error) {
             console.error('Error fetching referrals:', error);
-            // Return empty array instead of throwing
+
+            // Safety net: if this was a demo attempt and live failed, serve mock
+            const typedDemoCreds = (phoneNorm === demoPhoneNorm && emailNorm === demoEmailNorm);
+            if (typedDemoCreds) {
+                console.warn('Live call failed for demo creds — returning mock dataset.');
+                return getMockReferrals().map(processReferralData);
+            }
+
+            // Otherwise return empty array
             return [];
         }
     }
@@ -399,11 +391,7 @@ const ApiService = (function() {
         console.log('URL:', POWER_AUTOMATE_URL);
 
         try {
-            const testData = {
-                phone: 'test',
-                email: 'test@test.com'
-            };
-
+            const testData = { phone: 'test', email: 'test@test.com' };
             console.log('Sending test request with:', testData);
 
             const response = await fetch(POWER_AUTOMATE_URL, {
@@ -427,7 +415,7 @@ const ApiService = (function() {
             console.log('✓ Power Automate connection successful');
             console.log('Response structure:', data);
 
-            return { success: true, data: data };
+            return { success: true, data };
 
         } catch (error) {
             console.error('✗ Power Automate connection failed:', error);
