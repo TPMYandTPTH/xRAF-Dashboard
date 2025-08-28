@@ -1,12 +1,12 @@
 // statusMapping.js — xRAF dashboard canonical status logic (2025-08)
-// Maps many raw ATS statuses into 6 display groups used by the UI.
+// Maps raw ATS statuses into 6 display groups used by the UI.
 //
 // Display groups (and their order):
 // 1) Application Received
 // 2) Assessment Stage
 // 3) Hired (Probation)
 // 4) Hired (Confirmed)  <-- same as Probation but daysInStage ≥ 90
-// 5) Previously Applied (No Payment)  <-- source is NOT xRAF/Employee Referral/RAF
+// 5) Previously Applied (No Payment)  <-- source must be xRAF; anything else is not accepted
 // 6) Not Selected
 
 (function (global) {
@@ -15,21 +15,19 @@
     return (s || '').toString().trim().toLowerCase();
   }
 
+  // Only "xRAF" (case-insensitive) is accepted as a referral source.
+  // Anything else -> Previously Applied (No Payment)
   function isXRafSource(source) {
     const s = norm(source);
-    if (!s) return false; // empty is NOT accepted
-    // Accept only clear xRAF-type sources
-    return (
-      s.includes('xraf') ||
-      s.includes('xRAF')
-    );
+    return s === 'xraf';
   }
 
   // ---------- group dictionaries (exact labels you provided) ----------
-  const APP_RECEIVED = [
+  // 1) Application Received
+  const APP_RECEIVED_LIST = [
     'application received',
 
-    // SHL blocks (you requested these to live under "Application Received")
+    // SHL blocks (lives under "Application Received")
     'shl assessment: conversational multichat eng',
     'shl assessment: sales competency eng',
     'shl assessment: system diagnostic eng',
@@ -48,7 +46,8 @@
     'incomplete'
   ].map(norm);
 
-  const ASSESSMENT_STAGE = [
+  // 2) Assessment Stage
+  const ASSESSMENT_LIST = [
     'evaluated',
     'pre-screened',
     'screened',
@@ -69,7 +68,8 @@
     'class start date re-assigned'
   ].map(norm);
 
-  const HIRED = [
+  // 3) Hired (Probation/Confirmed)
+  const HIRED_LIST = [
     'credit check initiated',
     'onboarding started',
     'contract presented',
@@ -82,8 +82,8 @@
     'graduate'
   ].map(norm);
 
-  // Giant "Not Selected" bucket — everything you listed here maps to Not Selected
-  const NOT_SELECTED = [
+  // 4) Not Selected (full list)
+  const NOT_SELECTED_LIST = [
     'eliminated - age',
     'eliminated - assessment results did not meet criteria',
     'eliminated - availability',
@@ -148,7 +148,7 @@
     'withdrew - personal/family (post offer)',
     'withdrew - role (pre-offer)',
     'withdrew - role (post offer)',
-    'withdrew - salary (p re-offen', // keeping as provided
+    'withdrew - salary (p re-offen',
     'withdrew - salary (post offer)',
     'withdrew - schedule (pre-offer)',
     'withdrew - schedule (post offer)',
@@ -202,22 +202,17 @@
     'self-withdrew (portal)'
   ].map(norm);
 
-  // For inferring "AI assessment passed" (Plan B)
-  const INFER_ASSESSMENT_PASS = new Set([
-    'interview scheduled',
-    'interview complete / offer requested',
+  // For Plan B: statuses that imply the AI assessment has been passed
+  const INFER_ASSESS_PASS = new Set([
     'second interview scheduled',
-    'second interview complete / offer requested',
-    'third interview scheduled',
-    'third interview complete / offer requested',
-    'ready to offer',
-    'job offer presented',
-    'onboarding started',
-    'new starter (hired)',
-    'graduate',
-    'cleared to start',
-    'contract presented'
+    'second interview complete / offer requested'
   ]);
+
+  // Convert to Sets for O(1) checks
+  const APP_RECEIVED = new Set(APP_RECEIVED_LIST);
+  const ASSESSMENT_STAGE = new Set(ASSESSMENT_LIST);
+  const HIRED = new Set(HIRED_LIST);
+  const NOT_SELECTED = new Set(NOT_SELECTED_LIST);
 
   // ---------- main mapper ----------
   const StatusMapping = {
@@ -230,61 +225,76 @@
       'Not Selected'
     ],
 
-    // Core: map raw status + context -> display group
+    /**
+     * Core mapping: raw status + context -> display group
+     * @param {string} status
+     * @param {{score?:number,date?:string}|null} assessment
+     * @param {string} source
+     * @param {number} daysInStage
+     */
     mapStatusToGroup(status, assessment, source, daysInStage) {
       const s = norm(status);
 
-      // 1) Hard "Not Selected" bucket first (always wins)
-      if (NOT_SELECTED.includes(s)) return 'Not Selected';
-
-      // 2) Source gate: only xRAF/Employee Referral/RAF is accepted as referral
+      // 0) Source gate first: only xRAF is accepted
       if (!isXRafSource(source)) {
         return 'Previously Applied (No Payment)';
       }
 
-      // 3) Hired buckets
-      if (HIRED.includes(s)) {
+      // 1) Not Selected (exact list first)
+      if (NOT_SELECTED.has(s)) return 'Not Selected';
+      // Not Selected heuristics (covers variants)
+      if (
+        s.startsWith('eliminated') ||
+        s.startsWith('withdrew') ||
+        s.includes('legacy -') ||
+        s.includes('offer rescinded') ||
+        s.includes('no show') ||
+        s.includes('not re-hirable') ||
+        s.includes('unreachable') ||
+        s.includes('unresponsive')
+      ) {
+        return 'Not Selected';
+      }
+
+      // 2) Hired buckets
+      if (HIRED.has(s) || s.includes('new starter') || s.includes('hired') || s.includes('cleared to start') || s.includes('onboard')) {
         if (typeof daysInStage === 'number' && daysInStage >= 90) {
           return 'Hired (Confirmed)';
         }
         return 'Hired (Probation)';
       }
 
-      // 4) Assessment stage
-      if (ASSESSMENT_STAGE.includes(s)) {
+      // 3) Assessment Stage
+      if (
+        ASSESSMENT_STAGE.has(s) ||
+        s.startsWith('screen:') ||
+        s.startsWith('screened') ||
+        s.includes('interview') ||
+        s.includes('offer') ||
+        s.includes('waha agreement') ||
+        s.includes('moved to another requisition') ||
+        s.includes('class start date re-assigned')
+      ) {
         return 'Assessment Stage';
       }
 
-      // 5) Application received
-      if (APP_RECEIVED.includes(s)) {
+      // 4) Application Received
+      if (APP_RECEIVED.has(s) || s.startsWith('shl assessment:')) {
         return 'Application Received';
       }
 
-      // 6) Sensible fallback: try to infer
-      // - If status mentions interview/offer -> Assessment Stage
-      if (s.includes('interview') || s.includes('offer') || s.includes('screen')) {
-        return 'Assessment Stage';
-      }
-
-      // - If status hints anything "hired/onboarding/start/graduate"
-      if (
-        s.includes('hired') ||
-        s.includes('onboard') ||
-        s.includes('start') ||
-        s.includes('graduate')
-      ) {
-        return (typeof daysInStage === 'number' && daysInStage >= 90)
-          ? 'Hired (Confirmed)'
-          : 'Hired (Probation)';
-      }
-
-      // Default: Application Received
+      // 5) Fallback: treat unknowns as Application Received
       return 'Application Received';
     },
 
-    // Simplified style tokens for CSS
+    // Simplified style tokens for CSS (also tolerates being passed a group label directly)
     getSimplifiedStatusType(status, assessment, source, daysInStage) {
-      const group = this.mapStatusToGroup(status, assessment, source, daysInStage);
+      const groupLabels = new Set(this.displayOrder.map(norm));
+      const s = norm(status);
+      const group = groupLabels.has(s)
+        ? status
+        : this.mapStatusToGroup(status, assessment, source, daysInStage);
+
       switch (group) {
         case 'Hired (Confirmed)': return 'passed';
         case 'Hired (Probation)': return 'probation';
@@ -301,18 +311,28 @@
       return this.mapStatusToGroup(status, assessment, source, daysInStage);
     },
 
-    // Plan B: infer whether the AI assessment has passed from the status progression
-    // (use this in your RM50 logic if you don't have a numeric score)
-    didPassAI(status) {
-      return INFER_ASSESSMENT_PASS.has(norm(status));
+    /**
+     * Plan B + explicit score:
+     * - Returns true if assessment.score ≥ 70
+     * - Or if status implies pass via INFER_ASSESS_PASS (Second Interview scheduled/complete)
+     */
+    hasPassedAIAssessment(status, assessment) {
+      if (assessment && typeof assessment.score === 'number' && assessment.score >= 70) return true;
+      const s = norm(status);
+      return INFER_ASSESS_PASS.has(s);
     },
 
-    // expose for reuse
+    // For WhatsApp reminders (Application Received + Assessment Stage)
+    isReminderEligible(groupLabel) {
+      return groupLabel === 'Application Received' || groupLabel === 'Assessment Stage';
+    },
+
+    // Expose for debugging if needed
     _sets: {
-      APP_RECEIVED: new Set(APP_RECEIVED),
-      ASSESSMENT_STAGE: new Set(ASSESSMENT_STAGE),
-      HIRED: new Set(HIRED),
-      NOT_SELECTED: new Set(NOT_SELECTED)
+      APP_RECEIVED,
+      ASSESSMENT_STAGE,
+      HIRED,
+      NOT_SELECTED
     },
     _isXRafSource: isXRafSource
   };
