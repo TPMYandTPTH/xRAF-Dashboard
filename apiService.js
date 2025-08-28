@@ -18,6 +18,187 @@ const ApiService = (function() {
         modified: ['Modified', 'UpdatedDate', 'LastModified']
     };
 
+
+    // --- DEMO DATA SWITCH (use these credentials to load mock data) ---
+const DEMO_PHONE = '0123456789';
+const DEMO_EMAIL = 'amr@tp.com';
+
+// Build mock referrals (2 per display group)
+function getMockReferrals() {
+  // NOTE: Provide SharePoint-like field names so FIELD_MAPPINGS can pick them up
+  // Dates are ISO strings; today is assumed ~2025-08-28 for "90-day" logic
+  return [
+    // -----------------------------
+    // 1) Application Received (x2)
+    // -----------------------------
+    {
+      ID: 1001,
+      Person_x0020_Full_x0020_Name: 'Tarek Ezz',
+      Person_x0020_Email: 'tarek@tp.com',
+      Default_x0020_Phone: '0182708243',
+      Recent_x0020_Status: 'Application Received',
+      Source_x0020_Name: 'xRAF',              // accepted source
+      Location: 'Kuala Lumpur',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-18T09:00:00Z',
+      Modified: '2025-08-25T09:00:00Z'
+    },
+    {
+      ID: 1002,
+      Person_x0020_Full_x0020_Name: 'Loai',
+      Person_x0020_Email: 'loai@tp.com',
+      Default_x0020_Phone: '0174669871',
+      Recent_x0020_Status: 'SHL Assessment: Typing ENG', // sits under Application Received per your table
+      Source_x0020_Name: 'xRAF', // accepted source
+      Location: 'Penang',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-12T09:00:00Z',
+      Modified: '2025-08-20T09:00:00Z'
+    },
+
+    // -----------------------------
+    // 2) Assessment Stage (x2)
+    // -----------------------------
+    {
+      ID: 1003,
+      Person_x0020_Full_x0020_Name: 'Micole Barrientos',
+      Person_x0020_Email: 'miki@tp.com',
+      Default_x0020_Phone: '0177862292',
+      Recent_x0020_Status: 'Interview Scheduled',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Kuala Lumpur',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-10T09:00:00Z',
+      Modified: '2025-08-26T09:00:00Z'
+    },
+    {
+      ID: 1004,
+      Person_x0020_Full_x0020_Name: 'Pourya Tohidi',
+      Person_x0020_Email: 'pourya@tp.com',
+      Default_x0020_Phone: '0198899001',
+      Recent_x0020_Status: 'Screened: Green Candidate',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Johor Bahru',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-01T09:00:00Z',
+      Modified: '2025-08-21T09:00:00Z'
+    },
+
+    // -----------------------------
+    // 3) Hired (Probation) (x2) — < 90 days
+    // -----------------------------
+    {
+      ID: 1005,
+      Person_x0020_Full_x0020_Name: 'Melaine Sua',
+      Person_x0020_Email: 'melaine@tp.com',
+      Default_x0020_Phone: '0109988776',
+      Recent_x0020_Status: 'Onboarding Started',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Kuala Lumpur',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-05T09:00:00Z',
+      Modified: '2025-08-15T09:00:00Z' // < 90 days in stage
+    },
+    {
+      ID: 1006,
+      Person_x0020_Full_x0020_Name: 'Anna Saw Yee Lin',
+      Person_x0020_Email: 'anna@tp.com',
+      Default_x0020_Phone: '0185566778',
+      Recent_x0020_Status: 'Contract Presented',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Cyberjaya',
+      F_Nationality: 'Malaysia',
+      Created: '2025-07-20T09:00:00Z',
+      Modified: '2025-08-10T09:00:00Z' // < 90 days in stage
+    },
+
+    // -----------------------------
+    // 4) Hired (Confirmed) (x2) — ≥ 90 days
+    // -----------------------------
+    {
+      ID: 1007,
+      Person_x0020_Full_x0020_Name: 'Maho Yoriguchi',
+      Person_x0020_Email: 'maho@tp.com',
+      Default_x0020_Phone: '0161122334',
+      Recent_x0020_Status: 'New Starter (Hired)',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Kuala Lumpur',
+      F_Nationality: 'Malaysia',
+      Created: '2025-04-10T09:00:00Z', // > 90 days ago
+      Modified: '2025-04-20T09:00:00Z'  // daysInStage >= 90 ensures Confirmed
+    },
+    {
+      ID: 1008,
+      Person_x0020_Full_x0020_Name: 'Sieon Lee',
+      Person_x0020_Email: 'maya@tp.com',
+      Default_x0020_Phone: '0136677889',
+      Recent_x0020_Status: 'Cleared to Start',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Penang',
+      F_Nationality: 'Malaysia',
+      Created: '2025-05-01T09:00:00Z',
+      Modified: '2025-05-15T09:00:00Z'  // daysInStage >= 90
+    },
+
+    // -----------------------------
+    // 5) Previously Applied (No Payment) (x2) — non-xRAF source
+    // -----------------------------
+    {
+      ID: 1009,
+      Person_x0020_Full_x0020_Name: 'David Ong',
+      Person_x0020_Email: 'david@tp.com',
+      Default_x0020_Phone: '0114455667',
+      Recent_x0020_Status: 'Application Received',
+      Source_x0020_Name: 'LinkedIn',       // NOT accepted => Previously Applied
+      Location: 'Kuching',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-17T09:00:00Z',
+      Modified: '2025-08-22T09:00:00Z'
+    },
+    {
+      ID: 1010,
+      Person_x0020_Full_x0020_Name: 'Chloe',
+      Person_x0020_Email: 'chloe@tp.com',
+      Default_x0020_Phone: '0173344556',
+      Recent_x0020_Status: 'Screened',
+      Source_x0020_Name: 'JobStreet',      // NOT accepted => Previously Applied
+      Location: 'Kota Kinabalu',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-02T09:00:00Z',
+      Modified: '2025-08-19T09:00:00Z'
+    },
+
+    // -----------------------------
+    // 6) Not Selected (x2)
+    // -----------------------------
+    {
+      ID: 1011,
+      Person_x0020_Full_x0020_Name: 'Nurul Lydia Adini',
+      Person_x0020_Email: 'lydia@tp.com',
+      Default_x0020_Phone: '0125566778',
+      Recent_x0020_Status: 'Eliminated - Incomplete Assessment',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Kuala Lumpur',
+      F_Nationality: 'Malaysia',
+      Created: '2025-08-10T09:00:00Z',
+      Modified: '2025-08-16T09:00:00Z'
+    },
+    {
+      ID: 1012,
+      Person_x0020_Full_x0020_Name: 'Hanna Wong',
+      Person_x0020_Email: 'hanna@tp.com',
+      Default_x0020_Phone: '0197788990',
+      Recent_x0020_Status: 'Withdrew - Salary (Post Offer)',
+      Source_x0020_Name: 'xRAF',
+      Location: 'Ipoh',
+      F_Nationality: 'Malaysia',
+      Created: '2025-06-15T09:00:00Z',
+      Modified: '2025-07-01T09:00:00Z'
+    }
+  ];
+}
+
+    
     // Utility function to extract field value with multiple possible names
     function getFieldValue(item, fieldMappings) {
         for (const fieldName of fieldMappings) {
@@ -132,6 +313,17 @@ const ApiService = (function() {
 
     // Main function to fetch referrals
     async function fetchReferrals(phone, email) {
+        // DEMO: return mock referrals if the demo login is used
+        if (
+          phone === DEMO_PHONE &&
+          typeof email === 'string' &&
+          email.toLowerCase().trim() === DEMO_EMAIL
+        ) {
+          console.log('DEMO DATA ACTIVE — returning mock referrals');
+          const mock = getMockReferrals().map(processReferralData);
+          return mock;
+        }
+
         console.log('=== Starting fetchReferrals ===');
         console.log('Phone:', phone);
         console.log('Email:', email);
