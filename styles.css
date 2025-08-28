@@ -1127,3 +1127,11 @@ form .hint { font-size: 12px; color: var(--muted); }
     height: clamp(46px, 13cqw, 58px);
   }
 }
+/* Heavier shadow specifically for the Social media card if you wrap it in a .social-card */
+.social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); }
+
+/* Make sure 'In Progress' has a left accent and doesn't clash with Bootstrap .progress */
+.stats-card.in-progress { border-left: 4px solid var(--warning-color); }
+
+/* Perfect center for chart watermark */
+.chart-logo { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; opacity: .12; pointer-events: none; }
