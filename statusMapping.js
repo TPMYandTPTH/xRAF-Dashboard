@@ -1,366 +1,180 @@
-// statusMapping.js — xRAF dashboard canonical status logic (2025-08)
-// Maps raw ATS statuses into 6 display groups used by the UI.
-//
-// Display groups (and their order):
-// 1) Application Received
-// 2) Assessment Stage
-// 3) Hired (Probation)
-// 4) Hired (Confirmed)  <-- same as Probation but daysInStage ≥ 90
-// 5) Previously Applied (No Payment)  <-- ONLY when source is NOT xRAF
-// 6) Not Selected
-//
-// IMPORTANT SOURCE RULE:
-// - Only the source value "xRAF" (any case, extra spaces ignored) is accepted as a referral.
-// - If source is anything else (LinkedIn, JobStreet, Employee Referral, etc.) => "Previously Applied (No Payment)".
-
-(function (global) {
-  // ---------- helpers ----------
-  function norm(s) {
-    return (s || '').toString().trim().toLowerCase();
-  }
-
-  // Only a strict "xraf" (ignoring case & spaces) is accepted.
-  function isXRafSource(source) {
-    const s = norm((source || '').replace(/\s+/g, ''));
-    return s === 'xraf';
-  }
-
-  // ---------- group dictionaries (exact labels you provided) ----------
-  // 1) Application Received
-  const APP_RECEIVED_LIST = [
-    'application received',
-
-    // SHL blocks (live under "Application Received")
-    'shl assessment: conversational multichat eng',
-    'shl assessment: sales competency eng',
-    'shl assessment: system diagnostic eng',
-    'shl assessment: typing eng',
-    'shl assessment: writex e-mail eng',
-
-    'contact attempt 1',
-    'contact attempt 2',
-    'contact attempt 3',
-    'textapply',
-    'external portal',
-    'internal portal',
-    'recruiter submitted',
-    'agency submissions',
-    'employee referral',
-    'incomplete'
-  ].map(norm);
-
-  // 2) Assessment Stage
-  const ASSESSMENT_LIST = [
-    'evaluated',
-    'pre-screened',
-    'screened',
-    'screen: assessment 1 completed',
-    'screened: amber candidate',
-    'screened: green candidate',
-    'screened: unable to allocate',
-    'interview scheduled',
-    'interview complete / offer requested',
-    'second interview scheduled',
-    'second interview complete / offer requested',
-    'third interview scheduled',
-    'third interview complete / offer requested',
-    'ready to offer',
-    'job offer presented',
-    'waha agreement (signature)',
-    'moved to another requisition or talent pool',
-    'class start date re-assigned'
-  ].map(norm);
-
-  // 3) Hired (Probation / Confirmed)
-  const HIRED_LIST = [
-    'credit check initiated',
-    'onboarding started',
-    'contract presented',
-    'background check (canada)',
-    'background/drug check initiated',
-    'ccms export initiated',
-    'cleared to start',
-    'equipment requested',
-    'new starter (hired)',
-    'graduate'
-  ].map(norm);
-
-  // 4) Not Selected (full list)
-  const NOT_SELECTED_LIST = [
-    'eliminated - age',
-    'eliminated - assessment results did not meet criteria',
-    'eliminated - availability',
-    'eliminated - cv/resume analysis',
-    'eliminated - did not start assessment',
-    'eliminated - incomplete assessment',
-    'eliminated - language',
-    'eliminated - location/country',
-    'eliminated - no hire list/not rehireable',
-    'eliminated - processed on another requisition',
-    'eliminated - unprocessed candidate',
-    'eliminated - unreachable/unresponsive',
-    'eliminated - wah - connectivity requirements',
-    'eliminated - wah - technical requirements',
-    'withdrew - country',
-    'withdrew - location',
-    'withdrew - long-term commitment',
-    'withdrew - no reason given',
-    'withdrew - other job offer',
-    'withdrew - salary',
-    'withdrew - schedule',
-    'eliminated - initial dnq',
-    'eliminated - no show (interview 1)',
-    'eliminated - no show (interview 2)',
-    'eliminated - no show (interview 3)',
-    'eliminated - interview 1 complete (reject)',
-    'eliminated - interview 2 complete (reject)',
-    'eliminated - interview 3 complete (reject)',
-    'eliminated - availability (interview 1)',
-    'withdrew - job fit (interview 1)',
-    'withdrew - job fit (interview 2)',
-    'withdrew - job fit (interview 3)',
-    'withdrew - other job offer (interview 1)',
-    'withdrew - other job offer (interview 2)',
-    'withdrew - other job offer (interview 3)',
-    'withdrew - personal/family (interview 1 )',
-    'withdrew - personal/family (interview 2)',
-    'withdrew - personal/family (interview 3)',
-    'withdrew - salary (interview 1)',
-    'withdrew - salary (interview 2)',
-    'withdrew - salary (interview 3)',
-    'withdrew - schedule (interview 1 )',
-    'withdrew - schedule (interview 2)',
-    'withdrew - schedule (interview 3)',
-    'eliminated - age (pre-offer)',
-    'eliminated - age (post offer)',
-    'eliminated - employment eligibility verification',
-    'eliminated - falsified application',
-    'eliminated - ineligible (background)',
-    'eliminated - ineligible (drug test)',
-    'eliminated - offer rescinded (pre-offer)',
-    'eliminated - offer rescinded (post offer)',
-    'eliminated - unreachable/unresponsive (pre-offer)',
-    'eliminated - unreachable/unresponsive (post offer)',
-    'withdrew - medical (pre-offer)',
-    'withdrew - medical (post offer)',
-    'withdrew - offer declined/rejected',
-    'withdrew - onboarding incomplete',
-    'withdrew - other job offer (pre-offer)',
-    'withdrew - other job offer (post offer)',
-    'withdrew - personal/family (pre-offer)',
-    'withdrew - personal/family (post offer)',
-    'withdrew - role (pre-offer)',
-    'withdrew - role (post offer)',
-    'withdrew - salary (p re-offen', // as provided
-    'withdrew - salary (post offer)',
-    'withdrew - schedule (pre-offer)',
-    'withdrew - schedule (post offer)',
-    'eliminated - no show',
-    'internal employee',
-    'class cancelled',
-
-    // Legacy bucket
-    'legacy - assessment results did not meet criteria',
-    'legacy - age',
-    'legacy - anonymous by gdpr',
-    'legacy - availability',
-    'legacy - behavior',
-    'legacy - communication skills',
-    'legacy - criminal record',
-    'legacy - cv analysis',
-    'legacy - education',
-    'legacy - falsified application',
-    'legacy - invalid phone number',
-    'legacy - language',
-    'legacy - long-term commitment',
-    'legacy - motivation',
-    'legacy - no hire list',
-    'legacy - no show',
-    'legacy - not re-hirable',
-    'legacy - recording denied',
-    'legacy - reference check',
-    'legacy - salary expectation',
-    'legacy - soft skills',
-    'legacy - unreachable',
-    'legacy - wah - connectivity requirements',
-    'legacy - wah - contract',
-    'legacy - wah - technical requirements',
-    'legacy - work permit',
-    'legacy - country',
-    'legacy - did not apply',
-    'legacy - incomplete assessment',
-    'legacy - location',
-    'legacy - medical',
-    'legacy - negative review of tp',
-    'legacy - no reason given',
-    'legacy - other job offer',
-    'legacy - personal/family',
-    'legacy - project',
-    'legacy - role',
-    'legacy - salary conditions',
-    'legacy - schedule',
-    'legacy - security condition',
-
-    'self-withdrew (recruiter)',
-    'self-withdrew (portal)'
-  ].map(norm);
-
-  // Plan-B inference: statuses that strongly imply AI assessment PASS
-  const INFER_ASSESS_PASS = new Set([
-    'interview scheduled',
-    'interview complete / offer requested',
-    'second interview scheduled',
-    'second interview complete / offer requested',
-    'third interview scheduled',
-    'third interview complete / offer requested',
-    'ready to offer',
-    'job offer presented',
-    'onboarding started',
-    'new starter (hired)',
-    'graduate',
-    'cleared to start',
-    'contract presented'
-  ]);
-
-  // Convert to Sets for O(1) checks
-  const APP_RECEIVED = new Set(APP_RECEIVED_LIST);
-  const ASSESSMENT_STAGE = new Set(ASSESSMENT_LIST);
-  const HIRED = new Set(HIRED_LIST);
-  const NOT_SELECTED = new Set(NOT_SELECTED_LIST);
-
-  // ---------- main mapper ----------
-  const StatusMapping = {
-    displayOrder: [
-      'Application Received',
-      'Assessment Stage',
-      'Hired (Probation)',
-      'Hired (Confirmed)',
-      'Previously Applied (No Payment)',
-      'Not Selected'
-    ],
-
-    /**
-     * Core mapping: raw status + context -> display group
-     * Source gating is applied FIRST: only xRAF is accepted; anything else -> Previously Applied (No Payment)
-     * @param {string} status
-     * @param {{score?:number,date?:string}|null} assessment
-     * @param {string} source
-     * @param {number} daysInStage
-     */
-    mapStatusToGroup(status, assessment, source, daysInStage) {
-      const s = norm(status);
-
-      // 0) SOURCE GATE — strict xRAF only
-      if (!isXRafSource(source)) {
-        return 'Previously Applied (No Payment)';
-      }
-
-      // 1) NOT SELECTED: exact list & common heuristics
-      if (NOT_SELECTED.has(s)) return 'Not Selected';
-      if (
-        s.startsWith('eliminated') ||
-        s.startsWith('withdrew') ||
-        s.includes('legacy -') ||
-        s.includes('offer rescinded') ||
-        s.includes('no show') ||
-        s.includes('not re-hirable') ||
-        s.includes('unreachable') ||
-        s.includes('unresponsive')
-      ) {
-        return 'Not Selected';
-      }
-
-      // 2) HIRED buckets
-      if (
-        HIRED.has(s) ||
-        s.includes('new starter') ||
-        s.includes('hired') ||
-        s.includes('cleared to start') ||
-        s.includes('onboard')
-      ) {
-        if (typeof daysInStage === 'number' && daysInStage >= 90) {
-          return 'Hired (Confirmed)';
+// Complete Status Mapping with All Statuses
+const StatusMapping = {
+    // Map status to simplified group based on rules
+    mapStatusToGroup: function(status, assessment, source, daysInStage) {
+        if (!status) return 'Application Received';
+        
+        const statusStr = status.toLowerCase().trim();
+        const sourceStr = (source || '').toLowerCase().trim();
+        
+        // FIRST CHECK: Source must be xRAF for payment eligibility
+        const isXRAF = sourceStr.includes('xraf') || 
+                       sourceStr.includes('employee referral') || 
+                       sourceStr.includes('employee_referral') ||
+                       sourceStr === 'employee referral' ||
+                       sourceStr === 'xraf';
+        
+        // If source is not xRAF, it's previously applied (no payment)
+        if (!isXRAF && sourceStr !== '') {
+            return 'Previously Applied (No Payment)';
         }
-        return 'Hired (Probation)';
-      }
-
-      // 3) ASSESSMENT STAGE
-      if (
-        ASSESSMENT_STAGE.has(s) ||
-        s.startsWith('screen:') ||
-        s.startsWith('screened') ||
-        s.includes('interview') ||
-        s.includes('offer') ||
-        s.includes('waha agreement') ||
-        s.includes('moved to another requisition') ||
-        s.includes('class start date re-assigned')
-      ) {
-        return 'Assessment Stage';
-      }
-
-      // 4) APPLICATION RECEIVED
-      if (APP_RECEIVED.has(s) || s.startsWith('shl assessment:')) {
+        
+        // APPLICATION RECEIVED statuses
+        if (statusStr === 'application received' ||
+            statusStr === 'contact attempt 1' ||
+            statusStr === 'contact attempt 2' ||
+            statusStr === 'contact attempt 3' ||
+            statusStr === 'textapply' ||
+            statusStr === 'external portal' ||
+            statusStr === 'internal portal' ||
+            statusStr === 'recruiter submitted' ||
+            statusStr === 'agency submissions' ||
+            statusStr === 'employee referral' ||
+            statusStr === 'incomplete') {
+            return 'Application Received';
+        }
+        
+        // ASSESSMENT STAGE statuses
+        if (statusStr.includes('shl assessment') ||
+            statusStr.includes('assessment stage') ||
+            statusStr === 'evaluated' ||
+            statusStr === 'pre-screened' ||
+            statusStr === 'screened' ||
+            statusStr.includes('screen:') ||
+            statusStr.includes('screened:') ||
+            statusStr.includes('interview scheduled') ||
+            statusStr.includes('interview complete') ||
+            statusStr.includes('second interview') ||
+            statusStr.includes('third interview') ||
+            statusStr === 'ready to offer' ||
+            statusStr === 'job offer presented' ||
+            statusStr === 'waha agreement (signature)' ||
+            statusStr === 'moved to another requisition or talent pool' ||
+            statusStr === 'class start date' ||
+            statusStr === 're-assigned') {
+            return 'Assessment Stage';
+        }
+        
+        // HIRED (PROBATION) statuses - check days for confirmation
+        if (statusStr === 'credit check initiated' ||
+            statusStr === 'onboarding started' ||
+            statusStr === 'contract presented' ||
+            statusStr === 'background check (canada)' ||
+            statusStr === 'background/drug check initiated' ||
+            statusStr === 'ccms export initiated' ||
+            statusStr === 'cleared to start' ||
+            statusStr === 'equipment requested' ||
+            statusStr === 'new starter (hired)' ||
+            statusStr === 'graduate' ||
+            statusStr.includes('hired')) {
+            // If 90+ days since creation, they're confirmed
+            if (daysInStage !== undefined && daysInStage >= 90) {
+                return 'Hired (Confirmed)';
+            }
+            return 'Hired (Probation)';
+        }
+        
+        // NOT SELECTED statuses - all elimination and withdrawal reasons
+        if (statusStr.includes('eliminated') ||
+            statusStr.includes('withdrew') ||
+            statusStr.includes('self-withdrew') ||
+            statusStr.includes('class cancelled') ||
+            statusStr.includes('legacy') ||
+            statusStr.includes('no show') ||
+            statusStr.includes('not selected') ||
+            statusStr.includes('reject') ||
+            statusStr.includes('rescinded') ||
+            statusStr.includes('declined') ||
+            statusStr.includes('dnq')) {
+            return 'Not Selected';
+        }
+        
+        // Default to Application Received
         return 'Application Received';
-      }
-
-      // 5) Fallback: treat unknowns as Application Received
-      return 'Application Received';
     },
-
-    // Simplified style tokens for CSS (also tolerates being passed a group label directly)
-    getSimplifiedStatusType(status, assessment, source, daysInStage) {
-      const groupLabels = new Set(this.displayOrder.map(norm));
-      const s = norm(status);
-      const group = groupLabels.has(s)
-        ? status
-        : this.mapStatusToGroup(status, assessment, source, daysInStage);
-
-      switch (group) {
-        case 'Hired (Confirmed)': return 'passed';
-        case 'Hired (Probation)': return 'probation';
-        case 'Previously Applied (No Payment)': return 'previously-applied';
-        case 'Assessment Stage': return 'assessment';
-        case 'Not Selected': return 'failed';
-        case 'Application Received':
-        default: return 'received';
-      }
+    
+    // Get simplified status type for styling
+    getSimplifiedStatusType: function(status, assessment, source, daysInStage) {
+        const group = this.mapStatusToGroup(status, assessment, source, daysInStage);
+        switch (group) {
+            case 'Hired (Confirmed)': 
+                return 'passed';
+            case 'Hired (Probation)': 
+                return 'probation';
+            case 'Previously Applied (No Payment)': 
+                return 'previously-applied';
+            case 'Assessment Stage': 
+                return 'assessment';
+            case 'Not Selected': 
+                return 'failed';
+            case 'Application Received':
+            default: 
+                return 'received';
+        }
     },
-
-    // For display (alias)
-    determineStage(status, assessment, source, daysInStage) {
-      return this.mapStatusToGroup(status, assessment, source, daysInStage);
+    
+    // Determine stage for display
+    determineStage: function(status, assessment, source, daysInStage) {
+        return this.mapStatusToGroup(status, assessment, source, daysInStage);
     },
+    
+    // Display order for charts and lists
+    displayOrder: [
+        'Application Received',
+        'Assessment Stage', 
+        'Hired (Probation)',
+        'Hired (Confirmed)',
+        'Previously Applied (No Payment)',
+        'Not Selected'
+    ]
+};
 
-    /**
-     * AI-Assessment pass:
-     * - true if assessment.score ≥ 70
-     * - OR if status implies pass via INFER_ASSESS_PASS (interviews/offer/hired signals)
-     */
-    hasPassedAIAssessment(status, assessment) {
-      if (assessment && typeof assessment.score === 'number' && assessment.score >= 70) return true;
-      const s = norm(status);
-      return INFER_ASSESS_PASS.has(s);
+// Earnings structure with conditions
+const earningsStructure = {
+    assessment: {
+        amount: 50,
+        label: "Assessment Passed",
+        condition: "Candidate passes the AI assessment",
+        payment: "RM50"
     },
+    probation: { 
+        amount: 750, 
+        label: "Probation Completed",
+        condition: "Candidate completes 90-day probation period",
+        payment: "RM750"
+    }
+};
 
-    // For WhatsApp reminders (Application Received + Assessment Stage)
-    isReminderEligible(groupLabel) {
-      return groupLabel === 'Application Received' || groupLabel === 'Assessment Stage';
+// Status examples for guide - UPDATED TEXT
+const statusExamples = [
+    {
+        status: "Application Received",
+        description: "Candidate has applied but not completed assessment",
+        action: "Send WhatsApp reminder"
     },
-
-    // Expose for debugging if needed
-    _sets: {
-      APP_RECEIVED,
-      ASSESSMENT_STAGE,
-      HIRED,
-      NOT_SELECTED
+    {
+        status: "Assessment Stage",
+        description: "Candidate in assessment/interview process",
+        action: "RM50 payment eligible if the candidate pass the AI assessment"
     },
-    _isXRafSource: isXRafSource
-  };
-
-  // UMD-style export
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = StatusMapping;
-  } else {
-    global.StatusMapping = StatusMapping;
-  }
-})(this);
+    {
+        status: "Hired (Probation)",
+        description: "Candidate hired but in probation period (<90 days)",
+        action: "Monitor progress"
+    },
+    {
+        status: "Hired (Confirmed)",
+        description: "Candidate completed 90-day probation",
+        action: "RM750 payment eligible"
+    },
+    {
+        status: "Previously Applied (No Payment)",
+        description: "Candidate applied through other sources (not xRAF)",
+        action: "No payment eligible"
+    },
+    {
+        status: "Not Selected",
+        description: "Candidate rejected or withdrew application",
+        action: "No further action needed"
+    }
+];
