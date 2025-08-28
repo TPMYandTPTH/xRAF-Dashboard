@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        debugMode: true // Enabled for debugging WhatsApp reminder issue
+        debugMode: false // Set to true for debugging
     };
     
     // Initialize application
@@ -62,13 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Fetch referrals from API
-            console.log('Fetching referrals for:', phone, email);
             const apiData = await ApiService.fetchReferrals(phone, email);
-            console.log('API returned:', apiData);
             
-            // Process and store referrals
-            AppState.currentReferralsData = (apiData);
-            console.log('Processed referrals:', AppState.currentReferralsData);
+            // Process and store referrals with deduplication
+            AppState.currentReferralsData = processReferrals(apiData);
             
             // Always show dashboard
             showReferralResults(AppState.currentReferralsData);
@@ -84,164 +81,143 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Process API response with consolidated duplicates
-function processReferrals(apiData) {
-    console.log('Processing referrals data:', apiData);
-    if (!Array.isArray(apiData)) {
-        console.log('API data is not an array:', typeof apiData);
-        return [];
+    // Process API response with deduplication and fixed status mapping
+    function processReferrals(apiData) {
+        if (!Array.isArray(apiData)) return [];
+        
+        // Create a Map to track unique referrals by email+name combination
+        const uniqueReferrals = new Map();
+        
+        apiData.forEach(item => {
+            // Create unique key using email and name (or phone as fallback)
+            const email = (item.Email || item.email || '').toLowerCase().trim();
+            const name = (item.First_Name || item.name || 'Unknown').trim();
+            const phone = (item.Employee || item.phone || '').trim();
+            
+            // Use email+name as primary key, or phone+name as fallback
+            const uniqueKey = email ? `${email}_${name}` : `${phone}_${name}`;
+            
+            // Skip if we've already processed this person
+            if (uniqueReferrals.has(uniqueKey)) {
+                const existing = uniqueReferrals.get(uniqueKey);
+                // If duplicate found, keep the one with more recent update date
+                const existingDate = new Date(existing.UpdatedDate || existing.updatedDate || 0);
+                const currentDate = new Date(item.UpdatedDate || item.updatedDate || 0);
+                if (currentDate <= existingDate) {
+                    return; // Skip this duplicate
+                }
+            }
+            
+            // Parse dates
+            const parseDate = (dateStr) => {
+                if (!dateStr) return new Date();
+                // Handle various date formats
+                if (dateStr.includes('/')) {
+                    const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
+                    return new Date(year, month - 1, day);
+                }
+                return new Date(dateStr);
+            };
+            
+            const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
+            const createdDate = parseDate(item.CreatedDate || item.createdDate);
+            const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
+            const daysSinceCreation = Math.floor((new Date() - createdDate) / (86400000));
+            
+            // Get status and source
+            const rawStatus = (item.Status || item.status || 'Application Received').trim();
+            const source = (item.Source || item.source || item.SourceName || '').trim();
+            
+            // Check if xRAF referral (improved logic)
+            const sourceL = source.toLowerCase();
+            const isXRAF = sourceL.includes('xraf') || 
+                           sourceL.includes('employee referral') || 
+                           sourceL.includes('employee_referral') ||
+                           sourceL.includes('raf') ||
+                           sourceL === '' ||  // Empty source might be xRAF
+                           source === 'xRAF' ||
+                           source === 'RAF' ||
+                           source === 'Employee Referral';
+            
+            // Get assessment result if available
+            const assessment = item.assessment || null;
+            
+            // Map status with all parameters including source and days
+            let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage);
+            
+            // Special case: if status indicates hired and has been more than 90 days since created date
+            if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
+                mappedStatus = 'Hired (Confirmed)';
+            }
+            
+            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage);
+            const stage = StatusMapping.determineStage(rawStatus, assessment, source, daysInStage);
+            
+            // Check if needs reminder (any Application Received status)
+            const needsAction = mappedStatus === 'Application Received';
+            
+            const processedReferral = {
+                // IDs
+                id: item.Person_system_id || item.personId || item.ID || uniqueKey,
+                personId: item.Person_system_id || item.personId || item.ID,
+                uniqueKey: uniqueKey,
+                
+                // Contact info
+                name: name,
+                email: email,
+                phone: phone,
+                
+                // Status info
+                status: rawStatus,
+                mappedStatus: mappedStatus,
+                statusType: statusType,
+                stage: stage,
+                
+                // Source and eligibility
+                source: source,
+                isXRAF: isXRAF,
+                isPreviousCandidate: !isXRAF && source !== '',
+                
+                // Assessment info
+                assessment: assessment,
+                hasPassedAssessment: assessment && assessment.score >= 70,
+                assessmentScore: assessment ? assessment.score : null,
+                assessmentDate: assessment ? assessment.date : null,
+                
+                // Location info
+                location: item.Location || item.location || '',
+                nationality: item.F_Nationality || item.nationality || '',
+                
+                // Dates
+                createdDate: createdDate,
+                updatedDate: updatedDate,
+                daysInStage: daysInStage,
+                daysSinceCreation: daysSinceCreation,
+                
+                // Action flags
+                needsAction: needsAction,
+                
+                // Payment eligibility (with proper checks)
+                isEligibleForAssessmentPayment: isXRAF && (
+                    mappedStatus === 'Assessment Stage' || 
+                    mappedStatus === 'Hired (Probation)' || 
+                    mappedStatus === 'Hired (Confirmed)'
+                ) && (!assessment || assessment.score >= 70),
+                isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+                
+                // Original data for debugging
+                _original: item
+            };
+            
+            // Add to unique map
+            uniqueReferrals.set(uniqueKey, processedReferral);
+        });
+        
+        // Convert Map values to array and sort by created date (newest first)
+        return Array.from(uniqueReferrals.values()).sort((a, b) => {
+            return b.createdDate - a.createdDate;
+        });
     }
-    
-    console.log(`Processing ${apiData.length} referrals`);
-    
-    const processed = apiData.map(item => {
-        // Parse dates
-        const parseDate = (dateStr) => {
-            if (!dateStr) return new Date();
-            // Handle various date formats
-            if (dateStr.includes('/')) {
-                const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
-                return new Date(year, month - 1, day);
-            }
-            return new Date(dateStr);
-        };
-        
-        const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
-        const createdDate = parseDate(item.CreatedDate || item.createdDate);
-        const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
-        
-        // Get status and source
-        const rawStatus = (item.Status || item.status || 'Application Received').trim();
-        const source = (item.Source || item.source || item.SourceName || '').toLowerCase();
-        
-        console.log('Processing item:', {
-            rawStatus,
-            source,
-            name: item.First_Name || item.name,
-            phone: item.Employee || item.phone
-        });
-        
-        // Check if xRAF referral
-        const isXRAF = source.includes('xraf') || source.includes('employee referral');
-        
-        // Get assessment result if available
-        const assessment = item.assessment || null;
-        
-        // Map status based on comprehensive lists
-        let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment);
-        
-        console.log('Mapped status result:', {
-            rawStatus,
-            mappedStatus,
-            isXRAF
-        });
-        
-        // Override if not xRAF
-        if (!isXRAF) {
-            mappedStatus = 'Previously Applied (No Payment)';
-            console.log('Overridden to Previously Applied (not xRAF)');
-        }
-        
-        // Special case: if status indicates hired and has been more than 90 days
-        if (mappedStatus === 'Hired (Probation)' && daysInStage >= 90) {
-            mappedStatus = 'Hired (Confirmed)';
-        }
-        
-        if (mappedStatus === 'Previously Applied (No Payment)') {
-            statusType = 'previous';
-        } else {
-            statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment);
-        }
-        const stage = StatusMapping.determineStage(rawStatus, assessment);
-        
-        // WhatsApp FIX: Only for "Application Received" status with phone
-        const needsAction = rawStatus === 'Application Received' && (item.Employee || item.phone);
-        
-        return {
-            // IDs
-            id: item.Person_system_id || item.personId || item.ID,
-            personId: item.Person_system_id || item.personId || item.ID,
-            
-            // Contact info
-            name: item.First_Name || item.name || 'Unknown',
-            email: item.Email || item.email || '',
-            phone: item.Employee || item.phone || '',
-            
-            // Status info
-            status: rawStatus, // Keep original status for WhatsApp check
-            mappedStatus: mappedStatus,
-            statusType: statusType,
-            stage: stage,
-            
-            // Source and eligibility
-            source: item.Source || item.source || '',
-            isXRAF: isXRAF,
-            isPreviousCandidate: !isXRAF,
-            
-            // Assessment info
-            assessment: assessment,
-            hasPassedAssessment: assessment && assessment.score >= 70,
-            assessmentScore: assessment ? assessment.score : null,
-            assessmentDate: assessment ? assessment.date : null,
-            
-            // Location info
-            location: item.Location || item.location || '',
-            nationality: item.F_Nationality || item.nationality || '',
-            
-            // Dates
-            createdDate: createdDate,
-            updatedDate: updatedDate,
-            daysInStage: daysInStage,
-            
-            // ACTION FLAG CORRECTED: Use raw status and phone presence
-            needsAction: needsAction,
-            
-            // Payment eligibility (without assessment data, base on status only)
-            isEligibleForAssessmentPayment: isXRAF && (
-                mappedStatus === 'Assessment Stage' || 
-                mappedStatus === 'Hired (Probation)' || 
-                mappedStatus === 'Hired (Confirmed)'
-            ),
-            isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
-            
-            // Original data
-            _original: item
-        };
-    });
-    
-    // Consolidate duplicates by email
-    const consolidated = {};
-    processed.forEach(ref => {
-        if (!ref.email) {
-            // Handle cases without email - create unique key
-            const uniqueKey = ref.id || `${ref.name}-${Date.now()}-${Math.random()}`;
-            consolidated[uniqueKey] = {
-                ...ref,
-                applications: [ref]
-            };
-            return;
-        }
-        
-        if (!consolidated[ref.email]) {
-            consolidated[ref.email] = {
-                ...ref,
-                applications: [ref]
-            };
-        } else {
-            consolidated[ref.email].applications.push(ref);
-            // Update main record with latest info
-            if (ref.updatedDate > consolidated[ref.email].updatedDate) {
-                const existingApplications = consolidated[ref.email].applications;
-                Object.assign(consolidated[ref.email], ref);
-                consolidated[ref.email].applications = existingApplications;
-            }
-        }
-    });
-    
-    const result = Object.values(consolidated);
-    console.log(`Returning ${result.length} consolidated referrals:`, result);
-    return result;
-}
     
     // Validate form inputs
     function validateInputs(phone, email) {
@@ -305,7 +281,6 @@ function processReferrals(apiData) {
     
     // Show results dashboard
     function showReferralResults(referrals) {
-        console.log('Showing results for referrals:', referrals);
         document.getElementById('auth-step').style.display = 'none';
         const resultsStep = document.getElementById('results-step');
         resultsStep.style.display = 'block';
@@ -322,7 +297,7 @@ function processReferrals(apiData) {
         updateTranslations();
     }
     
-    // Create results HTML content
+    // Create results HTML with new sections
     function createResultsContent(referrals) {
         const hiredCount = referrals.filter(r => 
             r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
@@ -428,12 +403,12 @@ function processReferrals(apiData) {
             <!-- Referral List -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title mb-3" data-translate="allReferralsTitle">All Referrals</h5>
+                    <h5 class="mb-3">All Referrals</h5>
                     <div id="referral-list"></div>
                 </div>
             </div>
             
-            <!-- Status Guide -->
+            <!-- Status Guide moved to end -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
@@ -483,28 +458,16 @@ function processReferrals(apiData) {
     
     // Handle WhatsApp reminders with professional message
     function handleReminderClick(e) {
-        console.log('WhatsApp reminder clicked:', e.target);
-        
         const button = e.target.closest('.remind-btn');
-        if (!button) {
-            console.log('No remind button found');
-            return;
-        }
+        if (!button) return;
         
         const name = button.dataset.name;
         const phone = button.dataset.phone;
         const lang = button.dataset.lang || AppState.currentLanguage;
-        
-        console.log('Reminder data:', { name, phone, lang });
-        
-        if (!phone) {
-            console.log('No phone number available');
-            return;
-        }
+        if (!phone) return;
         
         // Format phone for WhatsApp
         const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
-        console.log('Formatted phone:', formattedPhone);
         
         // Professional messages in different languages
         const messages = {
@@ -520,13 +483,10 @@ function processReferrals(apiData) {
         };
         
         const message = messages[lang] || messages.en;
-        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
-        
-        console.log('Opening WhatsApp with URL:', whatsappUrl);
-        window.open(whatsappUrl, '_blank');
+        window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
     }
     
-    // Update status chart
+    // Update status chart with fixed mapping
     function updateChart(referrals) {
         const ctx = document.getElementById('statusChart')?.getContext('2d');
         if (!ctx) return;
@@ -536,18 +496,25 @@ function processReferrals(apiData) {
             AppState.statusChart.destroy();
         }
         
-        // Count statuses
+        // Count statuses using fixed mapping
         const counts = {};
         StatusMapping.displayOrder.forEach(status => {
-            counts[status] = referrals.filter(r => r.mappedStatus === status).length;
+            counts[status] = 0;
         });
         
-        // Chart colors - updated to use green for Hired (Confirmed) and gray for Previously Applied
+        // Count each referral's mapped status
+        referrals.forEach(r => {
+            if (counts[r.mappedStatus] !== undefined) {
+                counts[r.mappedStatus]++;
+            }
+        });
+        
+        // Chart colors - updated to match status types
         const colors = [
             '#0087FF',  // Application Received - blue
             '#00d769',  // Assessment Stage - green flash
             '#f5d200',  // Hired (Probation) - yellow
-            '#28a745',  // Hired (Confirmed) - green
+            '#84c98b',  // Hired (Confirmed) - green
             '#676767',  // Previously Applied (No Payment) - gray
             '#dc3545'   // Not Selected - red
         ];
@@ -576,6 +543,23 @@ function processReferrals(apiData) {
                             padding: 15,
                             font: {
                                 size: 12
+                            },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return {
+                                            text: `${label} (${value})`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
                             }
                         }
                     },
@@ -611,7 +595,7 @@ function processReferrals(apiData) {
         
         earningsBody.innerHTML = `
             <tr>
-                <td data-translate="statusAssessmentPassed">Assessment Passed</td>
+                <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
                 <td>RM 50</td>
                 <td>${assessmentPassed}</td>
                 <td>RM ${assessmentEarnings}</td>
@@ -628,55 +612,52 @@ function processReferrals(apiData) {
     }
     
     // Update reminder section
-function updateReminderSection(referrals) {
-    const container = document.getElementById('friends-to-remind');
-    if (!container) return;
-    
-    console.log('Updating reminder section with referrals:', referrals);
-    
-    // CORRECTED FILTER: Use needsAction flag which is based on raw status
-    const friendsToRemind = referrals.filter(r => r.needsAction);
-    
-    console.log('Friends to remind:', friendsToRemind);
-    
-    if (friendsToRemind.length === 0) {
-        container.innerHTML = `
-            <div class="col-12 text-center">
-                <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
-            </div>
-        `;
-        return;
+    function updateReminderSection(referrals) {
+        const container = document.getElementById('friends-to-remind');
+        if (!container) return;
+        
+        // Filter friends needing reminder (Application Received status only)
+        const friendsToRemind = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' && r.phone
+        );
+        
+        if (friendsToRemind.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <p class="text-muted" data-translate="noRemindersNeeded">All your friends are on track!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        friendsToRemind.forEach(friend => {
+            container.innerHTML += `
+                <div class="col-md-6 mb-3">
+                    <div class="friend-to-remind">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5>${friend.name}</h5>
+                            <span class="badge bg-${friend.statusType}">${friend.mappedStatus}</span>
+                        </div>
+                        <p class="small mb-1">${friend.email}</p>
+                        <p class="small mb-2"><span data-translate="referralDays">Days in Stage</span>: ${friend.daysInStage}</p>
+                        <button class="btn btn-primary w-100 remind-btn" 
+                            data-name="${friend.name}" 
+                            data-phone="${friend.phone}"
+                            data-lang="${AppState.currentLanguage}">
+                            <i class="fab fa-whatsapp me-2"></i>
+                            <span data-translate="remindBtn">Send Reminder</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
     }
     
-    container.innerHTML = friendsToRemind.map(friend => `
-        <div class="col-md-6 mb-3">
-            <div class="friend-to-remind">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5>${friend.name}</h5>
-                    <span class="badge bg-${friend.statusType} status-badge">${friend.mappedStatus}</span>
-                </div>
-                <p class="small mb-1">${friend.email}</p>
-                <p class="small mb-2"><span data-translate="referralDays">Days in Stage</span>: ${friend.daysInStage}</p>
-                <button class="btn btn-primary w-100 remind-btn" 
-                    data-name="${friend.name}" 
-                    data-phone="${friend.phone}"
-                    data-lang="${AppState.currentLanguage}">
-                    <i class="fab fa-whatsapp me-2"></i>
-                    <span data-translate="remindBtn">Send Reminder</span>
-                </button>
-            </div>
-        </div>
-    `).join('');
-    
-    console.log('Reminder section HTML updated');
-}        
-    
-    // Update referral list with consolidated duplicates
+    // Update referral list
     function updateReferralList(referrals) {
         const container = document.getElementById('referral-list');
         if (!container) return;
-        
-        console.log('Updating referral list with:', referrals);
         
         if (referrals.length === 0) {
             container.innerHTML = `
@@ -694,6 +675,8 @@ function updateReminderSection(referrals) {
             return;
         }
         
+        container.innerHTML = '<h5 class="mb-3">All Referrals</h5>';
+        
         // Sort referrals by status order
         const sortedReferrals = [...referrals].sort((a, b) => {
             const aIndex = StatusMapping.displayOrder.indexOf(a.mappedStatus);
@@ -701,72 +684,50 @@ function updateReminderSection(referrals) {
             return aIndex - bIndex;
         });
         
-        container.innerHTML = sortedReferrals.map(ref => {
-            const hasMultipleApplications = ref.applications && ref.applications.length > 1;
-            const showWhatsAppButton = ref.mappedStatus === 'Application Received' && ref.phone;
+        sortedReferrals.forEach(ref => {
+            const assessmentInfo = ref.assessment ? 
+                `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">
+                    Score: ${ref.assessmentScore}%
+                </span>` : '';
             
-            console.log('Referral card for:', {
-                name: ref.name,
-                mappedStatus: ref.mappedStatus,
-                phone: ref.phone,
-                showWhatsAppButton
-            });
-            
-            return `
+            container.innerHTML += `
                 <div class="card referral-card status-${ref.statusType} mb-3">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h5>${ref.name}</h5>
                                 <p class="small text-muted mb-1">${ref.email}</p>
                                 ${ref.personId ? `<p class="small text-muted">ID: ${ref.personId}</p>` : ''}
-                                ${hasMultipleApplications ? `<p class="small text-primary"><i class="fas fa-copy me-1"></i><span data-translate="multipleApplications">Multiple Applications</span> (${ref.applications.length})</p>` : ''}
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-${ref.statusType} status-badge">${ref.mappedStatus}</span>
-                                ${ref.assessmentScore ? `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">Score: ${ref.assessmentScore}%</span>` : ''}
+                                <span class="badge bg-${ref.statusType} status-badge">
+                                    ${ref.mappedStatus}
+                                </span>
+                                ${assessmentInfo}
                             </div>
                         </div>
                         
-                        ${hasMultipleApplications ? `
-                            <div class="mb-3">
-                                <h6 class="small text-muted mb-2">Applications:</h6>
-                                ${ref.applications.map(app => `
-                                    <div class="application-item status-${app.statusType}">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>${app.status}</strong>
-                                                <br><small class="text-muted">${app.location || 'N/A'} • ${app.daysInStage} days</small>
-                                            </div>
-                                            <span class="badge bg-${app.statusType} status-badge">${app.mappedStatus}</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                        
-                        <div class="row">
+                        <div class="row mt-3">
                             <div class="col-md-3">
                                 <small class="text-muted" data-translate="referralStage">Stage</small>
-                                <p class="mb-1">${ref.stage}</p>
+                                <p>${ref.stage}</p>
                             </div>
                             <div class="col-md-3">
                                 <small class="text-muted" data-translate="location">Location</small>
-                                <p class="mb-1">${ref.location || 'N/A'}</p>
+                                <p>${ref.location || 'N/A'}</p>
                             </div>
                             <div class="col-md-3">
                                 <small class="text-muted" data-translate="referralDays">Days in Stage</small>
-                                <p class="mb-1">${ref.daysInStage}</p>
+                                <p>${ref.daysInStage}</p>
                             </div>
                             <div class="col-md-3">
-                                ${showWhatsAppButton ? `
-                                    <button class="btn btn-sm btn-success w-100 remind-btn" 
-                                        data-name="${ref.name}" 
-                                        data-phone="${ref.phone}"
-                                        data-lang="${AppState.currentLanguage}">
-                                        <i class="fab fa-whatsapp me-1"></i>
-                                        <span data-translate="remindBtn">Remind</span>
-                                    </button>
+                                ${ref.needsAction && ref.phone ? `
+                                <button class="btn btn-sm btn-success w-100 remind-btn" 
+                                    data-name="${ref.name}" 
+                                    data-phone="${ref.phone}">
+                                    <i class="fab fa-whatsapp me-2"></i>
+                                    <span data-translate="remindBtn">Remind</span>
+                                </button>
                                 ` : ''}
                             </div>
                         </div>
@@ -780,9 +741,7 @@ function updateReminderSection(referrals) {
                     </div>
                 </div>
             `;
-        }).join('');
-        
-        console.log('Referral list HTML updated');
+        });
     }
     
     // Update status guide section
@@ -790,24 +749,33 @@ function updateReminderSection(referrals) {
         const container = document.getElementById('status-guide-content');
         if (!container) return;
         
+        const t = translations[AppState.currentLanguage];
+        
         container.innerHTML = `
             <div class="row">
                 <!-- Status Examples -->
                 <div class="col-md-6">
                     <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
                     <div class="status-examples">
-                        ${statusExamples.map(example => `
-                            <div class="status-example">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong>${example.status}</strong>
-                                    <span class="badge" style="background-color: ${example.color}; color: ${example.color === '#f5d200' || example.color === '#00d769' ? 'black' : 'white'};">
-                                        ${example.status}
-                                    </span>
+                        ${statusExamples.map(example => {
+                            // Get the correct status type for coloring
+                            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
+                            if (example.status === "Hired (Confirmed)") statusType = 'passed';
+                            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
+                            
+                            return `
+                                <div class="status-example">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+                                        <span class="badge bg-${statusType}">
+                                            ${example.status}
+                                        </span>
+                                    </div>
+                                    <p class="mb-1 mt-2 small">${example.description}</p>
+                                    <small class="text-muted">${example.action}</small>
                                 </div>
-                                <p class="mb-1 mt-2 small">${example.description}</p>
-                                <small class="text-muted">${example.action}</small>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </div>
                 
@@ -824,16 +792,13 @@ function updateReminderSection(referrals) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Assessment Passed</td>
-                                    <td>Candidate passes assessment</td>
-                                    <td><strong>RM50</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Probation Completed</td>
-                                    <td>Candidate completes 90-day probation period</td>
-                                    <td><strong>RM750</strong></td>
-                                </tr>
+                                ${Object.entries(earningsStructure).map(([key, value]) => `
+                                    <tr>
+                                        <td>${value.label}</td>
+                                        <td>${value.condition}</td>
+                                        <td><strong>${value.payment}</strong></td>
+                                    </tr>
+                                `).join('')}
                                 <tr>
                                     <td>Previously Applied</td>
                                     <td data-translate="noPaymentNote">Candidate applied before referral</td>
