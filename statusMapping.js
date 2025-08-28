@@ -1,6 +1,13 @@
 // Fixed Status Mapping with Proper Source Check
 const StatusMapping = {
-    // Map status to simplified group based on rules
+  // ADD this helper near the top (inside the StatusMapping object)
+hasAssessmentPassByStatus: function(status) {
+    if (!status) return false;
+    const s = String(status).toLowerCase();
+    // Plan B keywords that imply they passed the assessment
+    return /(second\s*interview|2nd\s*interview|interview\s*2|round\s*2|stage\s*2)/i.test(s);
+},
+  // Map status to simplified group based on rules
     mapStatusToGroup: function(status, assessment, source, daysInStage) {
         if (!status) return 'Application Received';
         
