@@ -1,5 +1,9 @@
-// Main Application Script (xRAF Dashboard)
-// Visibility fix for WhatsApp reminders + payment logic + Plan B
+// script.js — Main Application Script (xRAF Dashboard)
+// - WhatsApp reminders banner + list
+// - Status mapping integration
+// - Payments: RM50 when the candidate PASSES the AI assessment,
+//             RM750 when the candidate is a formal employee for 90 days (Hired Confirmed)
+
 document.addEventListener('DOMContentLoaded', function () {
   // -----------------------------
   // Application State
@@ -10,6 +14,55 @@ document.addEventListener('DOMContentLoaded', function () {
     currentReferralsData: [],
     isLoading: false,
     debugMode: false
+  };
+
+  // -----------------------------
+  // Content blocks used by the Status Guide
+  // -----------------------------
+  const statusExamples = [
+    {
+      status: 'Application Received',
+      description: 'We got your friend’s application or they’re at SHL/testing / contact attempts.',
+      action: 'Encourage them to watch their email and complete assessments.'
+    },
+    {
+      status: 'Assessment Stage',
+      description: 'They’re being screened/interviewed or offer is being prepared.',
+      action: 'Remind them to attend interviews and respond quickly.'
+    },
+    {
+      status: 'Hired (Probation)',
+      description: 'They started the hiring process or are within the first 90 days.',
+      action: 'Support them through onboarding. RM750 is paid after 90 days.'
+    },
+    {
+      status: 'Hired (Confirmed)',
+      description: 'They have completed at least 90 days as a formal employee.',
+      action: 'You qualify for RM750 once verified.'
+    },
+    {
+      status: 'Previously Applied (No Payment)',
+      description: 'Source isn’t xRAF — candidate applied via other channel before referral.',
+      action: 'No payment is applicable for this candidate.'
+    },
+    {
+      status: 'Not Selected',
+      description: 'Candidate withdrew, was unreachable, did not meet criteria, or other rejection.',
+      action: 'You may refer them again in the future if allowed.'
+    }
+  ];
+
+  const earningsStructure = {
+    ai: {
+      label: 'Assessment Passed',
+      condition: 'RM50 when your candidate PASSES the AI assessment',
+      payment: 'RM 50'
+    },
+    probation: {
+      label: 'Probation Completed',
+      condition: 'RM750 when your candidate is a formal employee for 90 days',
+      payment: 'RM 750'
+    }
   };
 
   // -----------------------------
@@ -71,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateTranslations() {
     const lang = AppState.currentLanguage;
-    const t = translations?.[lang] || translations?.en || {};
+    const t = (window.translations?.[lang]) || window.translations?.en || {};
     document.querySelectorAll('[data-translate]').forEach(el => {
       const key = el.getAttribute('data-translate');
       if (t[key]) el.textContent = t[key];
@@ -161,10 +214,10 @@ document.addEventListener('DOMContentLoaded', function () {
     apiData.forEach(item => {
       const email = (item.Email || item.email || '').toLowerCase().trim();
       const name = (item.First_Name || item.name || 'Unknown').trim();
-      const phone = (item.Employee || item.phone || '').trim();
+      const phone = (item.Employee || item.phone || '').toString().trim();
       const key = email ? `${email}_${name}` : `${phone}_${name}`;
 
-      // keep most recent
+      // Deduplicate by most recent
       if (unique.has(key)) {
         const existing = unique.get(key);
         const existUpdated = new Date(existing.updatedDate || 0);
@@ -182,49 +235,30 @@ document.addEventListener('DOMContentLoaded', function () {
       const rawStatus = String(item.Status || item.status || 'Application Received').trim();
       const source = (item.Source || item.source || item.SourceName || '').trim();
 
-      // xRAF detector
-      const sourceL = source.toLowerCase();
-      const isXRAF = (
-        sourceL.includes('xraf') ||
-        sourceL.includes('employee referral') ||
-        sourceL.includes('employee_referral') ||
-        sourceL.includes('raf') ||
-        sourceL === '' ||
-        source === 'xRAF' || source === 'RAF' || source === 'Employee Referral'
-      );
+      // Canonical group mapping (strict xRAF gating is inside StatusMapping)
+      let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, item.assessment || null, source, daysInStage);
 
-      const assessment = item.assessment || null;
-
-      // Plan B: "Second Interview" etc. ⇒ treat as assessment passed
-      const passedByStatus = /(second\s*interview|2nd\s*interview|interview\s*2|round\s*2|stage\s*2)/i.test(rawStatus);
-
-      // Group mapping
-      let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage);
-
-      // Formal Employee override
-      const isFormalEmployee = /formal\s*employee/i.test(rawStatus);
-      if (isFormalEmployee) {
+      // Formal-employee text override (rare edge-case if upstream sends "formal employee" text)
+      const isFormalEmployeeText = /formal\s*employee/i.test(rawStatus);
+      if (isFormalEmployeeText) {
         mappedStatus = daysInStage >= 90 ? 'Hired (Confirmed)' : 'Hired (Probation)';
       }
+      // Safety net: long-in-stage auto-confirm
       if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
         mappedStatus = 'Hired (Confirmed)';
       }
 
-      const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage);
-      const stage = StatusMapping.determineStage(rawStatus, assessment, source, daysInStage);
+      const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, item.assessment || null, source, daysInStage);
+      const stage = StatusMapping.determineStage(rawStatus, item.assessment || null, source, daysInStage);
 
-      const hasPassedAssessment = passedByStatus || (assessment && Number(assessment.score) >= 70);
+      // Payment rules
+      const isXRAF = StatusMapping._isXRafSource(source); // strict: only "xRAF" accepted
+      const passedAI = StatusMapping.hasPassedAIAssessment(rawStatus, item.assessment || null);
 
-      // Eligible for reminders?
-      const needsAction = (mappedStatus === 'Application Received' || mappedStatus === 'Assessment Stage');
+      const isEligibleForAssessmentPayment = isXRAF && passedAI;
+      const isEligibleForProbationPayment = isXRAF && mappedStatus === 'Hired (Confirmed)';
 
-      // Payment eligibility
-      const isEligibleForAssessmentPayment = isXRAF && hasPassedAssessment;
-      const isEligibleForProbationPayment =
-        isXRAF && (
-          (isFormalEmployee && daysInStage >= 90) ||
-          mappedStatus === 'Hired (Confirmed)'
-        );
+      const needsAction = StatusMapping.isReminderEligible(mappedStatus) && !!phone;
 
       unique.set(key, {
         id: item.Person_system_id || item.personId || item.ID || key,
@@ -244,10 +278,10 @@ document.addEventListener('DOMContentLoaded', function () {
         isXRAF,
         isPreviousCandidate: !isXRAF && source !== '',
 
-        assessment,
-        hasPassedAssessment,
-        assessmentScore: assessment ? Number(assessment.score) : (passedByStatus ? 70 : null),
-        assessmentDate: assessment ? assessment.date : null,
+        assessment: item.assessment || null,
+        hasPassedAssessment: passedAI,
+        assessmentScore: item.assessment && typeof item.assessment.score === 'number' ? Number(item.assessment.score) : null,
+        assessmentDate: item.assessment ? item.assessment.date : null,
 
         location: item.Location || item.location || '',
         nationality: item.F_Nationality || item.nationality || '',
@@ -281,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     resultsStep.style.display = 'block';
     resultsStep.innerHTML = createResultsContent(referrals);
 
-    updateWhatsAppBanner(referrals);   // <— NEW: top banner
+    updateWhatsAppBanner(referrals);
     updateChart(referrals);
     updateEarningsTable(referrals);
     updateReminderSection(referrals);
@@ -313,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function () {
         </button>
       </div>
 
-      <!-- WhatsApp Banner (always rendered, visibility toggled in JS) -->
+      <!-- WhatsApp Banner (visibility toggled in JS) -->
       <div id="whatsapp-banner" class="alert alert-success d-flex align-items-center justify-content-between" role="alert" style="display:none;">
         <div>
           <i class="fab fa-whatsapp me-2"></i>
@@ -443,9 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const countEl = document.getElementById('wa-count');
     if (!banner || !countEl) return;
 
-    const eligible = referrals.filter(r =>
-      (r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage') && r.phone
-    );
+    const eligible = referrals.filter(r => StatusMapping.isReminderEligible(r.mappedStatus) && r.phone);
 
     countEl.textContent = String(eligible.length);
     banner.style.display = eligible.length > 0 ? 'flex' : 'none';
@@ -542,7 +574,6 @@ document.addEventListener('DOMContentLoaded', function () {
               generateLabels: function (chart) {
                 const data = chart.data;
                 if (!data.labels.length || !data.datasets.length) return [];
-                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
                 return data.labels.map((label, i) => ({
                   text: `${label} (${data.datasets[0].data[i]})`,
                   fillStyle: data.datasets[0].backgroundColor[i],
@@ -583,15 +614,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const probationRM = probationCompletedCount * 750;
     const total = assessmentRM + probationRM;
 
+    const t = translations?.[AppState.currentLanguage] || translations.en;
+
     body.innerHTML = `
       <tr>
-        <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
+        <td>${t.statusAssessmentPassed || earningsStructure.ai.label}</td>
         <td>RM 50</td>
         <td>${assessmentPassedCount}</td>
         <td>RM ${assessmentRM}</td>
       </tr>
       <tr>
-        <td data-translate="statusProbationPassed">Probation Completed (90 days)</td>
+        <td>${t.statusProbationPassed || earningsStructure.probation.label}</td>
         <td>RM 750</td>
         <td>${probationCompletedCount}</td>
         <td>RM ${probationRM}</td>
@@ -607,9 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('friends-to-remind');
     if (!container) return;
 
-    const list = referrals.filter(r =>
-      (r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage') && r.phone
-    );
+    const list = referrals.filter(r => StatusMapping.isReminderEligible(r.mappedStatus) && r.phone);
 
     if (!list.length) {
       container.innerHTML = `
@@ -657,7 +688,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="card-body text-center py-5 empty-state">
             <i class="fas fa-users empty-state-icon"></i>
             <h4 data-translate="noReferrals">No referrals found yet</h4>
-            <p data-translate="startReferring">Start referring friends to see them appear here!</p>
+                <p data-translate="startReferring">Start referring friends to see them appear here!</p>
             <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">
               <i class="fas fa-user-plus me-2"></i><span data-translate="referFriend">Refer a Friend</span>
             </a>
@@ -676,11 +707,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     sorted.forEach(ref => {
-      const scoreHtml = ref.assessment
-        ? `<span class="assessment-score ${Number(ref.assessmentScore) < 70 ? 'low' : ''}">
-            Score: ${Number(ref.assessmentScore)}%
-           </span>`
-        : (ref.hasPassedAssessment ? `<span class="assessment-score">Score: 70%</span>` : '');
+      // Show AI pass badge or numeric score when present
+      let scoreHtml = '';
+      if (ref.hasPassedAssessment) {
+        scoreHtml = `<span class="assessment-score">AI Assessment: Passed</span>`;
+      } else if (ref.assessmentScore !== null) {
+        scoreHtml = `<span class="assessment-score ${Number(ref.assessmentScore) < 70 ? 'low' : ''}">
+          Score: ${Number(ref.assessmentScore)}%
+        </span>`;
+      }
 
       container.innerHTML += `
         <div class="card referral-card status-${ref.statusType} mb-3">
@@ -754,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
               return `
                 <div class="status-example">
                   <div class="d-flex justify-content-between align-items-center">
-                    <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+                    <strong>${t[\`status${example.status.replace(/[\s()]/g, '')}\`] || example.status}</strong>
                     <span class="badge bg-${type}">${example.status}</span>
                   </div>
                   <p class="mb-1 mt-2 small">${example.description}</p>
@@ -777,13 +812,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 </tr>
               </thead>
               <tbody>
-                ${Object.entries(earningsStructure).map(([_, v]) => `
-                  <tr>
-                    <td>${v.label}</td>
-                    <td>${v.condition}</td>
-                    <td><strong>${v.payment}</strong></td>
-                  </tr>
-                `).join('')}
+                <tr>
+                  <td>${earningsStructure.ai.label}</td>
+                  <td>${earningsStructure.ai.condition}</td>
+                  <td><strong>${earningsStructure.ai.payment}</strong></td>
+                </tr>
+                <tr>
+                  <td>${earningsStructure.probation.label}</td>
+                  <td>${earningsStructure.probation.condition}</td>
+                  <td><strong>${earningsStructure.probation.payment}</strong></td>
+                </tr>
                 <tr>
                   <td>Previously Applied</td>
                   <td data-translate="noPaymentNote">Candidate applied before referral</td>
@@ -832,6 +870,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // -----------------------------
   initializeApp();
 
-  // Expose for debugging
+  // Expose for debugging from console if needed
   window.AppState = AppState;
 });
