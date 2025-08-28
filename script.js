@@ -1,5 +1,5 @@
 // Main Application Script (xRAF Dashboard)
-// Updated for: Payment rules, Plan B (Second Interview), WhatsApp reminders, and UI fixes
+// Visibility fix for WhatsApp reminders + payment logic + Plan B
 document.addEventListener('DOMContentLoaded', function () {
   // -----------------------------
   // Application State
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     statusChart: null,
     currentReferralsData: [],
     isLoading: false,
-    debugMode: false // set true for console diagnostics
+    debugMode: false
   };
 
   // -----------------------------
@@ -21,8 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateTranslations();
     setupEventListeners();
-    const phoneEl = document.getElementById('dashboard-phone');
-    if (phoneEl) phoneEl.focus();
+    document.getElementById('dashboard-phone')?.focus();
 
     if (AppState.debugMode && window.ApiService?.testConnection) {
       ApiService.testConnection();
@@ -33,11 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // Event Listeners
   // -----------------------------
   function setupEventListeners() {
-    const langSelect = document.getElementById('lang-select');
-    if (langSelect) langSelect.addEventListener('change', handleLanguageChange);
-
-    const submitBtn = document.getElementById('dashboard-submit');
-    if (submitBtn) submitBtn.addEventListener('click', handleFormSubmit);
+    document.getElementById('lang-select')?.addEventListener('change', handleLanguageChange);
+    document.getElementById('dashboard-submit')?.addEventListener('click', handleFormSubmit);
 
     const phoneInput = document.getElementById('dashboard-phone');
     if (phoneInput) {
@@ -50,18 +46,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (e) {
       if (e.target.closest('.remind-btn')) handleReminderClick(e);
       if (e.target.id === 'dashboard-back') handleBackButton();
+      if (e.target.id === 'wa-open') scrollToReminderSection();
     });
 
     // Enter key submits
     const form = document.getElementById('dashboard-form');
-    if (form) {
-      form.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleFormSubmit();
-        }
-      });
-    }
+    form?.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleFormSubmit();
+      }
+    });
   }
 
   // -----------------------------
@@ -134,17 +129,14 @@ document.addEventListener('DOMContentLoaded', function () {
     input.classList.add('is-invalid');
   }
 
-  function clearError(input) {
-    if (!input) return;
-    input.classList.remove('is-invalid');
-  }
+  function clearError(input) { input?.classList.remove('is-invalid'); }
 
   function setLoadingState(isLoading) {
     const btn = document.getElementById('dashboard-submit');
     if (!btn) return;
     btn.disabled = isLoading;
     btn.innerHTML = isLoading
-      ? `<span class="spinner-border spinner-border-sm me-2"></span>${(translations?.[AppState.currentLanguage] || translations.en).connectingMessage || 'Connecting...'}` 
+      ? `<span class="spinner-border spinner-border-sm me-2"></span>${(translations?.[AppState.currentLanguage] || translations.en).connectingMessage || 'Connecting...'}`
       : (translations?.[AppState.currentLanguage] || translations.en).viewStatusBtn || 'View Referral Status';
   }
 
@@ -154,7 +146,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function processReferrals(apiData) {
     if (!Array.isArray(apiData)) return [];
 
-    // Helper: parse many date formats
     const parseDate = (dateStr) => {
       if (!dateStr) return new Date();
       if (typeof dateStr !== 'string') return new Date(dateStr);
@@ -191,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const rawStatus = String(item.Status || item.status || 'Application Received').trim();
       const source = (item.Source || item.source || item.SourceName || '').trim();
 
-      // Determine xRAF source
+      // xRAF detector
       const sourceL = source.toLowerCase();
       const isXRAF = (
         sourceL.includes('xraf') ||
@@ -202,22 +193,19 @@ document.addEventListener('DOMContentLoaded', function () {
         source === 'xRAF' || source === 'RAF' || source === 'Employee Referral'
       );
 
-      // Assessment object if present
       const assessment = item.assessment || null;
 
-      // Plan B: "Second Interview" / "2nd interview" / "interview 2" / "round 2" / "stage 2" ⇒ treat as assessment passed
+      // Plan B: "Second Interview" etc. ⇒ treat as assessment passed
       const passedByStatus = /(second\s*interview|2nd\s*interview|interview\s*2|round\s*2|stage\s*2)/i.test(rawStatus);
 
-      // Map status to group using StatusMapping, then apply "Formal Employee" special-case
+      // Group mapping
       let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage);
 
-      // If raw status explicitly says Formal Employee, force hired grouping
+      // Formal Employee override
       const isFormalEmployee = /formal\s*employee/i.test(rawStatus);
       if (isFormalEmployee) {
         mappedStatus = daysInStage >= 90 ? 'Hired (Confirmed)' : 'Hired (Probation)';
       }
-
-      // Also, if it's a hired-like state older than 90 days, confirm
       if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
         mappedStatus = 'Hired (Confirmed)';
       }
@@ -225,24 +213,20 @@ document.addEventListener('DOMContentLoaded', function () {
       const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage);
       const stage = StatusMapping.determineStage(rawStatus, assessment, source, daysInStage);
 
-      // Final pass condition (real score OR Plan B)
       const hasPassedAssessment = passedByStatus || (assessment && Number(assessment.score) >= 70);
 
-      // Needs reminder if Application Received OR Assessment Stage (per requirements)
+      // Eligible for reminders?
       const needsAction = (mappedStatus === 'Application Received' || mappedStatus === 'Assessment Stage');
 
-      // Payment eligibility:
-      // - RM50: xRAF + passed assessment (real or Plan B)
-      // - RM750: xRAF + Formal Employee ≥ 90 days  OR mapped as Hired (Confirmed)
+      // Payment eligibility
       const isEligibleForAssessmentPayment = isXRAF && hasPassedAssessment;
-
       const isEligibleForProbationPayment =
         isXRAF && (
           (isFormalEmployee && daysInStage >= 90) ||
           mappedStatus === 'Hired (Confirmed)'
         );
 
-      const processed = {
+      unique.set(key, {
         id: item.Person_system_id || item.personId || item.ID || key,
         personId: item.Person_system_id || item.personId || item.ID || '',
         uniqueKey: key,
@@ -262,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         assessment,
         hasPassedAssessment,
-        assessmentScore: assessment ? Number(assessment.score) : (passedByStatus ? 70 : null), // optional virtual 70 for UI
+        assessmentScore: assessment ? Number(assessment.score) : (passedByStatus ? 70 : null),
         assessmentDate: assessment ? assessment.date : null,
 
         location: item.Location || item.location || '',
@@ -279,9 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
         isEligibleForProbationPayment,
 
         _original: item
-      };
-
-      unique.set(key, processed);
+      });
     });
 
     return Array.from(unique.values()).sort((a, b) => b.createdDate - a.createdDate);
@@ -299,6 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
     resultsStep.style.display = 'block';
     resultsStep.innerHTML = createResultsContent(referrals);
 
+    updateWhatsAppBanner(referrals);   // <— NEW: top banner
     updateChart(referrals);
     updateEarningsTable(referrals);
     updateReminderSection(referrals);
@@ -312,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function () {
       r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
     ).length;
 
-    // "In Progress" = Application Received + Assessment Stage
     const inProgressCount = referrals.filter(r =>
       r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage'
     ).length;
@@ -328,6 +310,18 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
           <i class="fas fa-arrow-left me-2"></i> Back
+        </button>
+      </div>
+
+      <!-- WhatsApp Banner (always rendered, visibility toggled in JS) -->
+      <div id="whatsapp-banner" class="alert alert-success d-flex align-items-center justify-content-between" role="alert" style="display:none;">
+        <div>
+          <i class="fab fa-whatsapp me-2"></i>
+          <strong>WhatsApp Reminders:</strong>
+          <span id="wa-count">0</span> candidate(s) ready
+        </div>
+        <button id="wa-open" class="btn btn-success btn-sm">
+          Open List
         </button>
       </div>
 
@@ -350,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
         </div>
         <div class="col-md-4 mb-3">
-          <!-- IMPORTANT: use in-progress class (not .progress) -->
           <div class="card stats-card in-progress">
             <div class="card-body text-center">
               <h5 class="card-title" data-translate="inProgress">In Progress</h5>
@@ -403,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
 
       <!-- Reminder Section -->
-      <div class="card mb-4">
+      <div class="card mb-4" id="wa-section">
         <div class="card-body">
           <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
           <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
@@ -438,13 +431,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const email = document.getElementById('dashboard-email');
     if (phone) phone.value = '';
     if (email) email.value = '';
-    if (phone) phone.focus();
+    phone?.focus();
     AppState.currentReferralsData = [];
   }
 
   // -----------------------------
-  // WhatsApp Reminder
+  // WhatsApp Banner + Reminders
   // -----------------------------
+  function updateWhatsAppBanner(referrals) {
+    const banner = document.getElementById('whatsapp-banner');
+    const countEl = document.getElementById('wa-count');
+    if (!banner || !countEl) return;
+
+    const eligible = referrals.filter(r =>
+      (r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage') && r.phone
+    );
+
+    countEl.textContent = String(eligible.length);
+    banner.style.display = eligible.length > 0 ? 'flex' : 'none';
+  }
+
+  function scrollToReminderSection() {
+    const sec = document.getElementById('wa-section');
+    if (!sec) return;
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function handleReminderClick(e) {
     const button = e.target.closest('.remind-btn');
     if (!button) return;
@@ -474,7 +486,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (digits.startsWith('+60')) return digits.replace('+', '');
     if (digits.startsWith('60')) return digits;
     if (digits.startsWith('0')) return '60' + digits.slice(1);
-    // If user already stores full international without plus for other countries
     return digits.replace(/^\+/, '');
   }
 
@@ -590,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // -----------------------------
-  // Reminders list
+  // Reminders Section
   // -----------------------------
   function updateReminderSection(referrals) {
     const container = document.getElementById('friends-to-remind');
