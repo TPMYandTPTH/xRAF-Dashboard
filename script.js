@@ -1,10 +1,56 @@
-// script.js — Main Application Script (xRAF Dashboard)
-// - WhatsApp reminders banner + list
-// - Status mapping integration
-// - Payments: RM50 when the candidate PASSES the AI assessment,
-//             RM750 when the candidate is a formal employee for 90 days (Hired Confirmed)
-
+// Main Application Script (xRAF Dashboard)
+// Fixes: add statusExamples + earningsStructure, set <html data-lang>, safer translations, keep demo + WhatsApp logic
 document.addEventListener('DOMContentLoaded', function () {
+  // -----------------------------
+  // Globals used by the Status Guide (these were missing and caused a crash)
+  // -----------------------------
+  const earningsStructure = {
+    assessment: {
+      label: 'Assessment Passed',
+      // <- your requested wording
+      condition: 'RM50 payment eligible if the candidate pass the AI assessment',
+      payment: 'RM 50'
+    },
+    probation: {
+      label: 'Probation Completed',
+      condition: 'Candidate employed for at least 90 days',
+      payment: 'RM 750'
+    }
+  };
+
+  const statusExamples = [
+    {
+      status: 'Application Received',
+      description: 'We’ve received the application or the candidate is doing SHL assessments.',
+      action: 'Encourage them to complete the assessment promptly.'
+    },
+    {
+      status: 'Assessment Stage',
+      description: 'Screening/interviews/offers in progress.',
+      action: 'Remind them to attend interviews and check email for instructions.'
+    },
+    {
+      status: 'Hired (Probation)',
+      description: 'Candidate hired and within first 90 days.',
+      action: 'No action — payment for RM750 is after 90 days.'
+    },
+    {
+      status: 'Hired (Confirmed)',
+      description: 'Hired and ≥ 90 days in stage.',
+      action: 'Eligible for RM750 payment.'
+    },
+    {
+      status: 'Previously Applied (No Payment)',
+      description: 'Source is not xRAF (e.g., LinkedIn/JobStreet).',
+      action: 'No payment, but you can still support their process.'
+    },
+    {
+      status: 'Not Selected',
+      description: 'Candidate withdrew or was eliminated.',
+      action: 'Invite them to try again after improving fit or requirements.'
+    }
+  ];
+
   // -----------------------------
   // Application State
   // -----------------------------
@@ -17,66 +63,18 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // -----------------------------
-  // Content blocks used by the Status Guide
-  // -----------------------------
-  const statusExamples = [
-    {
-      status: 'Application Received',
-      description: 'We got your friend’s application or they’re at SHL/testing / contact attempts.',
-      action: 'Encourage them to watch their email and complete assessments.'
-    },
-    {
-      status: 'Assessment Stage',
-      description: 'They’re being screened/interviewed or offer is being prepared.',
-      action: 'Remind them to attend interviews and respond quickly.'
-    },
-    {
-      status: 'Hired (Probation)',
-      description: 'They started the hiring process or are within the first 90 days.',
-      action: 'Support them through onboarding. RM750 is paid after 90 days.'
-    },
-    {
-      status: 'Hired (Confirmed)',
-      description: 'They have completed at least 90 days as a formal employee.',
-      action: 'You qualify for RM750 once verified.'
-    },
-    {
-      status: 'Previously Applied (No Payment)',
-      description: 'Source isn’t xRAF — candidate applied via other channel before referral.',
-      action: 'No payment is applicable for this candidate.'
-    },
-    {
-      status: 'Not Selected',
-      description: 'Candidate withdrew, was unreachable, did not meet criteria, or other rejection.',
-      action: 'You may refer them again in the future if allowed.'
-    }
-  ];
-
-  const earningsStructure = {
-    ai: {
-      label: 'Assessment Passed',
-      condition: 'RM50 when your candidate PASSES the AI assessment',
-      payment: 'RM 50'
-    },
-    probation: {
-      label: 'Probation Completed',
-      condition: 'RM750 when your candidate is a formal employee for 90 days',
-      payment: 'RM 750'
-    }
-  };
-
-  // -----------------------------
   // Initialization
   // -----------------------------
   function initializeApp() {
     const yearEl = document.getElementById('current-year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    updateTranslations();
+    updateTranslations();           // set initial texts
     setupEventListeners();
-    document.getElementById('dashboard-phone')?.focus();
+    const phoneEl = document.getElementById('dashboard-phone');
+    if (phoneEl) phoneEl.focus();
 
-    if (AppState.debugMode && window.ApiService?.testConnection) {
+    if (AppState.debugMode && window.ApiService && typeof ApiService.testConnection === 'function') {
       ApiService.testConnection();
     }
   }
@@ -85,8 +83,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // Event Listeners
   // -----------------------------
   function setupEventListeners() {
-    document.getElementById('lang-select')?.addEventListener('change', handleLanguageChange);
-    document.getElementById('dashboard-submit')?.addEventListener('click', handleFormSubmit);
+    const langSel = document.getElementById('lang-select');
+    if (langSel) langSel.addEventListener('change', handleLanguageChange);
+
+    const submitBtn = document.getElementById('dashboard-submit');
+    if (submitBtn) submitBtn.addEventListener('click', handleFormSubmit);
 
     const phoneInput = document.getElementById('dashboard-phone');
     if (phoneInput) {
@@ -104,12 +105,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Enter key submits
     const form = document.getElementById('dashboard-form');
-    form?.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleFormSubmit();
-      }
-    });
+    if (form) {
+      form.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleFormSubmit();
+        }
+      });
+    }
   }
 
   // -----------------------------
@@ -118,20 +121,32 @@ document.addEventListener('DOMContentLoaded', function () {
   function handleLanguageChange(e) {
     AppState.currentLanguage = e.target.value;
     updateTranslations();
-    const resultsShown = document.getElementById('results-step')?.style.display !== 'none';
+    const resultsShown = document.getElementById('results-step') && document.getElementById('results-step').style.display !== 'none';
     if (resultsShown) showReferralResults(AppState.currentReferralsData);
+  }
+
+  function getTranslations(lang) {
+    if (window.translations && window.translations[lang]) return window.translations[lang];
+    if (window.translations && window.translations.en) return window.translations.en;
+    return {};
   }
 
   function updateTranslations() {
     const lang = AppState.currentLanguage;
-    const t = (window.translations?.[lang]) || window.translations?.en || {};
+    // Make CSS language rules work:
+    document.documentElement.setAttribute('data-lang', lang);
+
+    const t = getTranslations(lang);
+
+    // Text nodes
     document.querySelectorAll('[data-translate]').forEach(el => {
       const key = el.getAttribute('data-translate');
       if (t[key]) el.textContent = t[key];
     });
+    // Placeholders
     document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
       const key = el.getAttribute('data-translate-placeholder');
-      if (t[key]) el.placeholder = t[key];
+      if (t[key]) el.setAttribute('placeholder', t[key]);
     });
   }
 
@@ -139,8 +154,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // Form Submit
   // -----------------------------
   async function handleFormSubmit() {
-    const phone = document.getElementById('dashboard-phone')?.value.trim() || '';
-    const email = document.getElementById('dashboard-email')?.value.trim() || '';
+    const phone = (document.getElementById('dashboard-phone')?.value || '').trim();
+    const email = (document.getElementById('dashboard-email')?.value || '').trim();
 
     if (!validateInputs(phone, email)) return;
 
@@ -153,7 +168,8 @@ document.addEventListener('DOMContentLoaded', function () {
       console.error('Error fetching/processing referrals:', err);
       AppState.currentReferralsData = [];
       showReferralResults([]);
-      showNonBlockingError((translations?.[AppState.currentLanguage] || translations.en).connectingMessage || 'Connection issue.');
+      const t = getTranslations(AppState.currentLanguage);
+      showNonBlockingError(t.connectingMessage || 'Connection issue.');
     } finally {
       setLoadingState(false);
     }
@@ -161,13 +177,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function validateInputs(phone, email) {
     let ok = true;
+    const t = getTranslations(AppState.currentLanguage);
+
     if (!/^01\d{8,9}$/.test(phone)) {
-      showError(document.getElementById('dashboard-phone'), translations[AppState.currentLanguage].phoneError);
+      showError(document.getElementById('dashboard-phone'), t.phoneError || 'Invalid phone.');
       ok = false;
     } else clearError(document.getElementById('dashboard-phone'));
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showError(document.getElementById('dashboard-email'), translations[AppState.currentLanguage].emailError);
+      showError(document.getElementById('dashboard-email'), t.emailError || 'Invalid email.');
       ok = false;
     } else clearError(document.getElementById('dashboard-email'));
 
@@ -177,20 +195,21 @@ document.addEventListener('DOMContentLoaded', function () {
   function showError(input, message) {
     if (!input) return;
     const wrap = input.closest('.mb-3');
-    const err = wrap?.querySelector('.invalid-feedback');
+    const err = wrap && wrap.querySelector('.invalid-feedback');
     if (err) err.textContent = message;
     input.classList.add('is-invalid');
   }
 
-  function clearError(input) { input?.classList.remove('is-invalid'); }
+  function clearError(input) { if (input) input.classList.remove('is-invalid'); }
 
   function setLoadingState(isLoading) {
     const btn = document.getElementById('dashboard-submit');
     if (!btn) return;
+    const t = getTranslations(AppState.currentLanguage);
     btn.disabled = isLoading;
     btn.innerHTML = isLoading
-      ? `<span class="spinner-border spinner-border-sm me-2"></span>${(translations?.[AppState.currentLanguage] || translations.en).connectingMessage || 'Connecting...'}`
-      : (translations?.[AppState.currentLanguage] || translations.en).viewStatusBtn || 'View Referral Status';
+      ? `<span class="spinner-border spinner-border-sm me-2"></span>${t.connectingMessage || 'Connecting...'}`
+      : (t.viewStatusBtn || 'View Referral Status');
   }
 
   // -----------------------------
@@ -214,10 +233,10 @@ document.addEventListener('DOMContentLoaded', function () {
     apiData.forEach(item => {
       const email = (item.Email || item.email || '').toLowerCase().trim();
       const name = (item.First_Name || item.name || 'Unknown').trim();
-      const phone = (item.Employee || item.phone || '').toString().trim();
+      const phone = (item.Employee || item.phone || '').trim();
       const key = email ? `${email}_${name}` : `${phone}_${name}`;
 
-      // Deduplicate by most recent
+      // keep most recent
       if (unique.has(key)) {
         const existing = unique.get(key);
         const existUpdated = new Date(existing.updatedDate || 0);
@@ -235,30 +254,34 @@ document.addEventListener('DOMContentLoaded', function () {
       const rawStatus = String(item.Status || item.status || 'Application Received').trim();
       const source = (item.Source || item.source || item.SourceName || '').trim();
 
-      // Canonical group mapping (strict xRAF gating is inside StatusMapping)
-      let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, item.assessment || null, source, daysInStage);
+      const assessment = item.assessment || null;
 
-      // Formal-employee text override (rare edge-case if upstream sends "formal employee" text)
-      const isFormalEmployeeText = /formal\s*employee/i.test(rawStatus);
-      if (isFormalEmployeeText) {
+      // Map to display group
+      let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage);
+
+      // Formal Employee override (if you ever receive this)
+      const isFormalEmployee = /formal\s*employee/i.test(rawStatus);
+      if (isFormalEmployee) {
         mappedStatus = daysInStage >= 90 ? 'Hired (Confirmed)' : 'Hired (Probation)';
       }
-      // Safety net: long-in-stage auto-confirm
       if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
         mappedStatus = 'Hired (Confirmed)';
       }
 
-      const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, item.assessment || null, source, daysInStage);
-      const stage = StatusMapping.determineStage(rawStatus, item.assessment || null, source, daysInStage);
+      const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage);
+      const stage = StatusMapping.determineStage(rawStatus, assessment, source, daysInStage);
 
-      // Payment rules
-      const isXRAF = StatusMapping._isXRafSource(source); // strict: only "xRAF" accepted
-      const passedAI = StatusMapping.hasPassedAIAssessment(rawStatus, item.assessment || null);
+      // Assessment pass: score >= 70 OR inferred from status progression
+      const hasPassedAssessment = (assessment && Number(assessment.score) >= 70) || StatusMapping.hasPassedAIAssessment(rawStatus, assessment);
 
-      const isEligibleForAssessmentPayment = isXRAF && passedAI;
-      const isEligibleForProbationPayment = isXRAF && mappedStatus === 'Hired (Confirmed)';
+      // Only xRAF is accepted (matches statusMapping.js rule)
+      const isXRAF = StatusMapping._isXRafSource(source);
 
-      const needsAction = StatusMapping.isReminderEligible(mappedStatus) && !!phone;
+      const needsAction = StatusMapping.isReminderEligible(mappedStatus);
+
+      // Payment eligibility aligned with your wording
+      const isEligibleForAssessmentPayment = isXRAF && hasPassedAssessment;
+      const isEligibleForProbationPayment = isXRAF && (mappedStatus === 'Hired (Confirmed)');
 
       unique.set(key, {
         id: item.Person_system_id || item.personId || item.ID || key,
@@ -278,10 +301,10 @@ document.addEventListener('DOMContentLoaded', function () {
         isXRAF,
         isPreviousCandidate: !isXRAF && source !== '',
 
-        assessment: item.assessment || null,
-        hasPassedAssessment: passedAI,
-        assessmentScore: item.assessment && typeof item.assessment.score === 'number' ? Number(item.assessment.score) : null,
-        assessmentDate: item.assessment ? item.assessment.date : null,
+        assessment,
+        hasPassedAssessment,
+        assessmentScore: assessment ? Number(assessment.score) : (hasPassedAssessment ? 70 : null),
+        assessmentDate: assessment ? assessment.date : null,
 
         location: item.Location || item.location || '',
         nationality: item.F_Nationality || item.nationality || '',
@@ -321,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateReminderSection(referrals);
     updateReferralList(referrals);
     updateStatusGuide();
-    updateTranslations();
+    updateTranslations(); // re-apply current language to freshly injected nodes
   }
 
   function createResultsContent(referrals) {
@@ -347,19 +370,15 @@ document.addEventListener('DOMContentLoaded', function () {
         </button>
       </div>
 
-      <!-- WhatsApp Banner (visibility toggled in JS) -->
       <div id="whatsapp-banner" class="alert alert-success d-flex align-items-center justify-content-between" role="alert" style="display:none;">
         <div>
           <i class="fab fa-whatsapp me-2"></i>
           <strong>WhatsApp Reminders:</strong>
           <span id="wa-count">0</span> candidate(s) ready
         </div>
-        <button id="wa-open" class="btn btn-success btn-sm">
-          Open List
-        </button>
+        <button id="wa-open" class="btn btn-success btn-sm">Open List</button>
       </div>
 
-      <!-- Stats Cards -->
       <div class="row mb-4">
         <div class="col-md-4 mb-3">
           <div class="card stats-card">
@@ -387,7 +406,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- Status Distribution Chart -->
       <div class="card mb-4">
         <div class="card-body">
           <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
@@ -398,7 +416,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- Earnings Table -->
       <div class="card mb-4">
         <div class="card-body">
           <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
@@ -429,7 +446,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- Reminder Section -->
       <div class="card mb-4" id="wa-section">
         <div class="card-body">
           <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
@@ -438,7 +454,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- Referral List -->
       <div class="card mb-4">
         <div class="card-body">
           <h5 class="mb-3">All Referrals</h5>
@@ -446,7 +461,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- Status Guide -->
       <div class="card mb-4">
         <div class="card-body">
           <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
@@ -465,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const email = document.getElementById('dashboard-email');
     if (phone) phone.value = '';
     if (email) email.value = '';
-    phone?.focus();
+    if (phone) phone.focus();
     AppState.currentReferralsData = [];
   }
 
@@ -477,7 +491,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const countEl = document.getElementById('wa-count');
     if (!banner || !countEl) return;
 
-    const eligible = referrals.filter(r => StatusMapping.isReminderEligible(r.mappedStatus) && r.phone);
+    const eligible = referrals.filter(r =>
+      (r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage') && r.phone
+    );
 
     countEl.textContent = String(eligible.length);
     banner.style.display = eligible.length > 0 ? 'flex' : 'none';
@@ -539,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const labels = StatusMapping.displayOrder.map(status =>
-      (translations?.[AppState.currentLanguage] || translations.en)[`status${status.replace(/[\s()]/g, '')}`] || status
+      (getTranslations(AppState.currentLanguage))[`status${status.replace(/[\s()]/g, '')}`] || status
     );
 
     const colors = [
@@ -614,17 +630,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const probationRM = probationCompletedCount * 750;
     const total = assessmentRM + probationRM;
 
-    const t = translations?.[AppState.currentLanguage] || translations.en;
-
     body.innerHTML = `
       <tr>
-        <td>${t.statusAssessmentPassed || earningsStructure.ai.label}</td>
+        <td>Assessment Passed</td>
         <td>RM 50</td>
         <td>${assessmentPassedCount}</td>
         <td>RM ${assessmentRM}</td>
       </tr>
       <tr>
-        <td>${t.statusProbationPassed || earningsStructure.probation.label}</td>
+        <td>Probation Completed (90 days)</td>
         <td>RM 750</td>
         <td>${probationCompletedCount}</td>
         <td>RM ${probationRM}</td>
@@ -640,7 +654,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('friends-to-remind');
     if (!container) return;
 
-    const list = referrals.filter(r => StatusMapping.isReminderEligible(r.mappedStatus) && r.phone);
+    const list = referrals.filter(r =>
+      (r.mappedStatus === 'Application Received' || r.mappedStatus === 'Assessment Stage') && r.phone
+    );
 
     if (!list.length) {
       container.innerHTML = `
@@ -688,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="card-body text-center py-5 empty-state">
             <i class="fas fa-users empty-state-icon"></i>
             <h4 data-translate="noReferrals">No referrals found yet</h4>
-                <p data-translate="startReferring">Start referring friends to see them appear here!</p>
+            <p data-translate="startReferring">Start referring friends to see them appear here!</p>
             <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-primary mt-3">
               <i class="fas fa-user-plus me-2"></i><span data-translate="referFriend">Refer a Friend</span>
             </a>
@@ -707,15 +723,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     sorted.forEach(ref => {
-      // Show AI pass badge or numeric score when present
-      let scoreHtml = '';
-      if (ref.hasPassedAssessment) {
-        scoreHtml = `<span class="assessment-score">AI Assessment: Passed</span>`;
-      } else if (ref.assessmentScore !== null) {
-        scoreHtml = `<span class="assessment-score ${Number(ref.assessmentScore) < 70 ? 'low' : ''}">
-          Score: ${Number(ref.assessmentScore)}%
-        </span>`;
-      }
+      const scoreHtml = ref.assessment
+        ? `<span class="assessment-score ${Number(ref.assessmentScore) < 70 ? 'low' : ''}">
+            Score: ${Number(ref.assessmentScore)}%
+           </span>`
+        : (ref.hasPassedAssessment ? `<span class="assessment-score">Score: 70%</span>` : '');
 
       container.innerHTML += `
         <div class="card referral-card status-${ref.statusType} mb-3">
@@ -775,7 +787,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateStatusGuide() {
     const container = document.getElementById('status-guide-content');
     if (!container) return;
-    const t = translations?.[AppState.currentLanguage] || translations.en;
+
+    const t = getTranslations(AppState.currentLanguage);
 
     container.innerHTML = `
       <div class="row">
@@ -812,16 +825,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>${earningsStructure.ai.label}</td>
-                  <td>${earningsStructure.ai.condition}</td>
-                  <td><strong>${earningsStructure.ai.payment}</strong></td>
-                </tr>
-                <tr>
-                  <td>${earningsStructure.probation.label}</td>
-                  <td>${earningsStructure.probation.condition}</td>
-                  <td><strong>${earningsStructure.probation.payment}</strong></td>
-                </tr>
+                ${Object.values(earningsStructure).map(v => `
+                  <tr>
+                    <td>${v.label}</td>
+                    <td>${v.condition}</td>
+                    <td><strong>${v.payment}</strong></td>
+                  </tr>
+                `).join('')}
                 <tr>
                   <td>Previously Applied</td>
                   <td data-translate="noPaymentNote">Candidate applied before referral</td>
@@ -870,6 +880,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // -----------------------------
   initializeApp();
 
-  // Expose for debugging from console if needed
+  // Expose for debugging
   window.AppState = AppState;
 });
