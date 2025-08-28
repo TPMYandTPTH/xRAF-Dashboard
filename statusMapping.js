@@ -8,11 +8,7 @@ const StatusMapping = {
         const sourceStr = (source || '').toLowerCase().trim();
         
         // FIRST CHECK: Source must be xRAF for payment eligibility
-        const isXRAF = sourceStr.includes('xraf') || 
-                       sourceStr.includes('employee referral') || 
-                       sourceStr.includes('employee_referral') ||
-                       sourceStr === 'employee referral' ||
-                       sourceStr === 'xraf';
+        const isXRAF = sourceStr === 'xraf';
         
         // If source is not xRAF, it's previously applied (no payment)
         if (!isXRAF && sourceStr !== '') {
