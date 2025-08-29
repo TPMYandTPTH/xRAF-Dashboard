@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const source = (item.Source || item.source || item.SourceName || '').trim();
             
             // Check if xRAF referral (only xRAF is accepted for payment)
-            const sourceL = source.toLowerCase();
+            const sourceL = source.toLowerCase().trim();
             const isXRAF = sourceL === 'xraf';
             
             // Get assessment result if available
@@ -478,6 +478,14 @@ document.addEventListener('DOMContentLoaded', function() {
             r.mappedStatus === 'Application Received' || 
             r.mappedStatus === 'Assessment Stage'
         ).length;
+        
+        // Debug logging
+        console.log('Referral Status Summary:');
+        referrals.forEach(r => {
+            console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
+        });
+        console.log('In Progress Count:', inProgressCount);
+        console.log('Hired Count:', hiredCount);
         
         const userName = document.getElementById('dashboard-email').value.split('@')[0];
         
