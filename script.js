@@ -593,38 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
                     <div id="status-guide-content"></div>
                 </div>
-            </div>
-            
-            <!-- Social Media -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-4" data-translate="followUsTitle">Follow Us</h5>
-                    <div class="row text-center">
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="tpGlobal">TP Global</h6>
-                            <div class="d-flex justify-content-center gap-3">
-                                <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
-                                <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
-                                <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="followMalaysia">TP Malaysia</h6>
-                            <div class="d-flex justify-content-center gap-3">
-                                <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                                <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <h6 data-translate="followThailand">TP Thailand</h6>
-                            <div class="d-flex justify-content-center gap-3">
-                                <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                                <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </div>           
         `;
     }
     
