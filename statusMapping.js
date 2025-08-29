@@ -151,7 +151,7 @@ const statusExamples = [
     {
         status: "Assessment Stage",
         description: "Candidate in assessment/interview process",
-        action: "RM50 payment eligible if the candidate pass the AI assessment"
+        action: "RM50 payment is eligible if the candidate passes the AI assessment"
     },
     {
         status: "Hired (Probation)",
