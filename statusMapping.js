@@ -10,7 +10,7 @@ const StatusMapping = {
         // FIRST CHECK: Source must be xRAF for payment eligibility
         const isXRAF = sourceStr === 'xraf';
         
-        // If source is not xRAF, it's previously applied (no payment)
+        // If source is not xRAF AND not empty, it's previously applied (no payment)
         if (!isXRAF && sourceStr !== '') {
             return 'Previously Applied (No Payment)';
         }
@@ -151,7 +151,7 @@ const statusExamples = [
     {
         status: "Assessment Stage",
         description: "Candidate in assessment/interview process",
-        action: "RM50 payment is eligible if the candidate passes the AI assessment"
+        action: "RM50 payment eligible if the candidate pass the AI assessment"
     },
     {
         status: "Hired (Probation)",
