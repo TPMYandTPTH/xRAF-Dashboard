@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle back button
     function handleBackButton() {
-        document.getElementById('auth-step').style.display = 'block';
+        document.getElementById('auth-step').style.display = 'none';
         document.getElementById('results-step').style.display = 'none';
         document.getElementById('dashboard-phone').value = '';
         document.getElementById('dashboard-email').value = '';
