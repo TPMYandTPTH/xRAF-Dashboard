@@ -1086,7 +1086,7 @@ function createResultsContent(referrals) {
                 el.placeholder = t[key];
             }
         });
-        +  // NEW: translate tooltip titles
+          // NEW: translate tooltip titles
             document.querySelectorAll('[data-translate-title]').forEach(el => {
             const key = el.getAttribute('data-translate-title');
             if (t[key]) el.setAttribute('title', t[key]);
