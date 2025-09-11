@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEarningsTable(referrals);
         updateReminderSection(referrals);
         updateReferralList(referrals);
-        updateStatusGuide();
+        ();
         updateTranslations();
         enableTooltips(resultsStep);
     }
@@ -995,78 +995,78 @@ function createResultsContent(referrals) {
         });
     }
     
-    // Update status guide section
-    function updateStatusGuide() {
-        const container = document.getElementById('status-guide-content');
-        if (!container) return;
-        
-        const t = translations[AppState.currentLanguage];
-        
-        container.innerHTML = `
-            <div class="row">
-                <!-- Status Examples -->
-                <div class="col-md-6">
-                    <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
-                    <div class="status-examples">
-                        ${statusExamples.map(example => {
-                            // Get the correct status type for coloring
-                            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
-                            if (example.status === "Hired (Confirmed)") statusType = 'passed';
-                            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
-                            
-                            return `
-                                <div class="status-example">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
-                                        <span class="badge bg-${statusType}">
-                                            ${example.status}
-                                        </span>
-                                    </div>
-                                    <p class="mb-1 mt-2 small">${example.description}</p>
-                                    <small class="text-muted">${example.action}</small>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+function updateStatusGuide() {
+  const container = document.getElementById('status-guide-content');
+  if (!container) return;
+
+  const t = translations[AppState.currentLanguage];
+
+  // Fallbacks if not defined
+  const examples = Array.isArray(window.statusExamples) ? window.statusExamples : [];
+  const earnings = (window.earningsStructure && typeof window.earningsStructure === 'object')
+    ? window.earningsStructure
+    : {};
+
+  container.innerHTML = `
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
+        <div class="status-examples">
+          ${examples.map(example => {
+            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
+            if (example.status === "Hired (Confirmed)") statusType = 'passed';
+            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
+            return `
+              <div class="status-example">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>${t[\`status${example.status.replace(/[\s()]/g, '')}\`] || example.status}</strong>
+                  <span class="badge bg-${statusType}">${example.status}</span>
                 </div>
-                
-                <!-- Payment Conditions -->
-                <div class="col-md-6">
-                    <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
-                    <div class="table-responsive">
-                        <table class="table status-guide-table">
-                            <thead>
-                                <tr>
-                                    <th data-translate="stage">Stage</th>
-                                    <th data-translate="condition">Condition</th>
-                                    <th data-translate="payment">Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${Object.entries(earningsStructure).map(([key, value]) => `
-                                    <tr>
-                                        <td>${value.label}</td>
-                                        <td>${value.condition}</td>
-                                        <td><strong>${value.payment}</strong></td>
-                                    </tr>
-                                `).join('')}
-                                <tr>
-                                    <td>Previously Applied</td>
-                                    <td data-translate="noPaymentNote">Candidate applied before referral</td>
-                                    <td><strong>No Payment</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="payment-notes mt-3">
-                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
-                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
-                        <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+                <p class="mb-1 mt-2 small">${example.description || ''}</p>
+                <small class="text-muted">${example.action || ''}</small>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
+        <div class="table-responsive">
+          <table class="table status-guide-table">
+            <thead>
+              <tr>
+                <th data-translate="stage">Stage</th>
+                <th data-translate="condition">Condition</th>
+                <th data-translate="payment">Payment</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(earnings).map(([, value]) => `
+                <tr>
+                  <td>${value.label || ''}</td>
+                  <td>${value.condition || ''}</td>
+                  <td><strong>${value.payment || ''}</strong></td>
+                </tr>
+              `).join('')}
+              <tr>
+                <td>Previously Applied</td>
+                <td data-translate="noPaymentNote">Candidate applied before referral</td>
+                <td><strong>No Payment</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="payment-notes mt-3">
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
+          <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
     
     // Update translations
     function updateTranslations() {
