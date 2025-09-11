@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('current-year').textContent = new Date().getFullYear();
         updateTranslations();
         setupEventListeners();
+        enableTooltips(document);
         document.getElementById('dashboard-phone').focus();
         
         // Test connection if in debug mode
@@ -539,6 +540,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateReferralList(referrals);
         updateStatusGuide();
         updateTranslations();
+        enableTooltips(resultsStep);
     }
     
     // Create results HTML with new sections
@@ -668,8 +670,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>           
         `;
+        <!-- Contact Email (also shown on results page) -->
+<div class="card mb-4">
+  <div class="card-body text-center">
+    <p class="mb-0">
+      <span data-translate="contactUsText">Email us at:</span>
+      <a href="mailto:tpmycareers@teleperformance.com"
+         class="email-link"
+         data-bs-toggle="tooltip"
+         data-translate-title="emailTooltip"
+         title="Open your email app">
+        <i class="fa-solid fa-envelope me-1"></i>tpmycareers@teleperformance.com
+      </a>
+    </p>
+  </div>
+</div>
+
+
     }
-    
+    function enableTooltips(root = document) {
+  const els = Array.from(root.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  els.forEach(el => {
+    // dispose existing instance if re-initializing
+    const existing = bootstrap.Tooltip.getInstance(el);
+    if (existing) existing.dispose();
+    new bootstrap.Tooltip(el);
+  });
+}
+
     // Handle back button
     function handleBackButton() {
         document.getElementById('auth-step').style.display = 'block';
@@ -1059,6 +1087,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.placeholder = t[key];
             }
         });
+        +  // NEW: translate tooltip titles
+            document.querySelectorAll('[data-translate-title]').forEach(el => {
+            const key = el.getAttribute('data-translate-title');
+            if (t[key]) el.setAttribute('title', t[key]);
+            });
     }
     
     // Show non-blocking error
