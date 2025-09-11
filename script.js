@@ -1001,7 +1001,6 @@ function updateStatusGuide() {
 
   const t = translations[AppState.currentLanguage];
 
-  // Fallbacks if not defined
   const examples = Array.isArray(window.statusExamples) ? window.statusExamples : [];
   const earnings = (window.earningsStructure && typeof window.earningsStructure === 'object')
     ? window.earningsStructure
@@ -1019,7 +1018,7 @@ function updateStatusGuide() {
             return `
               <div class="status-example">
                 <div class="d-flex justify-content-between align-items-center">
-                  <strong>${t[\`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+                  <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
                   <span class="badge bg-${statusType}">${example.status}</span>
                 </div>
                 <p class="mb-1 mt-2 small">${example.description || ''}</p>
@@ -1066,6 +1065,7 @@ function updateStatusGuide() {
     </div>
   `;
 }
+
 
     
     // Update translations
