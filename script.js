@@ -1040,83 +1040,276 @@ document.addEventListener('DOMContentLoaded', function () {
   // =============================
   // Status guide
   // =============================
-  function updateStatusGuide() {
-    const container = document.getElementById('status-guide-content');
-    if (!container) return;
+// Update status guide section (drop-in replacement)
+function updateStatusGuide() {
+  const container = document.getElementById('status-guide-content');
+  if (!container) return;
 
-    const t = translations[AppState.currentLanguage] || {};
+  const t = translations[AppState.currentLanguage] || {};
 
-    const examples = (window.statusExamples || []).map((example) => {
-      let statusType = StatusMapping.getSimplifiedStatusType
-        ? StatusMapping.getSimplifiedStatusType(example.status)
-        : 'info';
-      if (example.status === 'Hired (Confirmed)') statusType = 'passed';
-      if (example.status === 'Previously Applied (No Payment)') statusType = 'previously-applied';
+  // Use provided `statusExamples` if available, otherwise fallback set
+  const examplesList =
+    (typeof statusExamples !== 'undefined' &&
+     Array.isArray(statusExamples) &&
+     statusExamples.length > 0)
+      ? statusExamples
+      : [
+          {
+            status: 'Application Received',
+            description: 'Your referral has been received and is awaiting processing.',
+            action: 'No action required.'
+          },
+          {
+            status: 'Assessment Stage',
+            description: 'Candidate is taking or awaiting the AI assessment / interview.',
+            action: 'Encourage your friend to complete the assessment.'
+          },
+          {
+            status: 'Hired (Probation)',
+            description: 'Candidate hired and within the first 90 days.',
+            action: 'Payment after confirmation.'
+          },
+          {
+            status: 'Hired (Confirmed)',
+            description: 'Candidate confirmed after probation.',
+            action: 'Eligible for probation payment.'
+          },
+          {
+            status: 'Previously Applied (No Payment)',
+            description: 'Candidate applied before referral.',
+            action: 'No payment is eligible for this case.'
+          },
+          {
+            status: 'Not Selected',
+            description: 'Candidate not proceeding.',
+            action: 'No action required.'
+          }
+        ];
 
-      return `
-        <div class="status-example">
-          <div class="d-flex justify-content-between align-items-center">
-            <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
-            <span class="badge bg-${statusType}">
-              ${example.status}
-            </span>
-          </div>
-          <p class="mb-1 mt-2 small">${example.description}</p>
-          <small class="text-muted">${example.action}</small>
+  const examplesHtml = examplesList.map(example => {
+    // Color badge using your StatusMapping if available; else default to 'info'
+    let statusType = (StatusMapping.getSimplifiedStatusType)
+      ? StatusMapping.getSimplifiedStatusType(example.status)
+      : 'info';
+    if (example.status === 'Hired (Confirmed)') statusType = 'passed';
+    if (example.status === 'Previously Applied (No Payment)') statusType = 'previously-applied';
+
+    return `
+      <div class="status-example">
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+          <span class="badge bg-${statusType}">
+            ${example.status}
+          </span>
         </div>
-      `;
-    }).join('');
+        <p class="mb-1 mt-2 small">${example.description}</p>
+        <small class="text-muted">${example.action}</small>
+      </div>
+    `;
+  }).join('');
 
-    const earningsRows = Object.entries(window.earningsStructure || {}).map(([_, value]) => `
+  // Build Payment rows from earningsStructure if present, else your exact fallback rows
+  let paymentRowsHtml = '';
+  if (typeof earningsStructure !== 'undefined' && earningsStructure && Object.keys(earningsStructure).length) {
+    paymentRowsHtml = Object.entries(earningsStructure).map(([_, value]) => `
       <tr>
         <td>${value.label}</td>
         <td>${value.condition}</td>
         <td><strong>${value.payment}</strong></td>
       </tr>
     `).join('');
-
-    container.innerHTML = `
-      <div class="row">
-        <!-- Status Examples -->
-        <div class="col-md-6">
-          <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
-          <div class="status-examples">
-            ${examples}
-          </div>
-        </div>
-
-        <!-- Payment Conditions -->
-        <div class="col-md-6">
-          <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
-          <div class="table-responsive">
-            <table class="table status-guide-table">
-              <thead>
-                <tr>
-                  <th data-translate="stage">Stage</th>
-                  <th data-translate="condition">Condition</th>
-                  <th data-translate="payment">Payment</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${earningsRows}
-                <tr>
-                  <td>Previously Applied</td>
-                  <td data-translate="noPaymentNote">Candidate applied before referral</td>
-                  <td><strong>No Payment</strong></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="payment-notes mt-3">
-            <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
-            <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
-            <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
-          </div>
-        </div>
-      </div>
+  } else {
+    // Fallback to the two lines you asked for
+    paymentRowsHtml = `
+      <tr>
+        <td>Assessment Passed</td>
+        <td>Candidate passes the AI assessment</td>
+        <td><strong>RM50</strong></td>
+      </tr>
+      <tr>
+        <td>Probation Completed</td>
+        <td>Candidate completes 90-day probation period</td>
+        <td><strong>RM750</strong></td>
+      </tr>
     `;
   }
 
+  container.innerHTML = `
+    <div class="row">
+      <!-- Status Examples -->
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
+        <div class="status-examples">
+          ${examplesHtml}
+        </div>
+      </div>
+
+      <!-- Payment Conditions -->
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
+        <div class="table-responsive">
+          <table class="table status-guide-table">
+            <thead>
+              <tr>
+                <th data-translate="stage">Stage</th>
+                <th data-translate="condition">Condition</th>
+                <th data-translate="payment">Payment</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paymentRowsHtml}
+              <tr>
+                <td>Previously Applied</td>
+                <td data-translate="noPaymentNote">Candidate applied before referral</td>
+                <td><strong>No Payment</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="payment-notes mt-3">
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
+          <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+// Update status guide section (drop-in replacement)
+function updateStatusGuide() {
+  const container = document.getElementById('status-guide-content');
+  if (!container) return;
+
+  const t = translations[AppState.currentLanguage] || {};
+
+  // Use provided `statusExamples` if available, otherwise fallback set
+  const examplesList =
+    (typeof statusExamples !== 'undefined' &&
+     Array.isArray(statusExamples) &&
+     statusExamples.length > 0)
+      ? statusExamples
+      : [
+          {
+            status: 'Application Received',
+            description: 'Your referral has been received and is awaiting processing.',
+            action: 'No action required.'
+          },
+          {
+            status: 'Assessment Stage',
+            description: 'Candidate is taking or awaiting the AI assessment/interview.',
+            action: 'Encourage your friend to complete the assessment.'
+          },
+          {
+            status: 'Hired (Probation)',
+            description: 'Candidate hired and within the first 90 days.',
+            action: 'Payment after confirmation.'
+          },
+          {
+            status: 'Hired (Confirmed)',
+            description: 'Candidate confirmed after probation.',
+            action: 'Eligible for probation payment.'
+          },
+          {
+            status: 'Previously Applied (No Payment)',
+            description: 'Candidate applied before referral.',
+            action: 'No payment is eligible for this case.'
+          },
+          {
+            status: 'Not Selected',
+            description: 'Candidate not proceeding.',
+            action: 'No action required.'
+          }
+        ];
+
+  const examplesHtml = examplesList.map(example => {
+    // Color badge using your StatusMapping if available; else default to 'info'
+    let statusType = (StatusMapping.getSimplifiedStatusType)
+      ? StatusMapping.getSimplifiedStatusType(example.status)
+      : 'info';
+    if (example.status === 'Hired (Confirmed)') statusType = 'passed';
+    if (example.status === 'Previously Applied (No Payment)') statusType = 'previously-applied';
+
+    return `
+      <div class="status-example">
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+          <span class="badge bg-${statusType}">
+            ${example.status}
+          </span>
+        </div>
+        <p class="mb-1 mt-2 small">${example.description}</p>
+        <small class="text-muted">${example.action}</small>
+      </div>
+    `;
+  }).join('');
+
+  // Build Payment rows from earningsStructure if present, else your exact fallback rows
+  let paymentRowsHtml = '';
+  if (typeof earningsStructure !== 'undefined' && earningsStructure && Object.keys(earningsStructure).length) {
+    paymentRowsHtml = Object.entries(earningsStructure).map(([_, value]) => `
+      <tr>
+        <td>${value.label}</td>
+        <td>${value.condition}</td>
+        <td><strong>${value.payment}</strong></td>
+      </tr>
+    `).join('');
+  } else {
+    // Fallback to the two lines you asked for
+    paymentRowsHtml = `
+      <tr>
+        <td>Assessment Passed</td>
+        <td>Candidate passes the AI assessment</td>
+        <td><strong>RM50</strong></td>
+      </tr>
+      <tr>
+        <td>Probation Completed</td>
+        <td>Candidate completes 90-day probation period</td>
+        <td><strong>RM750</strong></td>
+      </tr>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="row">
+      <!-- Status Examples -->
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
+        <div class="status-examples">
+          ${examplesHtml}
+        </div>
+      </div>
+
+      <!-- Payment Conditions -->
+      <div class="col-md-6">
+        <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
+        <div class="table-responsive">
+          <table class="table status-guide-table">
+            <thead>
+              <tr>
+                <th data-translate="stage">Stage</th>
+                <th data-translate="condition">Condition</th>
+                <th data-translate="payment">Payment</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paymentRowsHtml}
+              <tr>
+                <td>Previously Applied</td>
+                <td data-translate="noPaymentNote">Candidate applied before referral</td>
+                <td><strong>No Payment</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="payment-notes mt-3">
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
+          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
+          <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
   // =============================
   // Translations
   // =============================
