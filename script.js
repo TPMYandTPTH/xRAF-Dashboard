@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('current-year').textContent = new Date().getFullYear();
         updateTranslations();
         setupEventListeners();
-        enableTooltips(document);
         document.getElementById('dashboard-phone').focus();
         
         // Test connection if in debug mode
@@ -208,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP003',
                 First_Name: 'Kumar Raj',
                 Email: 'kumar.raj@yahoo.com',
-                Employee: '0123456789',
+                Employee: '0176543210',
                 Status: 'SHL Assessment: Conversational Multichat ENG',
                 Source: 'xRAF',
                 Location: 'Johor Bahru',
@@ -220,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP004',
                 First_Name: 'Jennifer Tan',
                 Email: 'jennifer.tan@gmail.com',
-                Employee: '0123456789',
+                Employee: '0165432109',
                 Status: 'Interview Scheduled',
                 Source: 'xRAF',
                 Location: 'Cyberjaya',
@@ -233,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP005',
                 First_Name: 'Michael Wong',
                 Email: 'michael.wong@outlook.com',
-                Employee: '0123456789',
+                Employee: '0154321098',
                 Status: 'New Starter (Hired)',
                 Source: 'xRAF',
                 Location: 'Kuala Lumpur',
@@ -246,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP006',
                 First_Name: 'Lisa Chen',
                 Email: 'lisa.chen@gmail.com',
-                Employee: '0123456789',
+                Employee: '0143210987',
                 Status: 'Onboarding Started',
                 Source: 'xRAF',  // Changed to xRAF for payment eligibility
                 Location: 'Petaling Jaya',
@@ -259,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP007',
                 First_Name: 'David Lim',
                 Email: 'david.lim@gmail.com',
-                Employee: '0123456789',
+                Employee: '0132109876',
                 Status: 'Graduate',
                 Source: 'xRAF',
                 Location: 'Kuala Lumpur',
@@ -271,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP008',
                 First_Name: 'Emily Ooi',
                 Email: 'emily.ooi@yahoo.com',
-                Employee: '0123456789',
+                Employee: '0121098765',
                 Status: 'New Starter (Hired)',
                 Source: 'xRAF',
                 Location: 'Penang',
@@ -284,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP009',
                 First_Name: 'Jason Ng',
                 Email: 'jason.ng@gmail.com',
-                Employee: '0123456789',
+                Employee: '0110987654',
                 Status: 'Interview Complete / Offer Requested',
                 Source: 'External Portal',  // Not xRAF
                 Location: 'Shah Alam',
@@ -296,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP010',
                 First_Name: 'Rachel Yap',
                 Email: 'rachel.yap@hotmail.com',
-                Employee: '0123456789',
+                Employee: '0109876543',
                 Status: 'Screened',
                 Source: 'Internal Portal',  // Not xRAF
                 Location: 'Subang Jaya',
@@ -309,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP011',
                 First_Name: 'Steven Toh',
                 Email: 'steven.toh@gmail.com',
-                Employee: '0123456789',
+                Employee: '0198765432',
                 Status: 'Eliminated - Assessment Results Did Not Meet Criteria',
                 Source: 'xRAF',
                 Location: 'Ipoh',
@@ -321,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Person_system_id: 'TP012',
                 First_Name: 'Angela Low',
                 Email: 'angela.low@yahoo.com',
-                Employee: '0123456789',
+                Employee: '0187654321',
                 Status: 'Withdrew - Other Job Offer',
                 Source: 'xRAF',  // Changed to xRAF
                 Location: 'Melaka',
@@ -540,163 +539,137 @@ document.addEventListener('DOMContentLoaded', function() {
         updateReferralList(referrals);
         updateStatusGuide();
         updateTranslations();
-        enableTooltips(resultsStep);
     }
     
-// Create results HTML with new sections
-function createResultsContent(referrals) {
-  const hiredCount = referrals.filter(r =>
-    r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
-  ).length;
+    // Create results HTML with new sections
+    function createResultsContent(referrals) {
+        const hiredCount = referrals.filter(r => 
+            r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
+        ).length;
+        
+        const inProgressCount = referrals.filter(r => 
+            r.mappedStatus === 'Application Received' || 
+            r.mappedStatus === 'Assessment Stage'
+        ).length;
+        
+        // Debug logging
+        console.log('Referral Status Summary:');
+        referrals.forEach(r => {
+            console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
+        });
+        console.log('In Progress Count:', inProgressCount);
+        console.log('Hired Count:', hiredCount);
+        
+        const userName = document.getElementById('dashboard-email').value.split('@')[0];
+        
+        return `
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h3 class="user-name-display">${userName}</h3>
+                    <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
+                </div>
+                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </button>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card total">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
+                            <h3 class="text-primary">${referrals.length}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card hired">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
+                            <h3 class="text-success">${hiredCount}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stats-card in-progress">
+                        <div class="card-body text-center">
+                            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
+                            <h3 class="text-warning">${inProgressCount}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Distribution Chart -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                        <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
+                    </div>
+                </div>
+            </div>
 
-  const inProgressCount = referrals.filter(r =>
-    r.mappedStatus === 'Application Received' ||
-    r.mappedStatus === 'Assessment Stage'
-  ).length;
-
-  // Debug logging
-  console.log('Referral Status Summary:');
-  referrals.forEach(r => {
-    console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
-  });
-  console.log('In Progress Count:', inProgressCount);
-  console.log('Hired Count:', hiredCount);
-
-  const userName = document.getElementById('dashboard-email').value.split('@')[0];
-
-  return `
-    <div class="d-flex justify-content-between align-items-start mb-4">
-      <div>
-        <h3 class="user-name-display">${userName}</h3>
-        <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
-      </div>
-      <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
-        <i class="fas fa-arrow-left me-2"></i> Back
-      </button>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-      <div class="col-md-4 mb-3">
-        <div class="card stats-card total">
-          <div class="card-body text-center">
-            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
-            <h3 class="text-primary">${referrals.length}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card stats-card hired">
-          <div class="card-body text-center">
-            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
-            <h3 class="text-success">${hiredCount}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card stats-card in-progress">
-          <div class="card-body text-center">
-            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
-            <h3 class="text-warning">${inProgressCount}</h3>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Status Distribution Chart -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
-        <div class="chart-container">
-          <canvas id="statusChart"></canvas>
-          <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
-        </div>
-      </div>
-    </div>
-
-    <!-- Earnings Table -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
-        <div class="table-responsive">
-          <table class="earnings-table">
-            <thead>
-              <tr>
-                <th data-translate="earningsStage">Stage</th>
-                <th data-translate="earningsAmount">Amount (RM)</th>
-                <th data-translate="earningsCount">Count</th>
-                <th data-translate="earningsTotal">Total</th>
-              </tr>
-            </thead>
-            <tbody id="earnings-body"></tbody>
-            <tfoot>
-              <tr>
-                <th colspan="3" data-translate="earningsTotal">Total Earnings</th>
-                <th id="total-earnings">RM 0</th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        <div class="text-center mt-3">
-          <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
-            Payment Terms & Conditions
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reminder Section -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
-        <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
-        <div id="friends-to-remind" class="row"></div>
-      </div>
-    </div>
-
-    <!-- Referral List -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="mb-3">All Referrals</h5>
-        <div id="referral-list"></div>
-      </div>
-    </div>
-
-    <!-- Status Guide moved to end -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
-        <div id="status-guide-content"></div>
-      </div>
-    </div>
-
-    <!-- Contact Email (also shown on results page) -->
-    <div class="card mb-4">
-      <div class="card-body text-center">
-        <p class="mb-0">
-          <span data-translate="contactUsText">Email us at:</span>
-          <a href="mailto:tpmycareers@teleperformance.com"
-             class="email-link"
-             data-bs-toggle="tooltip"
-             data-translate-title="emailTooltip"
-             title="Open your email app">
-            <i class="fa-solid fa-envelope me-1"></i>tpmycareers@teleperformance.com
-          </a>
-        </p>
-      </div>
-    </div>
-  `;
-}
-    function enableTooltips(root = document) {
-  const els = Array.from(root.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  els.forEach(el => {
-    // dispose existing instance if re-initializing
-    const existing = bootstrap.Tooltip.getInstance(el);
-    if (existing) existing.dispose();
-    new bootstrap.Tooltip(el);
-  });
-}
-
+            <!-- Earnings Table -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
+                    <div class="table-responsive">
+                        <table class="earnings-table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="earningsStage">Stage</th>
+                                    <th data-translate="earningsAmount">Amount (RM)</th>
+                                    <th data-translate="earningsCount">Count</th>
+                                    <th data-translate="earningsTotal">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="earnings-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" data-translate="earningsTotal">Total Earnings</th>
+                                    <th id="total-earnings">RM 0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+                            Payment Terms & Conditions
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reminder Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
+                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
+                    <div id="friends-to-remind" class="row"></div>
+                </div>
+            </div>
+            
+            <!-- Referral List -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">All Referrals</h5>
+                    <div id="referral-list"></div>
+                </div>
+            </div>
+            
+            <!-- Status Guide moved to end -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
+                    <div id="status-guide-content"></div>
+                </div>
+            </div>           
+        `;
+    }
+    
     // Handle back button
     function handleBackButton() {
         document.getElementById('auth-step').style.display = 'block';
@@ -995,83 +968,78 @@ function createResultsContent(referrals) {
         });
     }
     
-function updateStatusGuide() {
-  const container = document.getElementById('status-guide-content');
-  if (!container) return;
-
-  const t = translations[AppState.currentLanguage];
-
-  // ✅ Safe fallbacks so missing globals don't crash the page
-  const examples = Array.isArray(window.statusExamples) ? window.statusExamples : [];
-  const earnings = (window.earningsStructure && typeof window.earningsStructure === 'object')
-    ? window.earningsStructure
-    : {};
-
-  container.innerHTML = `
-    <div class="row">
-      <!-- Status Examples -->
-      <div class="col-md-6">
-        <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
-        <div class="status-examples">
-          ${examples.map(example => {
-            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
-            if (example.status === "Hired (Confirmed)") statusType = 'passed';
-            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
-
-            return `
-              <div class="status-example">
-                <div class="d-flex justify-content-between align-items-center">
-                  <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
-                  <span class="badge bg-${statusType}">${example.status}</span>
+    // Update status guide section
+    function updateStatusGuide() {
+        const container = document.getElementById('status-guide-content');
+        if (!container) return;
+        
+        const t = translations[AppState.currentLanguage];
+        
+        container.innerHTML = `
+            <div class="row">
+                <!-- Status Examples -->
+                <div class="col-md-6">
+                    <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
+                    <div class="status-examples">
+                        ${statusExamples.map(example => {
+                            // Get the correct status type for coloring
+                            let statusType = StatusMapping.getSimplifiedStatusType(example.status);
+                            if (example.status === "Hired (Confirmed)") statusType = 'passed';
+                            if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
+                            
+                            return `
+                                <div class="status-example">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+                                        <span class="badge bg-${statusType}">
+                                            ${example.status}
+                                        </span>
+                                    </div>
+                                    <p class="mb-1 mt-2 small">${example.description}</p>
+                                    <small class="text-muted">${example.action}</small>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
-                <p class="mb-1 mt-2 small">${example.description || ''}</p>
-                <small class="text-muted">${example.action || ''}</small>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Payment Conditions -->
-      <div class="col-md-6">
-        <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
-        <div class="table-responsive">
-          <table class="table status-guide-table">
-            <thead>
-              <tr>
-                <th data-translate="stage">Stage</th>
-                <th data-translate="condition">Condition</th>
-                <th data-translate="payment">Payment</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Object.entries(earnings).map(([, value]) => `
-                <tr>
-                  <td>${value.label || ''}</td>
-                  <td>${value.condition || ''}</td>
-                  <td><strong>${value.payment || ''}</strong></td>
-                </tr>
-              `).join('')}
-              <tr>
-                <td>Previously Applied</td>
-                <td data-translate="noPaymentNote">Candidate applied before referral</td>
-                <td><strong>No Payment</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="payment-notes mt-3">
-          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
-          <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
-          <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-
-
+                
+                <!-- Payment Conditions -->
+                <div class="col-md-6">
+                    <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
+                    <div class="table-responsive">
+                        <table class="table status-guide-table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="stage">Stage</th>
+                                    <th data-translate="condition">Condition</th>
+                                    <th data-translate="payment">Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(earningsStructure).map(([key, value]) => `
+                                    <tr>
+                                        <td>${value.label}</td>
+                                        <td>${value.condition}</td>
+                                        <td><strong>${value.payment}</strong></td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td>Previously Applied</td>
+                                    <td data-translate="noPaymentNote">Candidate applied before referral</td>
+                                    <td><strong>No Payment</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="payment-notes mt-3">
+                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
+                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
+                        <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
     
     // Update translations
     function updateTranslations() {
@@ -1091,11 +1059,6 @@ function updateStatusGuide() {
                 el.placeholder = t[key];
             }
         });
-          // NEW: translate tooltip titles
-            document.querySelectorAll('[data-translate-title]').forEach(el => {
-            const key = el.getAttribute('data-translate-title');
-            if (t[key]) el.setAttribute('title', t[key]);
-            });
     }
     
     // Show non-blocking error
