@@ -1019,7 +1019,7 @@ function updateStatusGuide() {
             return `
               <div class="status-example">
                 <div class="d-flex justify-content-between align-items-center">
-                  <strong>${t[\`status${example.status.replace(/[\s()]/g, '')}\`] || example.status}</strong>
+                  <strong>${t[\`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
                   <span class="badge bg-${statusType}">${example.status}</span>
                 </div>
                 <p class="mb-1 mt-2 small">${example.description || ''}</p>
