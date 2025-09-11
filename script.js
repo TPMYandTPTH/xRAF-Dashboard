@@ -1001,6 +1001,7 @@ function updateStatusGuide() {
 
   const t = translations[AppState.currentLanguage];
 
+  // ✅ Safe fallbacks so missing globals don't crash the page
   const examples = Array.isArray(window.statusExamples) ? window.statusExamples : [];
   const earnings = (window.earningsStructure && typeof window.earningsStructure === 'object')
     ? window.earningsStructure
@@ -1008,6 +1009,7 @@ function updateStatusGuide() {
 
   container.innerHTML = `
     <div class="row">
+      <!-- Status Examples -->
       <div class="col-md-6">
         <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
         <div class="status-examples">
@@ -1015,6 +1017,7 @@ function updateStatusGuide() {
             let statusType = StatusMapping.getSimplifiedStatusType(example.status);
             if (example.status === "Hired (Confirmed)") statusType = 'passed';
             if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
+
             return `
               <div class="status-example">
                 <div class="d-flex justify-content-between align-items-center">
@@ -1029,6 +1032,7 @@ function updateStatusGuide() {
         </div>
       </div>
 
+      <!-- Payment Conditions -->
       <div class="col-md-6">
         <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
         <div class="table-responsive">
@@ -1065,6 +1069,7 @@ function updateStatusGuide() {
     </div>
   `;
 }
+
 
 
     
