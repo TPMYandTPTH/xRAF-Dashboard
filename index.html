@@ -15,12 +15,26 @@
 
   <!-- Small inline overrides to guarantee fixes even before styles.css is updated -->
   <style>
-    /* ensure “In Progress” card doesn’t clash with .progress */
-    .stats-card.in-progress { border-left: 4px solid var(--warning-color); }
-    /* boxed social media area with heavier shadow */
-    .social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: .5rem; }
-    /* center the logo in Status Distribution chart */
+    /* ===== Fix 1: ensure “In Progress” card doesn’t clash with Bootstrap .progress ===== */
+    .stats-card.in-progress { border-left: 4px solid var(--warning-color, #f5d200); }
+    /* Failsafe if any .progress leaks onto a stats card (reset Bootstrap progress styles) */
+    .card.stats-card.progress {
+      display: block !important;
+      height: auto !important;
+      overflow: visible !important;
+      background: var(--card, #fff);
+      border-radius: .5rem;
+    }
+    .card.stats-card.in-progress .card-body { min-height: 72px; }
+
+    /* Boxed social media area with heavier shadow */
+    .social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); border: 1px solid var(--line, #e8e8e8); border-radius: .5rem; }
+
+    /* Center the logo in Status Distribution chart */
     .chart-logo { position: absolute; inset: 0; margin: auto; width: 60px; height: 60px; opacity: .1; pointer-events: none; transform: none; left: auto; top: auto; }
+
+    /* Just in case container spacing is tight on mobile */
+    .logo { max-width: 120px; height: auto; }
   </style>
 </head>
 <body>
@@ -74,16 +88,6 @@
           </form>
         </div>
       </div>
-
-      <!-- Email Contact Section -->
-      <div class="card mb-4">
-        <div class="card-body text-center">
-          <p class="mb-0">
-            <span data-translate="contactUsText">Email us at:</span>
-            <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a>
-          </p>
-        </div>
-      </div>
     </div>
 
     <!-- Results Step (initially hidden) -->
@@ -96,26 +100,36 @@
           <div class="col-md-4 mb-3">
             <h5 data-translate="tpGlobal">TP Global</h5>
             <div class="d-flex justify-content-center gap-3">
-              <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank"><i class="fab fa-linkedin"></i></a>
-              <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
-              <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank"><i class="fab fa-tiktok"></i></a>
+              <a href="https://www.linkedin.com/company/teleperformance" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-linkedin"></i></a>
+              <a href="https://www.youtube.com/@TeleperformanceGroup" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+              <a href="https://www.tiktok.com/@teleperformance_group" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
             </div>
           </div>
           <div class="col-md-4 mb-3">
             <h5 data-translate="followMalaysia">TP Malaysia</h5>
             <div class="d-flex justify-content-center gap-3">
-              <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
-              <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+              <a href="https://www.facebook.com/TPinMalaysia/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+              <a href="http://www.instagram.com/tp_malaysia/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
             </div>
           </div>
           <div class="col-md-4 mb-3">
             <h5 data-translate="followThailand">TP Thailand</h5>
             <div class="d-flex justify-content-center gap-3">
-              <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank"><i class="fab fa-facebook-f"></i></a>
-              <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+              <a href="http://www.facebook.com/TPinThailand/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+              <a href="http://www.instagram.com/tpinthailand/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Email Contact Section (GLOBAL – visible on both auth & results pages) -->
+    <div class="card my-4 contact-email-card">
+      <div class="card-body text-center">
+        <p class="mb-0">
+          <span data-translate="contactUsText">Email us at:</span>
+          <a href="mailto:tpmycareers@teleperformance.com">tpmycareers@teleperformance.com</a>
+        </p>
       </div>
     </div>
 
@@ -152,7 +166,6 @@
                   <div>
                     <strong>Assessment Passed</strong><br>
                     <small>RM50 payment is eligible if the candidate passes the AI assessment</small>
-
                   </div>
                   <span class="badge bg-success fs-6">RM50</span>
                 </div>
@@ -188,9 +201,46 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- App scripts (order matters) -->
-  <script src="translations.js"></script>
-  <script src="statusMapping.js"></script>
-  <script src="apiService.js"></script>
-  <script src="script.js"></script>
+  <script src="translations.js?v=20250911a"></script>
+  <script src="statusMapping.js?v=20250911a"></script>
+  <script src="apiService.js?v=20250911a"></script>
+  <script src="script.js?v=20250911a"></script>
+
+  <!-- Inline safety patches (loaded last to override anything earlier) -->
+  <script>
+    // Fix Back button: show auth, hide results
+    function handleBackButton() {
+      const auth = document.getElementById('auth-step');
+      const results = document.getElementById('results-step');
+      if (auth) auth.style.display = 'block';
+      if (results) results.style.display = 'none';
+      const phone = document.getElementById('dashboard-phone');
+      const email = document.getElementById('dashboard-email');
+      if (phone) phone.value = '';
+      if (email) email.value = '';
+      if (phone) phone.focus();
+      if (window.AppState) window.AppState.currentReferralsData = [];
+    }
+
+    // Failsafe: if any stats card still has .progress, convert to .in-progress
+    document.addEventListener('DOMContentLoaded', () => {
+      const fixProgressCards = () => {
+        document.querySelectorAll('.stats-card.progress').forEach(el => {
+          el.classList.remove('progress');
+          el.classList.add('in-progress');
+        });
+      };
+
+      // Run once now
+      fixProgressCards();
+
+      // Also observe results-step for dynamic inserts
+      const results = document.getElementById('results-step');
+      if (results && 'MutationObserver' in window) {
+        const mo = new MutationObserver(() => fixProgressCards());
+        mo.observe(results, { childList: true, subtree: true });
+      }
+    });
+  </script>
 </body>
 </html>
