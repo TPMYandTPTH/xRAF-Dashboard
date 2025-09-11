@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEarningsTable(referrals);
         updateReminderSection(referrals);
         updateReferralList(referrals);
-        ();
+        updateStatusGuide();
         updateTranslations();
         enableTooltips(resultsStep);
     }
