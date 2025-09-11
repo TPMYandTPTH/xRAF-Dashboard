@@ -1,4 +1,4 @@
-// Main Application Script (robust & self-contained)
+// Main Application Script with Updated Logic
 document.addEventListener('DOMContentLoaded', function () {
   // =============================
   // Application State
@@ -8,85 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
     statusChart: null,
     currentReferralsData: [],
     isLoading: false,
-    debugMode: false, // Set to true for console logs
+    debugMode: false, // Set to true for debugging
   };
-
-  // =============================
-  // Defaults / Fallbacks (used when external globals are missing)
-  // =============================
-  const DEFAULT_DISPLAY_ORDER = [
-    'Application Received',
-    'Assessment Stage',
-    'Hired (Probation)',
-    'Hired (Confirmed)',
-    'Previously Applied (No Payment)',
-    'Not Selected',
-  ];
-
-  const DEFAULT_STATUS_EXAMPLES = [
-    {
-      status: 'Application Received',
-      description: 'Your referral has been received and is awaiting processing.',
-      action: 'No action required.',
-    },
-    {
-      status: 'Assessment Stage',
-      description: 'Candidate is taking or awaiting the AI assessment / interview.',
-      action: 'Encourage your friend to complete the assessment.',
-    },
-    {
-      status: 'Hired (Probation)',
-      description: 'Candidate hired and within the first 90 days.',
-      action: 'Payment after confirmation.',
-    },
-    {
-      status: 'Hired (Confirmed)',
-      description: 'Candidate confirmed after probation.',
-      action: 'Eligible for probation payment.',
-    },
-    {
-      status: 'Previously Applied (No Payment)',
-      description: 'Candidate applied before referral.',
-      action: 'No payment is eligible for this case.',
-    },
-    {
-      status: 'Not Selected',
-      description: 'Candidate not proceeding.',
-      action: 'No action required.',
-    },
-  ];
-
-  const DEFAULT_EARNINGS_STRUCTURE = {
-    assessment_passed: {
-      label: 'Assessment Passed',
-      condition: 'Candidate passes the AI assessment',
-      payment: 'RM50',
-    },
-    probation_completed: {
-      label: 'Probation Completed',
-      condition: 'Candidate completes 90-day probation period',
-      payment: 'RM750',
-    },
-  };
-
-  // Safe getters for possibly-missing globals
-  const T = () => (window.translations ? (translations[AppState.currentLanguage] || translations.en || {}) : {});
-  const DISPLAY_ORDER = () =>
-    (window.StatusMapping && Array.isArray(StatusMapping.displayOrder) && StatusMapping.displayOrder.length
-      ? StatusMapping.displayOrder
-      : DEFAULT_DISPLAY_ORDER);
-
-  const STATUS_EXAMPLES = () =>
-    (typeof window.statusExamples !== 'undefined' && Array.isArray(window.statusExamples) && window.statusExamples.length
-      ? window.statusExamples
-      : DEFAULT_STATUS_EXAMPLES);
-
-  const EARNINGS_STRUCTURE = () =>
-    (typeof window.earningsStructure !== 'undefined' &&
-    window.earningsStructure &&
-    Object.keys(window.earningsStructure).length
-      ? window.earningsStructure
-      : DEFAULT_EARNINGS_STRUCTURE);
 
   // =============================
   // Initialize application
@@ -97,16 +20,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateTranslations();
     setupEventListeners();
-    document.getElementById('dashboard-phone')?.focus();
+    const phoneEl = document.getElementById('dashboard-phone');
+    if (phoneEl) phoneEl.focus();
 
-    if (AppState.debugMode && window.ApiService?.testConnection) {
+    // Test connection if in debug mode
+    if (AppState.debugMode && window.ApiService && ApiService.testConnection) {
       ApiService.testConnection();
     }
 
+    // Check for demo mode
     checkForDemoMode();
-
-    // Failsafe: if any stats card accidentally has .progress, fix it immediately
-    fixProgressCardClasses();
   }
 
   // =============================
@@ -126,15 +49,21 @@ document.addEventListener('DOMContentLoaded', function () {
   // Event listeners
   // =============================
   function setupEventListeners() {
-    document.getElementById('lang-select')?.addEventListener('change', handleLanguageChange);
-    document.getElementById('dashboard-submit')?.addEventListener('click', handleFormSubmit);
+    const langSel = document.getElementById('lang-select');
+    if (langSel) langSel.addEventListener('change', handleLanguageChange);
 
-    // Only numbers in phone
-    document.getElementById('dashboard-phone')?.addEventListener('input', function () {
-      this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    const submitBtn = document.getElementById('dashboard-submit');
+    if (submitBtn) submitBtn.addEventListener('click', handleFormSubmit);
 
-    // Delegate dynamic buttons
+    const phoneEl = document.getElementById('dashboard-phone');
+    if (phoneEl) {
+      // Only numbers
+      phoneEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '');
+      });
+    }
+
+    // Delegate event handling for dynamic content
     document.addEventListener('click', function (e) {
       if (e.target.closest('.remind-btn')) {
         handleReminderClick(e);
@@ -144,13 +73,16 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    // Enter key submits
-    document.getElementById('dashboard-form')?.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleFormSubmit();
-      }
-    });
+    // Enter key support on the form
+    const form = document.getElementById('dashboard-form');
+    if (form) {
+      form.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleFormSubmit();
+        }
+      });
+    }
   }
 
   // =============================
@@ -167,23 +99,28 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       let apiData;
 
-      // Demo shortcut
+      // Demo credentials shortcut
       if (phone === '0123456789' && email.toLowerCase() === 'amr@tp.com') {
         apiData = generateMockData();
       } else {
-        if (!window.ApiService?.fetchReferrals) {
+        // Fetch real referrals from API
+        if (!window.ApiService || !ApiService.fetchReferrals) {
           throw new Error('ApiService.fetchReferrals is not available');
         }
         apiData = await ApiService.fetchReferrals(phone, email);
       }
 
+      // Process and store referrals with deduplication
       AppState.currentReferralsData = processReferrals(apiData);
+
+      // Always show dashboard
       showReferralResults(AppState.currentReferralsData);
     } catch (error) {
       console.error('Error:', error);
+      // Still show dashboard with empty data
       AppState.currentReferralsData = [];
       showReferralResults([]);
-      showNonBlockingError(T().errorMessage || 'Something went wrong. Please try again.');
+      showNonBlockingError(translations[AppState.currentLanguage]?.errorMessage || 'Something went wrong. Please try again.');
     } finally {
       setLoadingState(false);
     }
@@ -194,40 +131,238 @@ document.addEventListener('DOMContentLoaded', function () {
   // =============================
   function generateMockData() {
     const today = new Date();
-    const d = (n) => new Date(today - n * 86400000).toISOString();
-    return [
+    const mockData = [
       // Hired examples
-      { Person_system_id: 'TP020', First_Name: 'Tarek Ezz', Email: 'tarekezz@yahoo.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Kuala Lumpur', F_Nationality: 'Egypt', CreatedDate: d(150), UpdatedDate: d(100) },
-      { Person_system_id: 'TP021', First_Name: 'Loai', Email: 'loai@tp.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Yamen', CreatedDate: d(150), UpdatedDate: d(100) },
-      { Person_system_id: 'TP022', First_Name: 'Micole Barrientos', Email: 'miki@tp.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Philipinese', CreatedDate: d(150), UpdatedDate: d(100) },
-      { Person_system_id: 'TP023', First_Name: 'Anna Saw Yee Lin', Email: 'anna@tp.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Malaysian', CreatedDate: d(150), UpdatedDate: d(100) },
-      { Person_system_id: 'TP024', First_Name: 'Pourya Tohidi', Email: 'pourya@tp.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Iran', CreatedDate: d(150), UpdatedDate: d(100) },
-      { Person_system_id: 'TP025', First_Name: 'Melaine Sua', Email: 'melaine@tp.com', Employee: '0123456789', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Malaysian', CreatedDate: d(150), UpdatedDate: d(100) },
+      {
+        Person_system_id: 'TP020',
+        First_Name: 'Tarek Ezz',
+        Email: 'tarekezz@yahoo.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Kuala Lumpur',
+        F_Nationality: 'Egypt',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP021',
+        First_Name: 'Loai',
+        Email: 'loai@tp.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Yamen',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP022',
+        First_Name: 'Micole Barrientos',
+        Email: 'miki@tp.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Philipinese',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP023',
+        First_Name: 'Anna Saw Yee Lin',
+        Email: 'anna@tp.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP024',
+        First_Name: 'Pourya Tohidi',
+        Email: 'pourya@tp.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Iran',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP025',
+        First_Name: 'Melaine Sua',
+        Email: 'melaine@tp.com',
+        Employee: '0123456789',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
 
-      // Application / Contact attempt
-      { Person_system_id: 'TP001', First_Name: 'Amr Ezz', Email: 'amr@gmail.com', Employee: '0183931348', Status: 'Application Received', Source: 'xRAF', Location: 'Kuala Lumpur', F_Nationality: 'Egypt', CreatedDate: d(2), UpdatedDate: d(2) },
-      { Person_system_id: 'TP002', First_Name: 'Micole Barrientos', Email: 'Miki@hotmail.com', Employee: '0126240297', Status: 'Contact Attempt 1', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Malaysian', CreatedDate: d(5), UpdatedDate: d(4) },
+      // Application Received / Contact Attempt
+      {
+        Person_system_id: 'TP001',
+        First_Name: 'Amr Ezz',
+        Email: 'amr@gmail.com',
+        Employee: '0183931348',
+        Status: 'Application Received',
+        Source: 'xRAF',
+        Location: 'Kuala Lumpur',
+        F_Nationality: 'Egypt',
+        CreatedDate: new Date(today - 2 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 2 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP002',
+        First_Name: 'Micole Barrientos',
+        Email: 'Miki@hotmail.com',
+        Employee: '0126240297',
+        Status: 'Contact Attempt 1',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 5 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 4 * 86400000).toISOString(),
+      },
 
       // Assessment / Interview
-      { Person_system_id: 'TP003', First_Name: 'Kumar Raj', Email: 'kumar.raj@yahoo.com', Employee: '0176543210', Status: 'SHL Assessment: Conversational Multichat ENG', Source: 'xRAF', Location: 'Johor Bahru', F_Nationality: 'Indian', CreatedDate: d(10), UpdatedDate: d(3) },
-      { Person_system_id: 'TP004', First_Name: 'Jennifer Tan', Email: 'jennifer.tan@gmail.com', Employee: '0165432109', Status: 'Interview Scheduled', Source: 'xRAF', Location: 'Cyberjaya', F_Nationality: 'Malaysian', CreatedDate: d(15), UpdatedDate: d(1) },
+      {
+        Person_system_id: 'TP003',
+        First_Name: 'Kumar Raj',
+        Email: 'kumar.raj@yahoo.com',
+        Employee: '0176543210',
+        Status: 'SHL Assessment: Conversational Multichat ENG',
+        Source: 'xRAF',
+        Location: 'Johor Bahru',
+        F_Nationality: 'Indian',
+        CreatedDate: new Date(today - 10 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 3 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP004',
+        First_Name: 'Jennifer Tan',
+        Email: 'jennifer.tan@gmail.com',
+        Employee: '0165432109',
+        Status: 'Interview Scheduled',
+        Source: 'xRAF',
+        Location: 'Cyberjaya',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 15 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 1 * 86400000).toISOString(),
+      },
 
-      // Probation / Hired
-      { Person_system_id: 'TP005', First_Name: 'Michael Wong', Email: 'michael.wong@outlook.com', Employee: '0154321098', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Kuala Lumpur', F_Nationality: 'Malaysian', CreatedDate: d(45), UpdatedDate: d(30) },
-      { Person_system_id: 'TP006', First_Name: 'Lisa Chen', Email: 'lisa.chen@gmail.com', Employee: '0143210987', Status: 'Onboarding Started', Source: 'xRAF', Location: 'Petaling Jaya', F_Nationality: 'Chinese', CreatedDate: d(60), UpdatedDate: d(50) },
+      // Probation/Hired
+      {
+        Person_system_id: 'TP005',
+        First_Name: 'Michael Wong',
+        Email: 'michael.wong@outlook.com',
+        Employee: '0154321098',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Kuala Lumpur',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 45 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 30 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP006',
+        First_Name: 'Lisa Chen',
+        Email: 'lisa.chen@gmail.com',
+        Employee: '0143210987',
+        Status: 'Onboarding Started',
+        Source: 'xRAF',
+        Location: 'Petaling Jaya',
+        F_Nationality: 'Chinese',
+        CreatedDate: new Date(today - 60 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 50 * 86400000).toISOString(),
+      },
 
       // Confirmed
-      { Person_system_id: 'TP007', First_Name: 'David Lim', Email: 'david.lim@gmail.com', Employee: '0132109876', Status: 'Graduate', Source: 'xRAF', Location: 'Kuala Lumpur', F_Nationality: 'Malaysian', CreatedDate: d(120), UpdatedDate: d(95) },
-      { Person_system_id: 'TP008', First_Name: 'Emily Ooi', Email: 'emily.ooi@yahoo.com', Employee: '0121098765', Status: 'New Starter (Hired)', Source: 'xRAF', Location: 'Penang', F_Nationality: 'Malaysian', CreatedDate: d(150), UpdatedDate: d(100) },
+      {
+        Person_system_id: 'TP007',
+        First_Name: 'David Lim',
+        Email: 'david.lim@gmail.com',
+        Employee: '0132109876',
+        Status: 'Graduate',
+        Source: 'xRAF',
+        Location: 'Kuala Lumpur',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 120 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 95 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP008',
+        First_Name: 'Emily Ooi',
+        Email: 'emily.ooi@yahoo.com',
+        Employee: '0121098765',
+        Status: 'New Starter (Hired)',
+        Source: 'xRAF',
+        Location: 'Penang',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 150 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 100 * 86400000).toISOString(),
+      },
 
-      // Previously applied (no payment)
-      { Person_system_id: 'TP009', First_Name: 'Jason Ng', Email: 'jason.ng@gmail.com', Employee: '0110987654', Status: 'Interview Complete / Offer Requested', Source: 'External Portal', Location: 'Shah Alam', F_Nationality: 'Malaysian', CreatedDate: d(20), UpdatedDate: d(10) },
-      { Person_system_id: 'TP010', First_Name: 'Rachel Yap', Email: 'rachel.yap@hotmail.com', Employee: '0109876543', Status: 'Screened', Source: 'Internal Portal', Location: 'Subang Jaya', F_Nationality: 'Malaysian', CreatedDate: d(25), UpdatedDate: d(15) },
+      // Previously Applied (no payment)
+      {
+        Person_system_id: 'TP009',
+        First_Name: 'Jason Ng',
+        Email: 'jason.ng@gmail.com',
+        Employee: '0110987654',
+        Status: 'Interview Complete / Offer Requested',
+        Source: 'External Portal',
+        Location: 'Shah Alam',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 20 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 10 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP010',
+        First_Name: 'Rachel Yap',
+        Email: 'rachel.yap@hotmail.com',
+        Employee: '0109876543',
+        Status: 'Screened',
+        Source: 'Internal Portal',
+        Location: 'Subang Jaya',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 25 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 15 * 86400000).toISOString(),
+      },
 
       // Not selected
-      { Person_system_id: 'TP011', First_Name: 'Steven Toh', Email: 'steven.toh@gmail.com', Employee: '0198765432', Status: 'Eliminated - Assessment Results Did Not Meet Criteria', Source: 'xRAF', Location: 'Ipoh', F_Nationality: 'Malaysian', CreatedDate: d(30), UpdatedDate: d(20) },
-      { Person_system_id: 'TP012', First_Name: 'Angela Low', Email: 'angela.low@yahoo.com', Employee: '0187654321', Status: 'Withdrew - Other Job Offer', Source: 'xRAF', Location: 'Melaka', F_Nationality: 'Malaysian', CreatedDate: d(35), UpdatedDate: d(25) },
+      {
+        Person_system_id: 'TP011',
+        First_Name: 'Steven Toh',
+        Email: 'steven.toh@gmail.com',
+        Employee: '0198765432',
+        Status: 'Eliminated - Assessment Results Did Not Meet Criteria',
+        Source: 'xRAF',
+        Location: 'Ipoh',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 30 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 20 * 86400000).toISOString(),
+      },
+      {
+        Person_system_id: 'TP012',
+        First_Name: 'Angela Low',
+        Email: 'angela.low@yahoo.com',
+        Employee: '0187654321',
+        Status: 'Withdrew - Other Job Offer',
+        Source: 'xRAF',
+        Location: 'Melaka',
+        F_Nationality: 'Malaysian',
+        CreatedDate: new Date(today - 35 * 86400000).toISOString(),
+        UpdatedDate: new Date(today - 25 * 86400000).toISOString(),
+      },
     ];
+    return mockData;
   }
 
   // =============================
@@ -236,22 +371,27 @@ document.addEventListener('DOMContentLoaded', function () {
   function processReferrals(apiData) {
     if (!Array.isArray(apiData)) return [];
 
+    // Create a Map to track unique referrals by email+name combination
     const uniqueReferrals = new Map();
 
     apiData.forEach((item) => {
+      // Create unique key using email and name (or phone as fallback)
       const email = (item.Email || item.email || '').toLowerCase().trim();
       const name = (item.First_Name || item.name || 'Unknown').trim();
       const phone = (item.Employee || item.phone || '').trim();
 
-      const key = email ? `${email}_${name}` : `${phone}_${name}`;
+      // Use email+name as primary key, or phone+name as fallback
+      const uniqueKey = email ? `${email}_${name}` : `${phone}_${name}`;
 
-      if (uniqueReferrals.has(key)) {
-        const existing = uniqueReferrals.get(key);
+      // If duplicate found, keep the one with more recent update date
+      if (uniqueReferrals.has(uniqueKey)) {
+        const existing = uniqueReferrals.get(uniqueKey);
         const existingDate = new Date(existing.UpdatedDate || existing.updatedDate || 0);
         const currentDate = new Date(item.UpdatedDate || item.updatedDate || 0);
         if (currentDate <= existingDate) return;
       }
 
+      // Parse dates
       const parseDate = (dateStr) => {
         if (!dateStr) return new Date();
         if (typeof dateStr === 'string' && dateStr.includes('/')) {
@@ -266,55 +406,77 @@ document.addEventListener('DOMContentLoaded', function () {
       const daysInStage = Math.floor((new Date() - updatedDate) / 86400000);
       const daysSinceCreation = Math.floor((new Date() - createdDate) / 86400000);
 
+      // Status/source
       const rawStatus = (item.Status || item.status || 'Application Received').trim();
       const source = (item.Source || item.source || item.SourceName || '').trim();
       const isXRAF = source.toLowerCase().trim() === 'xraf';
 
+      // Assessment
       const assessment = item.assessment || null;
 
-      let mappedStatus = (window.StatusMapping?.mapStatusToGroup)
+      // Map status
+      let mappedStatus = StatusMapping.mapStatusToGroup
         ? StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage)
         : rawStatus;
 
+      // Special case: hired > 90 days => confirmed
       if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
         mappedStatus = 'Hired (Confirmed)';
       }
 
-      const statusType = (window.StatusMapping?.getSimplifiedStatusType)
+      const statusType = StatusMapping.getSimplifiedStatusType
         ? StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage)
         : 'info';
 
-      const stage = (window.StatusMapping?.determineStage)
+      const stage = StatusMapping.determineStage
         ? StatusMapping.determineStage(rawStatus, assessment, source, daysInStage)
         : mappedStatus;
 
+      // Need reminder?
       const needsAction = mappedStatus === 'Application Received';
 
-      uniqueReferrals.set(key, {
-        id: item.Person_system_id || item.personId || item.ID || key,
+      const processedReferral = {
+        // IDs
+        id: item.Person_system_id || item.personId || item.ID || uniqueKey,
         personId: item.Person_system_id || item.personId || item.ID,
-        uniqueKey: key,
+        uniqueKey,
+
+        // Contact info
         name,
         email,
         phone,
+
+        // Status info
         status: rawStatus,
         mappedStatus,
         statusType,
         stage,
+
+        // Source and eligibility
         source,
         isXRAF,
         isPreviousCandidate: !isXRAF && source !== '',
+
+        // Assessment info
         assessment,
         hasPassedAssessment: assessment && assessment.score >= 70,
         assessmentScore: assessment ? assessment.score : null,
         assessmentDate: assessment ? assessment.date : null,
+
+        // Location info
         location: item.Location || item.location || '',
         nationality: item.F_Nationality || item.nationality || '',
+
+        // Dates
         createdDate,
         updatedDate,
         daysInStage,
         daysSinceCreation,
+
+        // Action flags
         needsAction,
+
+        // Payment eligibility
         isEligibleForAssessmentPayment:
           isXRAF &&
           (mappedStatus === 'Assessment Stage' ||
@@ -322,10 +484,15 @@ document.addEventListener('DOMContentLoaded', function () {
             mappedStatus === 'Hired (Confirmed)') &&
           (!assessment || assessment.score >= 70),
         isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+
+        // Original data for debugging
         _original: item,
-      });
+      };
+
+      uniqueReferrals.set(uniqueKey, processedReferral);
     });
 
+    // Convert Map values to array and sort by created date (newest first)
     return Array.from(uniqueReferrals.values()).sort((a, b) => b.createdDate - a.createdDate);
   }
 
@@ -338,21 +505,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const phoneEl = document.getElementById('dashboard-phone');
     const emailEl = document.getElementById('dashboard-email');
 
-    if (!/^01\d{8,9}$/.test(phone)) {
-      showError(phoneEl, T().phoneError || 'Invalid phone number.');
+    if (!validatePhone(phone)) {
+      showError(phoneEl, translations[AppState.currentLanguage]?.phoneError || 'Invalid phone number.');
       isValid = false;
     } else {
       clearError(phoneEl);
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showError(emailEl, T().emailError || 'Invalid email address.');
+    if (!validateEmail(email)) {
+      showError(emailEl, translations[AppState.currentLanguage]?.emailError || 'Invalid email address.');
       isValid = false;
     } else {
       clearError(emailEl);
     }
 
     return isValid;
+  }
+
+  function validatePhone(phone) {
+    return /^01\d{8,9}$/.test(phone);
+  }
+
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   function showError(input, message) {
@@ -368,11 +543,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function setLoadingState(isLoading) {
-    const btn = document.getElementById('dashboard-submit');
-    if (!btn) return;
-    btn.disabled = isLoading;
-    const t = T();
-    btn.innerHTML = isLoading
+    const submitBtn = document.getElementById('dashboard-submit');
+    if (!submitBtn) return;
+    submitBtn.disabled = isLoading;
+    const t = translations[AppState.currentLanguage] || translations.en || {};
+    submitBtn.innerHTML = isLoading
       ? `<span class="spinner-border spinner-border-sm me-2"></span>${t.connectingMessage || 'Connecting...'}`
       : (t.viewStatusBtn || 'View Referral Status');
   }
@@ -384,6 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
     AppState.currentLanguage = e.target.value;
     updateTranslations();
     if (document.getElementById('results-step')?.style.display !== 'none') {
+      // re-render for localized labels/assets
       showReferralResults(AppState.currentReferralsData);
     }
   }
@@ -392,14 +568,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Results view
   // =============================
   function showReferralResults(referrals) {
-    const auth = document.getElementById('auth-step');
-    const results = document.getElementById('results-step');
-    if (auth) auth.style.display = 'none';
-    if (results) {
-      results.style.display = 'block';
-      results.innerHTML = createResultsContent(referrals);
+    const authStep = document.getElementById('auth-step');
+    const resultsStep = document.getElementById('results-step');
+    if (authStep) authStep.style.display = 'none';
+    if (resultsStep) {
+      resultsStep.style.display = 'block';
+      resultsStep.innerHTML = createResultsContent(referrals);
     }
 
+    // Initialize dashboard components
     updateChart(referrals);
     updateEarningsTable(referrals);
     updateReminderSection(referrals);
@@ -407,13 +584,13 @@ document.addEventListener('DOMContentLoaded', function () {
     updateStatusGuide();
     updateTranslations();
 
-    // Failsafe for .progress on stats card
+    // Failsafe: if any stats card accidentally has .progress, fix it
     fixProgressCardClasses();
 
-    // Watch for dynamic inserts (if any) and re-fix
-    if (results && 'MutationObserver' in window) {
+    // Observe dynamic content in results for any late insertions
+    if (resultsStep && 'MutationObserver' in window) {
       const mo = new MutationObserver(() => fixProgressCardClasses());
-      mo.observe(results, { childList: true, subtree: true });
+      mo.observe(resultsStep, { childList: true, subtree: true });
     }
   }
 
@@ -427,8 +604,12 @@ document.addEventListener('DOMContentLoaded', function () {
     ).length;
 
     if (AppState.debugMode) {
-      console.log('Referral Status Summary:', referrals.map(r => ({ name: r.name, status: r.status, mapped: r.mappedStatus })));
-      console.log('In Progress Count:', inProgressCount, 'Hired Count:', hiredCount);
+      console.log('Referral Status Summary:');
+      referrals.forEach((r) => {
+        console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
+      });
+      console.log('In Progress Count:', inProgressCount);
+      console.log('Hired Count:', hiredCount);
     }
 
     const emailVal = (document.getElementById('dashboard-email')?.value || '');
@@ -554,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const email = document.getElementById('dashboard-email');
     if (phone) phone.value = '';
     if (email) email.value = '';
-    phone?.focus();
+    if (phone) phone.focus();
     AppState.currentReferralsData = [];
   }
 
@@ -570,6 +751,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const lang = button.dataset.lang || AppState.currentLanguage;
     if (!phone) return;
 
+    // Format phone for WhatsApp (Malaysia leading 6)
     const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
 
     const messages = {
@@ -591,29 +773,45 @@ document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('statusChart')?.getContext('2d');
     if (!ctx || !window.Chart) return;
 
+    // Destroy previous chart
     if (AppState.statusChart) {
       AppState.statusChart.destroy();
     }
 
-    const order = DISPLAY_ORDER();
+    // Count statuses using displayOrder
     const counts = {};
-    order.forEach((s) => (counts[s] = 0));
+    const order = (StatusMapping.displayOrder || [
+      'Application Received',
+      'Assessment Stage',
+      'Hired (Probation)',
+      'Hired (Confirmed)',
+      'Previously Applied (No Payment)',
+      'Not Selected',
+    ]);
+
+    order.forEach((status) => (counts[status] = 0));
     referrals.forEach((r) => {
-      if (r && counts[r.mappedStatus] !== undefined) counts[r.mappedStatus]++;
+      if (counts[r.mappedStatus] !== undefined) counts[r.mappedStatus]++;
     });
 
-    const colors = ['#0087FF', '#00d769', '#f5d200', '#84c98b', '#676767', '#dc3545'];
+    const colors = [
+      '#0087FF', // Application Received - blue
+      '#00d769', // Assessment Stage - green flash
+      '#f5d200', // Hired (Probation) - yellow
+      '#84c98b', // Hired (Confirmed) - green
+      '#676767', // Previously Applied (No Payment) - gray
+      '#dc3545', // Not Selected - red
+    ];
 
     AppState.statusChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: order.map((status) => {
-          const key = `status${status.replace(/[\s()]/g, '')}`;
-          return T()[key] || status;
-        }),
+        labels: order.map(
+          (status) => translations[AppState.currentLanguage]?.[`status${status.replace(/[\s()]/g, '')}`] || status
+        ),
         datasets: [
           {
-            data: order.map((s) => counts[s] || 0),
+            data: order.map((status) => counts[status] || 0),
             backgroundColor: colors,
             borderWidth: 2,
             borderColor: '#fff',
@@ -666,8 +864,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // Earnings table
   // =============================
   function updateEarningsTable(referrals) {
-    const body = document.getElementById('earnings-body');
-    if (!body) return;
+    const earningsBody = document.getElementById('earnings-body');
+    if (!earningsBody) return;
 
     const assessmentPassed = referrals.filter((r) => r.isEligibleForAssessmentPayment).length;
     const probationCompleted = referrals.filter((r) => r.isEligibleForProbationPayment).length;
@@ -676,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const probationEarnings = probationCompleted * 750;
     const totalEarnings = assessmentEarnings + probationEarnings;
 
-    body.innerHTML = `
+    earningsBody.innerHTML = `
       <tr>
         <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
         <td>RM 50</td>
@@ -760,12 +958,25 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    // Remove duplicate title (the card already has "All Referrals" above the container)
     container.innerHTML = '';
 
-    const order = DISPLAY_ORDER();
-    const sorted = [...referrals].sort((a, b) => order.indexOf(a.mappedStatus) - order.indexOf(b.mappedStatus));
+    // Sort referrals by status order
+    const order = (StatusMapping.displayOrder || [
+      'Application Received',
+      'Assessment Stage',
+      'Hired (Probation)',
+      'Hired (Confirmed)',
+      'Previously Applied (No Payment)',
+      'Not Selected',
+    ]);
+    const sortedReferrals = [...referrals].sort((a, b) => {
+      const aIndex = order.indexOf(a.mappedStatus);
+      const bIndex = order.indexOf(b.mappedStatus);
+      return aIndex - bIndex;
+    });
 
-    sorted.forEach((ref) => {
+    sortedReferrals.forEach((ref) => {
       const assessmentInfo = ref.assessment
         ? `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">Score: ${ref.assessmentScore}%</span>`
         : '';
@@ -780,7 +991,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${ref.personId ? `<p class="small text-muted">ID: ${ref.personId}</p>` : ''}
               </div>
               <div class="text-end">
-                <span class="badge bg-${ref.statusType} status-badge">${ref.mappedStatus}</span>
+                <span class="badge bg-${ref.statusType} status-badge">
+                  ${ref.mappedStatus}
+                </span>
                 ${assessmentInfo}
               </div>
             </div>
@@ -800,10 +1013,14 @@ document.addEventListener('DOMContentLoaded', function () {
               </div>
               <div class="col-md-3">
                 ${ref.needsAction && ref.phone
-                  ? `<button class="btn btn-sm btn-success w-100 remind-btn" data-name="${ref.name}" data-phone="${ref.phone}">
+                  ? `
+                    <button class="btn btn-sm btn-success w-100 remind-btn"
+                      data-name="${ref.name}"
+                      data-phone="${ref.phone}">
                       <i class="fab fa-whatsapp me-2"></i>
                       <span data-translate="remindBtn">Remind</span>
-                    </button>`
+                    </button>
+                  `
                   : ''}
               </div>
             </div>
@@ -821,48 +1038,42 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // =============================
-  // Status guide (EXAMPLES + PAYMENT CONDITIONS with reliable fallbacks)
+  // Status guide
   // =============================
   function updateStatusGuide() {
     const container = document.getElementById('status-guide-content');
     if (!container) return;
 
-    const t = T();
+    const t = translations[AppState.currentLanguage] || {};
 
-    const examplesList = STATUS_EXAMPLES();
-    const examplesHtml = examplesList
-      .map((example) => {
-        let statusType = (window.StatusMapping?.getSimplifiedStatusType)
-          ? StatusMapping.getSimplifiedStatusType(example.status)
-          : 'info';
-        if (example.status === 'Hired (Confirmed)') statusType = 'passed';
-        if (example.status === 'Previously Applied (No Payment)') statusType = 'previously-applied';
+    const examples = (window.statusExamples || []).map((example) => {
+      let statusType = StatusMapping.getSimplifiedStatusType
+        ? StatusMapping.getSimplifiedStatusType(example.status)
+        : 'info';
+      if (example.status === 'Hired (Confirmed)') statusType = 'passed';
+      if (example.status === 'Previously Applied (No Payment)') statusType = 'previously-applied';
 
-        const label = t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status;
-
-        return `
-          <div class="status-example">
-            <div class="d-flex justify-content-between align-items-center">
-              <strong>${label}</strong>
-              <span class="badge bg-${statusType}">${example.status}</span>
-            </div>
-            <p class="mb-1 mt-2 small">${example.description}</p>
-            <small class="text-muted">${example.action}</small>
+      return `
+        <div class="status-example">
+          <div class="d-flex justify-content-between align-items-center">
+            <strong>${t[`status${example.status.replace(/[\s()]/g, '')}`] || example.status}</strong>
+            <span class="badge bg-${statusType}">
+              ${example.status}
+            </span>
           </div>
-        `;
-      })
-      .join('');
+          <p class="mb-1 mt-2 small">${example.description}</p>
+          <small class="text-muted">${example.action}</small>
+        </div>
+      `;
+    }).join('');
 
-    const structure = EARNINGS_STRUCTURE();
-    const paymentRowsHtml = Object.values(structure)
-      .map((v) => `
-        <tr>
-          <td>${v.label}</td>
-          <td>${v.condition}</td>
-          <td><strong>${v.payment}</strong></td>
-        </tr>
-      `)
-      .join('');
+    const earningsRows = Object.entries(window.earningsStructure || {}).map(([_, value]) => `
+      <tr>
+        <td>${value.label}</td>
+        <td>${value.condition}</td>
+        <td><strong>${value.payment}</strong></td>
+      </tr>
+    `).join('');
 
     container.innerHTML = `
       <div class="row">
@@ -870,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="col-md-6">
           <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
           <div class="status-examples">
-            ${examplesHtml}
+            ${examples}
           </div>
         </div>
 
@@ -887,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </tr>
               </thead>
               <tbody>
-                ${paymentRowsHtml}
+                ${earningsRows}
                 <tr>
                   <td>Previously Applied</td>
                   <td data-translate="noPaymentNote">Candidate applied before referral</td>
@@ -910,16 +1121,21 @@ document.addEventListener('DOMContentLoaded', function () {
   // Translations
   // =============================
   function updateTranslations() {
-    const t = T();
+    const lang = AppState.currentLanguage;
+    const t = translations[lang] || translations.en || {};
 
     document.querySelectorAll('[data-translate]').forEach((el) => {
       const key = el.getAttribute('data-translate');
-      if (t[key]) el.textContent = t[key];
+      if (t[key]) {
+        el.textContent = t[key];
+      }
     });
 
     document.querySelectorAll('[data-translate-placeholder]').forEach((el) => {
       const key = el.getAttribute('data-translate-placeholder');
-      if (t[key]) el.placeholder = t[key];
+      if (t[key]) {
+        el.placeholder = t[key];
+      }
     });
   }
 
@@ -931,6 +1147,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!alertContainer) return;
 
     const alertId = 'alert-' + Date.now();
+
     const alert = document.createElement('div');
     alert.id = alertId;
     alert.className = 'alert alert-warning alert-dismissible fade show';
@@ -940,13 +1157,14 @@ document.addEventListener('DOMContentLoaded', function () {
       ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
+
     alertContainer.appendChild(alert);
 
     setTimeout(() => {
-      const el = document.getElementById(alertId);
-      if (el) {
-        el.classList.remove('show');
-        setTimeout(() => el.remove(), 150);
+      const alertEl = document.getElementById(alertId);
+      if (alertEl) {
+        alertEl.classList.remove('show');
+        setTimeout(() => alertEl.remove(), 150);
       }
     }, 5000);
   }
@@ -966,7 +1184,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // =============================
   initializeApp();
 
-  // Expose some for debugging (optional)
+  // Expose state for debugging
   window.AppState = AppState;
+  // Optional: expose handlers if needed elsewhere
   window.handleBackButton = handleBackButton;
 });
