@@ -543,151 +543,150 @@ document.addEventListener('DOMContentLoaded', function() {
         enableTooltips(resultsStep);
     }
     
-    // Create results HTML with new sections
-    function createResultsContent(referrals) {
-        const hiredCount = referrals.filter(r => 
-            r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
-        ).length;
-        
-        const inProgressCount = referrals.filter(r => 
-            r.mappedStatus === 'Application Received' || 
-            r.mappedStatus === 'Assessment Stage'
-        ).length;
-        
-        // Debug logging
-        console.log('Referral Status Summary:');
-        referrals.forEach(r => {
-            console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
-        });
-        console.log('In Progress Count:', inProgressCount);
-        console.log('Hired Count:', hiredCount);
-        
-        const userName = document.getElementById('dashboard-email').value.split('@')[0];
-        
-        return `
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <h3 class="user-name-display">${userName}</h3>
-                    <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
-                </div>
-                <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
-                    <i class="fas fa-arrow-left me-2"></i> Back
-                </button>
-            </div>
-            
-            <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-md-4 mb-3">
-                    <div class="card stats-card total">
-                        <div class="card-body text-center">
-                            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
-                            <h3 class="text-primary">${referrals.length}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card stats-card hired">
-                        <div class="card-body text-center">
-                            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
-                            <h3 class="text-success">${hiredCount}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card stats-card in-progress">
-                        <div class="card-body text-center">
-                            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
-                            <h3 class="text-warning">${inProgressCount}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Status Distribution Chart -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
-                    <div class="chart-container">
-                        <canvas id="statusChart"></canvas>
-                        <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
-                    </div>
-                </div>
-            </div>
+// Create results HTML with new sections
+function createResultsContent(referrals) {
+  const hiredCount = referrals.filter(r =>
+    r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
+  ).length;
 
-            <!-- Earnings Table -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
-                    <div class="table-responsive">
-                        <table class="earnings-table">
-                            <thead>
-                                <tr>
-                                    <th data-translate="earningsStage">Stage</th>
-                                    <th data-translate="earningsAmount">Amount (RM)</th>
-                                    <th data-translate="earningsCount">Count</th>
-                                    <th data-translate="earningsTotal">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="earnings-body"></tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="3" data-translate="earningsTotal">Total Earnings</th>
-                                    <th id="total-earnings">RM 0</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="text-center mt-3">
-                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
-                            Payment Terms & Conditions
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Reminder Section -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
-                    <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
-                    <div id="friends-to-remind" class="row"></div>
-                </div>
-            </div>
-            
-            <!-- Referral List -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="mb-3">All Referrals</h5>
-                    <div id="referral-list"></div>
-                </div>
-            </div>
-            
-            <!-- Status Guide moved to end -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
-                    <div id="status-guide-content"></div>
-                </div>
-            </div>           
-        `;
-        <!-- Contact Email (also shown on results page) -->
-<div class="card mb-4">
-  <div class="card-body text-center">
-    <p class="mb-0">
-      <span data-translate="contactUsText">Email us at:</span>
-      <a href="mailto:tpmycareers@teleperformance.com"
-         class="email-link"
-         data-bs-toggle="tooltip"
-         data-translate-title="emailTooltip"
-         title="Open your email app">
-        <i class="fa-solid fa-envelope me-1"></i>tpmycareers@teleperformance.com
-      </a>
-    </p>
-  </div>
-</div>
+  const inProgressCount = referrals.filter(r =>
+    r.mappedStatus === 'Application Received' ||
+    r.mappedStatus === 'Assessment Stage'
+  ).length;
 
+  // Debug logging
+  console.log('Referral Status Summary:');
+  referrals.forEach(r => {
+    console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
+  });
+  console.log('In Progress Count:', inProgressCount);
+  console.log('Hired Count:', hiredCount);
 
-    }
+  const userName = document.getElementById('dashboard-email').value.split('@')[0];
+
+  return `
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h3 class="user-name-display">${userName}</h3>
+        <h4 data-translate="yourReferralsTitle">Your Referrals</h4>
+      </div>
+      <button id="dashboard-back" class="btn btn-outline-secondary" data-translate="backBtn">
+        <i class="fas fa-arrow-left me-2"></i> Back
+      </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3">
+        <div class="card stats-card total">
+          <div class="card-body text-center">
+            <h5 class="card-title" data-translate="totalReferrals">Total Referrals</h5>
+            <h3 class="text-primary">${referrals.length}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card stats-card hired">
+          <div class="card-body text-center">
+            <h5 class="card-title" data-translate="hiredReferrals">Hired</h5>
+            <h3 class="text-success">${hiredCount}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card stats-card in-progress">
+          <div class="card-body text-center">
+            <h5 class="card-title" data-translate="inProgress">In Progress</h5>
+            <h3 class="text-warning">${inProgressCount}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Distribution Chart -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
+        <div class="chart-container">
+          <canvas id="statusChart"></canvas>
+          <img src="TPLogo11.png" class="chart-logo" alt="TP Logo">
+        </div>
+      </div>
+    </div>
+
+    <!-- Earnings Table -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
+        <div class="table-responsive">
+          <table class="earnings-table">
+            <thead>
+              <tr>
+                <th data-translate="earningsStage">Stage</th>
+                <th data-translate="earningsAmount">Amount (RM)</th>
+                <th data-translate="earningsCount">Count</th>
+                <th data-translate="earningsTotal">Total</th>
+              </tr>
+            </thead>
+            <tbody id="earnings-body"></tbody>
+            <tfoot>
+              <tr>
+                <th colspan="3" data-translate="earningsTotal">Total Earnings</th>
+                <th id="total-earnings">RM 0</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="text-center mt-3">
+          <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#tngModal" data-translate="paymentNote">
+            Payment Terms & Conditions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reminder Section -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
+        <p class="text-center" data-translate="remindFriendsText">Help your friends complete their assessments to join TP!</p>
+        <div id="friends-to-remind" class="row"></div>
+      </div>
+    </div>
+
+    <!-- Referral List -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">All Referrals</h5>
+        <div id="referral-list"></div>
+      </div>
+    </div>
+
+    <!-- Status Guide moved to end -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
+        <div id="status-guide-content"></div>
+      </div>
+    </div>
+
+    <!-- Contact Email (also shown on results page) -->
+    <div class="card mb-4">
+      <div class="card-body text-center">
+        <p class="mb-0">
+          <span data-translate="contactUsText">Email us at:</span>
+          <a href="mailto:tpmycareers@teleperformance.com"
+             class="email-link"
+             data-bs-toggle="tooltip"
+             data-translate-title="emailTooltip"
+             title="Open your email app">
+            <i class="fa-solid fa-envelope me-1"></i>tpmycareers@teleperformance.com
+          </a>
+        </p>
+      </div>
+    </div>
+  `;
+}
     function enableTooltips(root = document) {
   const els = Array.from(root.querySelectorAll('[data-bs-toggle="tooltip"]'));
   els.forEach(el => {
