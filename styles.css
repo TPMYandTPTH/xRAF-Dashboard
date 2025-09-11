@@ -1140,3 +1140,30 @@ form .hint { font-size: 12px; color: var(--muted); }
     height: clamp(46px, 13cqw, 58px);
   }
 }
+
+/* Email link hover micro-interaction */
+.email-link {
+  position: relative;
+  text-decoration: none;
+  color: var(--primary-color, #0d6efd);
+  transition: color .2s ease, transform .2s ease;
+}
+.email-link::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -2px;
+  width: 0%; height: 2px;
+  background: currentColor;
+  transition: width .25s ease;
+}
+.email-link:hover,
+.email-link:focus {
+  color: #084298;
+  transform: translateY(-1px);
+  outline: none;
+}
+.email-link:hover::after,
+.email-link:focus::after { width: 100%; }
+.email-link i { transition: transform .2s ease; }
+.email-link:hover i,
+.email-link:focus i { transform: translateY(-1px) scale(1.05); }
