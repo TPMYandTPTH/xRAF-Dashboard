@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="card stats-card in-progress">
+                    <div class="card stats-card inprogress">
                         <div class="card-body text-center">
                             <h5 class="card-title" data-translate="inProgress">In Progress</h5>
                             <h3 class="text-warning">${inProgressCount}</h3>
