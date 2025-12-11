@@ -43,7 +43,7 @@
     
     /* Payment Tier Colors */
     --tier-johor: var(--tp-orange);       /* Orange - RM500 Johor */
-    --tier-standard: #84c98b;             /* Black - RM800 Standard */
+    --tier-standard: var(--tp-green-light);       /* Green - RM800 Standard */
     --tier-interpreter: var(--tp-turquoise); /* Turquoise - RM3000 Interpreter */
     
     /* Layout - ROUNDED/EDGY Design */
@@ -382,7 +382,7 @@ tbody tr:last-child td:last-child {
 }
 
 .earnings-table .tier-standard td:first-child {
-    border-left: 4px solid var(--primary-color);
+    border-left: 4px solid var(--tp-green-light);
 }
 
 .earnings-table .tier-interpreter td:first-child {
