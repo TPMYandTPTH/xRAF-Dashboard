@@ -1,5 +1,5 @@
 // Main Application Script with Updated Logic
-// Updated: December 2024 - New payment structure (RM500/RM800/RM3000)
+// Updated: December 2025 - New payment structure (RM500/RM800/RM3000)
 
 document.addEventListener('DOMContentLoaded', function() {
     // Application State
