@@ -481,7 +481,7 @@ const ApiService = {
         const tiers = {
             johor: { amount: 500, label: 'Mandarin - Johor', color: '#ff5c00' },
             standard: { amount: 800, label: 'Standard Roles', color: '#000000' },
-            interpreter: { amount: 3000, label: 'WFH Interpreter', color: '#3047b0' }
+            interpreter: { amount: 3000, label: 'WFH Interpreter', color: '#00af9b' }
         };
         
         // Use explicit PaymentTier if available (mock data)
