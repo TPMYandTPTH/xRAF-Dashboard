@@ -707,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        container.innerHTML = '<h5 class="mb-3">All Referrals</h5>';
+        container.innerHTML = '<h5 class="mb-3"></h5>';
         
         // Sort referrals by status order
         const sortedReferrals = [...referrals].sort((a, b) => {
