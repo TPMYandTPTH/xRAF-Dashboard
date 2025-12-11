@@ -13,9 +13,9 @@
   <!-- Main CSS -->
   <link href="styles.css" rel="stylesheet"/>
 
-  <!-- Small inline overrides to guarantee fixes even before styles.css is updated -->
+  <!-- Small inline overrides -->
   <style>
-    /* ensure “In Progress” card doesn’t clash with .progress */
+    /* ensure "In Progress" card doesn't clash with .progress */
     .stats-card.in-progress { border-left: 4px solid var(--warning-color); }
     /* boxed social media area with heavier shadow */
     .social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: .5rem; }
@@ -135,7 +135,7 @@
     </div>
   </footer>
 
-  <!-- TnG Terms Modal -->
+  <!-- TnG Terms Modal - UPDATED December 2024 -->
   <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -146,33 +146,48 @@
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6">
-              <h6>Payment Structure</h6>
+              <h6><i class="fas fa-money-bill-wave me-2" style="color: #ff5c00;"></i>Payment Structure</h6>
               <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-2">
+                <!-- Johor Tier - Orange -->
+                <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background: #ff5c00; color: #fff; border-left: 4px solid #cc4a00;">
                   <div>
-                    <strong>Assessment Passed</strong><br>
-                    <small>RM50 payment is eligible if the candidate passes the AI assessment</small>
-
+                    <strong>Mandarin - Johor</strong><br>
+                    <small>90 days probation completed</small>
                   </div>
-                  <span class="badge bg-success fs-6">RM50</span>
+                  <span class="badge bg-light text-dark fs-6">RM500</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                <!-- Standard Tier - Black -->
+                <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background: #000000; color: #fff; border-left: 4px solid #333;">
                   <div>
-                    <strong>90-Day Probation</strong><br>
-                    <small>Completed successfully</small>
+                    <strong>Standard Roles (Other Locations)</strong><br>
+                    <small>90 days probation completed</small>
                   </div>
-                  <span class="badge bg-success fs-6">RM750</span>
+                  <span class="badge bg-light text-dark fs-6">RM800</span>
+                </div>
+                <!-- Interpreter Tier - Blue -->
+                <div class="d-flex justify-content-between align-items-center p-3" style="background: #3047b0; color: #fff; border-left: 4px solid #1a2a6e;">
+                  <div>
+                    <strong>Interpreter (Work From Home)</strong><br>
+                    <small>90 days probation completed</small>
+                  </div>
+                  <span class="badge bg-light text-dark fs-6">RM3,000</span>
                 </div>
               </div>
             </div>
             <div class="col-md-6">
-              <h6>Important Notes</h6>
+              <h6><i class="fas fa-info-circle me-2" style="color: #3047b0;"></i>Important Notes</h6>
               <ul class="small">
-                <li>Payments via TnG eWallet only</li>
+                <li>Payments via <strong>TnG eWallet only</strong></li>
+                <li>Single payment after 90 days probation</li>
                 <li>No payment for previously applied candidates</li>
-                <li>Must not be an active TP employee</li>
+                <li>Referral must not be an active TP employee</li>
                 <li>Processing within 30 days after verification</li>
+                <li>Only xRAF referrals are eligible</li>
               </ul>
+              <div class="alert alert-warning small mt-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Note:</strong> Tax responsibility is borne by the referrer. All payments are subject to TP's verification and approval.
+              </div>
             </div>
           </div>
         </div>

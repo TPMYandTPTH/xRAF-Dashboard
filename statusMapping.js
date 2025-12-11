@@ -1,4 +1,6 @@
 // Complete Status Mapping with All Statuses
+// Updated: December 2024 - New payment structure (RM500/RM800/RM3000)
+
 const StatusMapping = {
     // Map status to simplified group based on rules
     mapStatusToGroup: function(status, assessment, source, daysInStage) {
@@ -125,23 +127,30 @@ const StatusMapping = {
     ]
 };
 
-// Earnings structure with conditions
+// Earnings structure with conditions - UPDATED December 2024
+// All payments are single payment after 90 days probation
 const earningsStructure = {
-    assessment: {
-        amount: 50,
-        label: "Assessment Passed",
-        condition: "Candidate passes the AI assessment",
-        payment: "RM50"
+    johor: {
+        amount: 500,
+        label: "Mandarin - Johor",
+        condition: "90 days probation completed",
+        payment: "RM500"
     },
-    probation: { 
-        amount: 750, 
-        label: "Probation Completed",
-        condition: "Candidate completes 90-day probation period",
-        payment: "RM750"
+    standard: { 
+        amount: 800, 
+        label: "Standard Roles (Other Locations)",
+        condition: "90 days probation completed",
+        payment: "RM800"
+    },
+    interpreter: {
+        amount: 3000,
+        label: "Interpreter (Work From Home)",
+        condition: "90 days probation completed",
+        payment: "RM3,000"
     }
 };
 
-// Status examples for guide - UPDATED TEXT
+// Status examples for guide - UPDATED December 2024
 const statusExamples = [
     {
         status: "Application Received",
@@ -151,17 +160,17 @@ const statusExamples = [
     {
         status: "Assessment Stage",
         description: "Candidate in assessment/interview process",
-        action: "RM50 payment eligible if the candidate pass the AI assessment"
+        action: "Waiting for assessment completion"
     },
     {
         status: "Hired (Probation)",
         description: "Candidate hired but in probation period (<90 days)",
-        action: "Monitor progress"
+        action: "Monitor progress - payment after 90 days"
     },
     {
         status: "Hired (Confirmed)",
         description: "Candidate completed 90-day probation",
-        action: "RM750 payment eligible"
+        action: "Payment eligible (RM500/RM800/RM3,000)"
     },
     {
         status: "Previously Applied (No Payment)",

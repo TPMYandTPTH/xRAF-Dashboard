@@ -1,4 +1,6 @@
 // Main Application Script with Updated Logic
+// Updated: December 2024 - New payment structure (RM500/RM800/RM3000)
+
 document.addEventListener('DOMContentLoaded', function() {
     // Application State
     const AppState = {
@@ -28,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if demo credentials are used
     function checkForDemoMode() {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('demo') === 'true') {
+        if (urlParams.get('demo') === 'true' || urlParams.get('demo') === '1') {
             document.getElementById('dashboard-phone').value = '0123456789';
             document.getElementById('dashboard-email').value = 'amr@tp.com';
         }
@@ -73,15 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setLoadingState(true);
         
         try {
-            let apiData;
-            
-            // Check if demo credentials
-            if (phone === '0123456789' && email === 'amr@tp.com') {
-                apiData = generateMockData();
-            } else {
-                // Fetch real referrals from API
-                apiData = await ApiService.fetchReferrals(phone, email);
-            }
+            // Fetch referrals from API (handles demo mode internally)
+            const apiData = await ApiService.fetchReferrals(phone, email);
             
             // Process and store referrals with deduplication
             AppState.currentReferralsData = processReferrals(apiData);
@@ -100,238 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Generate mock data for presentation
-    function generateMockData() {
-        const today = new Date();
-        const mockData = [
-            {
-                Person_system_id: 'TP020',
-                First_Name: 'Tarek Ezz',
-                Email: 'tarekezz@yahoo.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Kuala Lumpur',
-                F_Nationality: 'Egypt',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-           {
-                Person_system_id: 'TP021',
-                First_Name: 'Loai',
-                Email: 'loai@tp.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Yamen',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-      {
-                Person_system_id: 'TP022',
-                First_Name: 'Micole Barrientos',
-                Email: 'miki@tp.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Philipinese',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-     {
-                Person_system_id: 'TP023',
-                First_Name: 'Anna Saw Yee Lin',
-                Email: 'anna@tp.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-         {
-                Person_system_id: 'TP024',
-                First_Name: 'Pourya Tohidi',
-                Email: 'pourya@tp.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Iran',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-                 {
-                Person_system_id: 'TP025',
-                First_Name: 'Melaine Sua',
-                Email: 'melaine@tp.com',
-                Employee: '0123456789',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-    
-            // Application Received (2 examples)
-            {
-                Person_system_id: 'TP001',
-                First_Name: 'Amr Ezz',
-                Email: 'amr@gmail.com',
-                Employee: '0183931348',
-                Status: 'Application Received',
-                Source: 'xRAF',
-                Location: 'Kuala Lumpur',
-                F_Nationality: 'Egypt',
-                CreatedDate: new Date(today - 2 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 2 * 86400000).toISOString()
-            },
-            {
-                Person_system_id: 'TP002', 
-                First_Name: 'Micole Barrientos',
-                Email: 'Miki@hotmail.com',
-                Employee: '0126240297',
-                Status: 'Contact Attempt 1',
-                Source: 'xRAF',  // Changed to xRAF
-                Location: 'Penang',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 5 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 4 * 86400000).toISOString()
-            },
-            // Assessment Stage (2 examples)
-            {
-                Person_system_id: 'TP003',
-                First_Name: 'Kumar Raj',
-                Email: 'kumar.raj@yahoo.com',
-                Employee: '0176543210',
-                Status: 'SHL Assessment: Conversational Multichat ENG',
-                Source: 'xRAF',
-                Location: 'Johor Bahru',
-                F_Nationality: 'Indian',
-                CreatedDate: new Date(today - 10 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 3 * 86400000).toISOString()
-            },
-            {
-                Person_system_id: 'TP004',
-                First_Name: 'Jennifer Tan',
-                Email: 'jennifer.tan@gmail.com',
-                Employee: '0165432109',
-                Status: 'Interview Scheduled',
-                Source: 'xRAF',
-                Location: 'Cyberjaya',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 15 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 1 * 86400000).toISOString()
-            },
-            // Hired (Probation) (2 examples)
-            {
-                Person_system_id: 'TP005',
-                First_Name: 'Michael Wong',
-                Email: 'michael.wong@outlook.com',
-                Employee: '0154321098',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Kuala Lumpur',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 45 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 30 * 86400000).toISOString()
-            },
-            // Lisa Chen - Hired Probation (not xRAF, so won't get payment)
-            {
-                Person_system_id: 'TP006',
-                First_Name: 'Lisa Chen',
-                Email: 'lisa.chen@gmail.com',
-                Employee: '0143210987',
-                Status: 'Onboarding Started',
-                Source: 'xRAF',  // Changed to xRAF for payment eligibility
-                Location: 'Petaling Jaya',
-                F_Nationality: 'Chinese',
-                CreatedDate: new Date(today - 60 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 50 * 86400000).toISOString()
-            },
-            // Hired (Confirmed) (2 examples)
-            {
-                Person_system_id: 'TP007',
-                First_Name: 'David Lim',
-                Email: 'david.lim@gmail.com',
-                Employee: '0132109876',
-                Status: 'Graduate',
-                Source: 'xRAF',
-                Location: 'Kuala Lumpur',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 120 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 95 * 86400000).toISOString()
-            },
-            {
-                Person_system_id: 'TP008',
-                First_Name: 'Emily Ooi',
-                Email: 'emily.ooi@yahoo.com',
-                Employee: '0121098765',
-                Status: 'New Starter (Hired)',
-                Source: 'xRAF',
-                Location: 'Penang',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 150 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 100 * 86400000).toISOString()
-            },
-            // Previously Applied (No Payment) (2 examples)
-            {
-                Person_system_id: 'TP009',
-                First_Name: 'Jason Ng',
-                Email: 'jason.ng@gmail.com',
-                Employee: '0110987654',
-                Status: 'Interview Complete / Offer Requested',
-                Source: 'External Portal',  // Not xRAF
-                Location: 'Shah Alam',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 20 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 10 * 86400000).toISOString()
-            },
-            {
-                Person_system_id: 'TP010',
-                First_Name: 'Rachel Yap',
-                Email: 'rachel.yap@hotmail.com',
-                Employee: '0109876543',
-                Status: 'Screened',
-                Source: 'Internal Portal',  // Not xRAF
-                Location: 'Subang Jaya',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 25 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 15 * 86400000).toISOString()
-            },
-            // Not Selected (2 examples)
-            {
-                Person_system_id: 'TP011',
-                First_Name: 'Steven Toh',
-                Email: 'steven.toh@gmail.com',
-                Employee: '0198765432',
-                Status: 'Eliminated - Assessment Results Did Not Meet Criteria',
-                Source: 'xRAF',
-                Location: 'Ipoh',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 30 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 20 * 86400000).toISOString()
-            },
-            {
-                Person_system_id: 'TP012',
-                First_Name: 'Angela Low',
-                Email: 'angela.low@yahoo.com',
-                Employee: '0187654321',
-                Status: 'Withdrew - Other Job Offer',
-                Source: 'xRAF',  // Changed to xRAF
-                Location: 'Melaka',
-                F_Nationality: 'Malaysian',
-                CreatedDate: new Date(today - 35 * 86400000).toISOString(),
-                UpdatedDate: new Date(today - 25 * 86400000).toISOString()
-            }
-        ];
-        return mockData;
-    }
-    
     // Process API response with deduplication and fixed status mapping
     function processReferrals(apiData) {
         if (!Array.isArray(apiData)) return [];
@@ -341,9 +104,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         apiData.forEach(item => {
             // Create unique key using email and name (or phone as fallback)
-            const email = (item.Email || item.email || '').toLowerCase().trim();
-            const name = (item.First_Name || item.name || 'Unknown').trim();
-            const phone = (item.Employee || item.phone || '').trim();
+            // Support both simplified and SharePoint field names
+            const email = (item.Person_x0020_Email || item.Email || item.email || '').toLowerCase().trim();
+            const name = (item.Person_x0020_Full_x0020_Name || item.First_Name || item.name || 'Unknown').trim();
+            const phone = (item.Default_x0020_Phone || item.Employee || item.phone || '').trim();
             
             // Use email+name as primary key, or phone+name as fallback
             const uniqueKey = email ? `${email}_${name}` : `${phone}_${name}`;
@@ -353,13 +117,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const existing = uniqueReferrals.get(uniqueKey);
                 // If duplicate found, keep the one with more recent update date
                 const existingDate = new Date(existing.UpdatedDate || existing.updatedDate || 0);
-                const currentDate = new Date(item.UpdatedDate || item.updatedDate || 0);
+                const currentDate = new Date(item.UpdatedDate || item.updatedDate || item.Modified || 0);
                 if (currentDate <= existingDate) {
                     return; // Skip this duplicate
                 }
             }
             
-            // Parse dates
+            // Parse dates - support SharePoint field names
             const parseDate = (dateStr) => {
                 if (!dateStr) return new Date();
                 // Handle various date formats
@@ -370,35 +134,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 return new Date(dateStr);
             };
             
-            const updatedDate = parseDate(item.UpdatedDate || item.updatedDate);
-            const createdDate = parseDate(item.CreatedDate || item.createdDate);
+            const updatedDate = parseDate(item.Modified || item.UpdatedDate || item.updatedDate);
+            const createdDate = parseDate(item.Created || item.CreatedDate || item.createdDate);
+            const hireDate = item.HireDate ? parseDate(item.HireDate) : null;
             const daysInStage = Math.floor((new Date() - updatedDate) / (86400000));
             const daysSinceCreation = Math.floor((new Date() - createdDate) / (86400000));
+            const daysSinceHire = hireDate ? Math.floor((new Date() - hireDate) / (86400000)) : 0;
             
-            // Get status and source
-            const rawStatus = (item.Status || item.status || 'Application Received').trim();
-            const source = (item.Source || item.source || item.SourceName || '').trim();
+            // Get status and source - support SharePoint field names
+            const rawStatus = (item.Recent_x0020_Status || item.Status || item.status || 'Application Received').trim();
+            const source = (item.Source_x0020_Name || item.Source || item.source || item.SourceName || '').trim();
             
             // Check if xRAF referral (only xRAF is accepted for payment)
             const sourceL = source.toLowerCase().trim();
             const isXRAF = sourceL === 'xraf';
             
-            // Get assessment result if available
-            const assessment = item.assessment || null;
-            
             // Map status with all parameters including source and days
-            let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, assessment, source, daysInStage);
+            let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, null, source, daysInStage);
             
-            // Special case: if status indicates hired and has been more than 90 days since created date
-            if (mappedStatus === 'Hired (Probation)' && daysSinceCreation >= 90) {
-                mappedStatus = 'Hired (Confirmed)';
+            // Special case: if status indicates hired, check days since hire date or creation
+            if (mappedStatus === 'Hired (Probation)') {
+                const daysEmployed = hireDate ? daysSinceHire : daysSinceCreation;
+                if (daysEmployed >= 90) {
+                    mappedStatus = 'Hired (Confirmed)';
+                }
             }
             
-            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, assessment, source, daysInStage);
-            const stage = StatusMapping.determineStage(rawStatus, assessment, source, daysInStage);
+            const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, null, source, daysInStage);
+            const stage = StatusMapping.determineStage(rawStatus, null, source, daysInStage);
             
             // Check if needs reminder (any Application Received status)
             const needsAction = mappedStatus === 'Application Received';
+            
+            // Get location and position for payment tier determination
+            const location = (item.Location || item.location || '').trim();
+            const position = (item.Position || item.position || '').trim();
+            const paymentTier = item.PaymentTier || null; // From mock data
             
             const processedReferral = {
                 // IDs
@@ -422,15 +193,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 isXRAF: isXRAF,
                 isPreviousCandidate: !isXRAF && source !== '',
                 
-                // Assessment info
-                assessment: assessment,
-                hasPassedAssessment: assessment && assessment.score >= 70,
-                assessmentScore: assessment ? assessment.score : null,
-                assessmentDate: assessment ? assessment.date : null,
-                
-                // Location info
-                location: item.Location || item.location || '',
+                // Location and position info
+                location: location,
+                position: position,
                 nationality: item.F_Nationality || item.nationality || '',
+                PaymentTier: paymentTier, // For tier-based earnings calculation
                 
                 // Dates
                 createdDate: createdDate,
@@ -441,13 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Action flags
                 needsAction: needsAction,
                 
-                // Payment eligibility (with proper checks)
-                isEligibleForAssessmentPayment: isXRAF && (
-                    mappedStatus === 'Assessment Stage' || 
-                    mappedStatus === 'Hired (Probation)' || 
-                    mappedStatus === 'Hired (Confirmed)'
-                ) && (!assessment || assessment.score >= 70),
-                isEligibleForProbationPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
+                // Payment eligibility - only after 90 days probation
+                isEligibleForPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
                 
                 // Original data for debugging
                 _original: item
@@ -733,13 +495,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Chart colors - updated to match status types
+        // Chart colors - TP Brand colors
         const colors = [
-            '#0087FF',  // Application Received - blue
-            '#00d769',  // Assessment Stage - green flash
-            '#f5d200',  // Hired (Probation) - yellow
-            '#84c98b',  // Hired (Confirmed) - green
-            '#676767',  // Previously Applied (No Payment) - gray
+            '#3047b0',  // Application Received - Blue TP
+            '#00d769',  // Assessment Stage - Green Flash TP
+            '#F5D200',  // Hired (Probation) - Yellow TP
+            '#84c98b',  // Hired (Confirmed) - Green Light TP
+            '#676767',  // Previously Applied (No Payment) - Gray TP
             '#dc3545'   // Not Selected - red
         ];
         
@@ -803,36 +565,82 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Update earnings table with new logic
+    // Update earnings table with new 3-tier structure
+    // Counts eligible referrals by payment tier based on PaymentTier field or auto-detection
     function updateEarningsTable(referrals) {
         const earningsBody = document.getElementById('earnings-body');
         if (!earningsBody) return;
         
-        // Calculate eligible candidates
-        const assessmentPassed = referrals.filter(r => r.isEligibleForAssessmentPayment).length;
-        const probationCompleted = referrals.filter(r => r.isEligibleForProbationPayment).length;
+        // Count eligible candidates (Hired Confirmed + xRAF source)
+        const eligibleReferrals = referrals.filter(r => r.isEligibleForPayment);
+        
+        // Count by payment tier
+        let johorCount = 0;
+        let standardCount = 0;
+        let interpreterCount = 0;
+        
+        eligibleReferrals.forEach(r => {
+            // Use PaymentTier if available (from mock data), otherwise auto-detect
+            const tier = r.PaymentTier || detectPaymentTier(r);
+            
+            if (tier === 'johor') {
+                johorCount++;
+            } else if (tier === 'interpreter') {
+                interpreterCount++;
+            } else {
+                standardCount++;
+            }
+        });
         
         // Calculate earnings
-        const assessmentEarnings = assessmentPassed * 50;
-        const probationEarnings = probationCompleted * 750;
-        const totalEarnings = assessmentEarnings + probationEarnings;
+        const johorEarnings = johorCount * 500;
+        const standardEarnings = standardCount * 800;
+        const interpreterEarnings = interpreterCount * 3000;
+        const totalEarnings = johorEarnings + standardEarnings + interpreterEarnings;
+        
+        const t = translations[AppState.currentLanguage];
         
         earningsBody.innerHTML = `
-            <tr>
-                <td data-translate="statusAssessmentPassed">Assessment Passed (Score ≥ 70%)</td>
-                <td>RM 50</td>
-                <td>${assessmentPassed}</td>
-                <td>RM ${assessmentEarnings}</td>
+            <tr class="tier-johor">
+                <td>${t.statusJohorProbation || 'Mandarin - Johor (RM500)'}</td>
+                <td>RM 500</td>
+                <td>${johorCount}</td>
+                <td>RM ${johorEarnings.toLocaleString()}</td>
             </tr>
-            <tr>
-                <td data-translate="statusProbationPassed">Probation Completed (90 days)</td>
-                <td>RM 750</td>
-                <td>${probationCompleted}</td>
-                <td>RM ${probationEarnings}</td>
+            <tr class="tier-standard">
+                <td>${t.statusStandardProbation || 'Standard Roles (RM800)'}</td>
+                <td>RM 800</td>
+                <td>${standardCount}</td>
+                <td>RM ${standardEarnings.toLocaleString()}</td>
+            </tr>
+            <tr class="tier-interpreter">
+                <td>${t.statusInterpreterProbation || 'Interpreter WFH (RM3,000)'}</td>
+                <td>RM 3,000</td>
+                <td>${interpreterCount}</td>
+                <td>RM ${interpreterEarnings.toLocaleString()}</td>
             </tr>
         `;
         
-        document.getElementById('total-earnings').textContent = `RM ${totalEarnings}`;
+        document.getElementById('total-earnings').textContent = `RM ${totalEarnings.toLocaleString()}`;
+    }
+    
+    // Auto-detect payment tier from referral data
+    function detectPaymentTier(referral) {
+        const position = (referral.position || referral.Position || '').toLowerCase();
+        const location = (referral.location || referral.Location || '').toLowerCase();
+        
+        // Check for Interpreter position
+        if (position.includes('interpreter')) {
+            return 'interpreter';
+        }
+        
+        // Check for Johor location
+        if (location.includes('johor')) {
+            return 'johor';
+        }
+        
+        // Default to standard
+        return 'standard';
     }
     
     // Update reminder section
@@ -909,11 +717,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         sortedReferrals.forEach(ref => {
-            const assessmentInfo = ref.assessment ? 
-                `<span class="assessment-score ${ref.assessmentScore < 70 ? 'low' : ''}">
-                    Score: ${ref.assessmentScore}%
-                </span>` : '';
-            
             container.innerHTML += `
                 <div class="card referral-card status-${ref.statusType} mb-3">
                     <div class="card-body">
@@ -927,7 +730,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span class="badge bg-${ref.statusType} status-badge">
                                     ${ref.mappedStatus}
                                 </span>
-                                ${assessmentInfo}
                             </div>
                         </div>
                         
@@ -1033,8 +835,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="payment-notes mt-3">
                         <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>All payments via Touch 'n Go eWallet</p>
-                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days</p>
-                        <p class="small"><i class="fas fa-info-circle me-2"></i>Must be active TP employee at payment time</p>
+                        <p class="small mb-1"><i class="fas fa-info-circle me-2"></i>Payments processed within 30 days after probation</p>
+                        <p class="small"><i class="fas fa-info-circle me-2"></i>Only xRAF referrals are eligible for payment</p>
                     </div>
                 </div>
             </div>
