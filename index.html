@@ -198,6 +198,42 @@
     </div>
   </div>
 
+  <!-- OTP Verification Modal -->
+  <div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-translate="otpTitle">Security Verification</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="mb-4">
+            <i class="fas fa-envelope-open-text fa-3x text-primary"></i>
+          </div>
+          <h6 data-translate="otpSentMessage">We have sent a verification code to:</h6>
+          <p id="otp-target-email" class="fw-bold mb-4"></p>
+          
+          <div class="mb-3">
+            <label for="otp-input" class="form-label" data-translate="enterOtp">Enter 6-digit Code</label>
+            <input type="text" class="form-control text-center fs-4 letter-spacing-2" id="otp-input" maxlength="6" autocomplete="one-time-code" placeholder="------">
+            <div class="invalid-feedback" id="otp-error-msg">Invalid Code</div>
+          </div>
+          
+          <div class="d-grid gap-2 mb-3">
+            <button type="button" class="btn btn-dark" id="verify-otp-btn" disabled>
+              <span id="verify-btn-text" data-translate="verifyBtn">Verify & Login</span>
+            </button>
+          </div>
+          
+          <p class="small text-muted mb-0">
+            <span data-translate="didntReceive">Didn't receive code?</span> 
+            <a href="#" id="resend-otp" class="text-decoration-none" data-translate="resendBtn">Resend</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -205,6 +241,7 @@
   <!-- App scripts (order matters) -->
   <script src="translations.js"></script>
   <script src="statusMapping.js"></script>
+  <script src="authService.js"></script>
   <script src="apiService.js"></script>
   <script src="script.js"></script>
 </body>

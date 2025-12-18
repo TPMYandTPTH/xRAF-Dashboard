@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
+        pendingLogin: { phone: null, email: null }, // Store credentials while waiting for OTP
         debugMode: false // Set to true for debugging
     };
     
@@ -63,15 +64,133 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleFormSubmit();
             }
         });
+
+        // OTP Modal Listeners
+        document.getElementById('verify-otp-btn').addEventListener('click', handleOtpVerify);
+        document.getElementById('resend-otp').addEventListener('click', handleResendOtp);
+        
+        // Auto-enable verify button when 6 digits entered
+        document.getElementById('otp-input').addEventListener('input', function(e) {
+            // Allow numbers only
+            this.value = this.value.replace(/[^0-9]/g, '');
+            const btn = document.getElementById('verify-otp-btn');
+            btn.disabled = this.value.length !== 6;
+            
+            // Auto-submit on 6th digit
+            if (this.value.length === 6) {
+                // small delay for UI feedback
+                setTimeout(() => btn.click(), 100);
+            }
+            
+            // Clear error on input
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+            }
+        });
     }
     
-    // Handle form submission
+    // Handle form submission - STEP 1: Request OTP
     async function handleFormSubmit() {
         const phone = document.getElementById('dashboard-phone').value.trim();
         const email = document.getElementById('dashboard-email').value.trim();
         
         if (!validateInputs(phone, email)) return;
         
+        // Store credentials temporarily
+        AppState.pendingLogin = { phone, email };
+        
+        setLoadingState(true);
+        
+        try {
+            // Request OTP
+            await AuthService.requestOTP(email);
+            
+            // Show OTP Modal
+            const otpModal = new bootstrap.Modal(document.getElementById('otpModal'));
+            document.getElementById('otp-target-email').textContent = email;
+            document.getElementById('otp-input').value = '';
+            document.getElementById('otp-input').classList.remove('is-invalid');
+            
+            setLoadingState(false);
+            otpModal.show();
+            
+            // Focus OTP input
+            setTimeout(() => document.getElementById('otp-input').focus(), 500);
+            
+        } catch (error) {
+            console.error('OTP Error:', error);
+            showNonBlockingError('Failed to send OTP. Please try again.');
+            setLoadingState(false);
+        }
+    }
+    
+    // Handle OTP Verify - STEP 2: Verify and Login
+    async function handleOtpVerify() {
+        const input = document.getElementById('otp-input');
+        const btn = document.getElementById('verify-otp-btn');
+        const otpValue = input.value;
+        
+        // UI Loading State
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+        btn.disabled = true;
+        input.disabled = true;
+        
+        // Verify OTP
+        const verification = AuthService.verifyOTP(otpValue);
+        
+        if (verification.success) {
+            // Success! Proceed to dashboard
+            const modalEl = document.getElementById('otpModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            
+            // Reset modal UI
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            input.disabled = false;
+            
+            // Proceed to load dashboard data
+            await finalizedLogin();
+            
+        } else {
+            // Failure
+            input.classList.add('is-invalid');
+            document.getElementById('otp-error-msg').textContent = verification.message;
+            
+            // Reset UI
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            input.disabled = false;
+            input.focus();
+        }
+    }
+    
+    // Resend OTP
+    async function handleResendOtp(e) {
+        e.preventDefault();
+        const email = AppState.pendingLogin.email;
+        if (!email) return;
+        
+        const link = e.target;
+        const originalText = link.textContent;
+        link.textContent = 'Sending...';
+        link.style.pointerEvents = 'none';
+        
+        await AuthService.requestOTP(email);
+        
+        link.textContent = 'Sent!';
+        setTimeout(() => {
+            link.textContent = originalText;
+            link.style.pointerEvents = 'auto';
+        }, 3000);
+    }
+
+    // Finalize Login after OTP success
+    async function finalizedLogin() {
+        const { phone, email } = AppState.pendingLogin;
+        
+        // Show main loading state again
         setLoadingState(true);
         
         try {
