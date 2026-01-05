@@ -1,5 +1,5 @@
 // Main Application Script with Updated Logic
-// Updated: December 2025 - New payment structure (RM500/RM800/RM3000)
+// Updated: January 2026 - Email-only login, New payment structure (RM500/RM800/RM3000)
 
 document.addEventListener('DOMContentLoaded', function() {
     // Application State
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        pendingLogin: { phone: null, email: null }, // Store credentials while waiting for OTP
+        pendingLogin: { email: null }, // Store email while waiting for OTP
         debugMode: false // Set to true for debugging
     };
     
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('current-year').textContent = new Date().getFullYear();
         updateTranslations();
         setupEventListeners();
-        document.getElementById('dashboard-phone').focus();
+        document.getElementById('dashboard-email').focus();
         
         // Test connection if in debug mode
         if (AppState.debugMode) {
@@ -28,11 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
         checkForDemoMode();
     }
     
-    // Check if demo credentials are used
+    // Check if demo mode is enabled via URL parameter
     function checkForDemoMode() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('demo') === 'true' || urlParams.get('demo') === '1') {
-            document.getElementById('dashboard-phone').value = '0123456789';
             document.getElementById('dashboard-email').value = 'amr@tp.com';
         }
     }
@@ -41,11 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupEventListeners() {
         document.getElementById('lang-select').addEventListener('change', handleLanguageChange);
         document.getElementById('dashboard-submit').addEventListener('click', handleFormSubmit);
-        
-        // Phone number validation - only numbers
-        document.getElementById('dashboard-phone').addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
         
         // Delegate event handling for dynamic content
         document.addEventListener('click', function(e) {
@@ -91,13 +85,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle form submission - STEP 1: Request OTP
     async function handleFormSubmit() {
-        const phone = document.getElementById('dashboard-phone').value.trim();
         const email = document.getElementById('dashboard-email').value.trim();
         
-        if (!validateInputs(phone, email)) return;
+        if (!validateInputs(email)) return;
         
-        // Store credentials temporarily
-        AppState.pendingLogin = { phone, email };
+        // Store email temporarily
+        AppState.pendingLogin = { email };
         
         setLoadingState(true);
         
@@ -188,14 +181,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Finalize Login after OTP success
     async function finalizedLogin() {
-        const { phone, email } = AppState.pendingLogin;
+        const { email } = AppState.pendingLogin;
         
         // Show main loading state again
         setLoadingState(true);
         
         try {
             // Fetch referrals from API (handles demo mode internally)
-            const apiData = await ApiService.fetchReferrals(phone, email);
+            const apiData = await ApiService.fetchReferrals(email);
             
             // Process and store referrals with deduplication
             AppState.currentReferralsData = processReferrals(apiData);
@@ -344,17 +337,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validate form inputs
-    function validateInputs(phone, email) {
+    // Validate form inputs (email only)
+    function validateInputs(email) {
         let isValid = true;
-        
-        if (!validatePhone(phone)) {
-            showError(document.getElementById('dashboard-phone'), 
-                     translations[AppState.currentLanguage].phoneError);
-            isValid = false;
-        } else {
-            clearError(document.getElementById('dashboard-phone'));
-        }
         
         if (!validateEmail(email)) {
             showError(document.getElementById('dashboard-email'), 
@@ -365,10 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return isValid;
-    }
-    
-    function validatePhone(phone) {
-        return /^01\d{8,9}$/.test(phone);
     }
     
     function validateEmail(email) {
@@ -555,9 +536,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleBackButton() {
         document.getElementById('auth-step').style.display = 'block';
         document.getElementById('results-step').style.display = 'none';
-        document.getElementById('dashboard-phone').value = '';
         document.getElementById('dashboard-email').value = '';
-        document.getElementById('dashboard-phone').focus();
+        document.getElementById('dashboard-email').focus();
         AppState.currentReferralsData = [];
     }
     

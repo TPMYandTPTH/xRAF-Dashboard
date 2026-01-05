@@ -1,5 +1,5 @@
 // Complete Status Mapping with All Statuses
-// Updated: December 2024 - New payment structure (RM500/RM800/RM3000)
+// Updated: January 2026 - New payment structure (RM500/RM800/RM3000)
 
 const StatusMapping = {
     // Map status to simplified group based on rules
@@ -127,7 +127,7 @@ const StatusMapping = {
     ]
 };
 
-// Earnings structure with conditions - UPDATED December 2024
+// Earnings structure with conditions - UPDATED January 2026
 // All payments are single payment after 90 days probation
 const earningsStructure = {
     johor: {
@@ -150,7 +150,7 @@ const earningsStructure = {
     }
 };
 
-// Status examples for guide - UPDATED December 2024
+// Status examples for guide - UPDATED January 2026
 const statusExamples = [
     {
         status: "Application Received",

@@ -1,7 +1,7 @@
 /**
  * apiService.js - Dashboard API Service
  * Handles SharePoint connection, data fetching, and mock data for testing
- * Updated: December 2024 - 18 mock records (6 statuses × 3 payment tiers)
+ * Updated: January 2026 - Email-only login, 18 mock records (6 statuses × 3 payment tiers)
  */
 
 const ApiService = {
@@ -18,7 +18,7 @@ const ApiService = {
     
     /**
      * Check if demo mode is enabled
-     * Enable via: ?demo=1 URL parameter or demo credentials
+     * Enable via: ?demo=1 URL parameter or demo email
      */
     isDemoMode() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -26,11 +26,11 @@ const ApiService = {
     },
 
     /**
-     * Check demo credentials
-     * Demo login: 0123456789 / amr@tp.com
+     * Check demo credentials (email only)
+     * Demo login: amr@tp.com (note: this is not a real email, for demo purposes only)
      */
-    isDemoCredentials(phone, email) {
-        return phone === '0123456789' && email.toLowerCase() === 'amr@tp.com';
+    isDemoEmail(email) {
+        return email.toLowerCase() === 'amr@tp.com';
     },
 
     /**
@@ -337,20 +337,18 @@ const ApiService = {
     // ==================== AUTHENTICATION ====================
     
     /**
-     * Validate user credentials
-     * @param {string} phone - User phone number
+     * Validate user credentials (email only)
      * @param {string} email - User email address
      * @returns {Promise<object>} Authentication result
      */
-    async validateCredentials(phone, email) {
+    async validateCredentials(email) {
         // Check demo mode first
-        if (this.isDemoMode() || this.isDemoCredentials(phone, email)) {
+        if (this.isDemoMode() || this.isDemoEmail(email)) {
             console.log('🎭 Demo mode activated');
             return {
                 success: true,
                 isDemo: true,
                 user: {
-                    phone: phone,
                     email: email,
                     name: 'Demo User (Amr)'
                 }
@@ -366,7 +364,6 @@ const ApiService = {
                 success: true,
                 isDemo: false,
                 user: {
-                    phone: phone,
                     email: email
                 }
             };
@@ -382,22 +379,21 @@ const ApiService = {
     // ==================== DATA FETCHING ====================
     
     /**
-     * Fetch referrals for a user
-     * @param {string} phone - Referrer phone number
+     * Fetch referrals for a user (by email only)
      * @param {string} email - Referrer email address
      * @returns {Promise<array>} Array of referral objects
      */
-    async fetchReferrals(phone, email) {
+    async fetchReferrals(email) {
         // Demo mode returns mock data
-        if (this.isDemoMode() || this.isDemoCredentials(phone, email)) {
+        if (this.isDemoMode() || this.isDemoEmail(email)) {
             console.log('📦 Loading mock data (18 records)...');
             await this.simulateDelay(800);
             return this.getMockReferrals();
         }
 
         try {
-            // Real SharePoint API call would go here
-            const response = await this.makeSharePointRequest(phone, email);
+            // Real SharePoint API call
+            const response = await this.makeSharePointRequest(email);
             return response;
         } catch (error) {
             console.error('Fetch error:', error);
@@ -406,13 +402,13 @@ const ApiService = {
     },
 
     /**
-     * Make actual SharePoint REST API request
-     * @param {string} phone - Referrer phone
+     * Make actual SharePoint REST API request (email only)
      * @param {string} email - Referrer email
      * @returns {Promise<array>} SharePoint list items
      */
-    async makeSharePointRequest(phone, email) {
-        const filterQuery = `$filter=(Referrer_x0020_Phone eq '${phone}') or (Referrer_x0020_Email eq '${email}')`;
+    async makeSharePointRequest(email) {
+        // Query by email only
+        const filterQuery = `$filter=Referrer_x0020_Email eq '${email}'`;
         const selectQuery = `$select=ID,Person_x0020_Full_x0020_Name,Person_x0020_Email,Default_x0020_Phone,Recent_x0020_Status,Source_x0020_Name,Location,Position,F_Nationality,Created,Modified,HireDate`;
         
         const apiUrl = `${this.config.siteUrl}/_api/web/lists/getbytitle('${this.config.listName}')/items?${filterQuery}&${selectQuery}`;

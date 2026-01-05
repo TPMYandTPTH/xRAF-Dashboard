@@ -1,14 +1,11 @@
 // Translations for all languages
-// Updated: December 2024 - New payment structure (RM500/RM800/RM3000)
+// Updated: January 2026 - Email-only login, New payment structure (RM500/RM800/RM3000)
 
 const translations = {
     en: {
         pageLangLabel: "Choose Your Language:",
         dashboardTitle: "TP External RAF Dashboard",
-        dashboardSubtitle: "Enter your details to view your referral status",
-        phoneLabel: "Phone Number:",
-        phonePlaceholder: "Enter your phone number (01XXXXXXXX)",
-        phoneError: "Please provide a valid phone number (01XXXXXXXX).",
+        dashboardSubtitle: "Enter your email to view your referral status",
         emailLabel: "Email Address:",
         emailPlaceholder: "Enter your email address",
         emailError: "Please provide a valid email address.",
@@ -61,7 +58,7 @@ const translations = {
         filteredViewLabel: "Simplified Status View",
         previouslyAppliedNote: "Note:",
         previouslyAppliedNoteText: "No payment will be made if the candidate had previously applied to TP",
-        connectingMessage: "Connecting to SharePoint...",
+        connectingMessage: "Connecting...",
         statusGuideTitle: "Status Guide & Payment Information",
         location: "Location",
         source: "Source",
@@ -77,15 +74,19 @@ const translations = {
         condition: "Condition", 
         payment: "Payment",
         noPaymentNote: "Candidate applied before referral",
-        errorMessage: "Unable to connect to server. Showing available data."
+        errorMessage: "Unable to connect to server. Showing available data.",
+        // OTP related
+        otpTitle: "Security Verification",
+        otpSentMessage: "We have sent a verification code to:",
+        enterOtp: "Enter 6-digit Code",
+        verifyBtn: "Verify & Login",
+        didntReceive: "Didn't receive code?",
+        resendBtn: "Resend"
     },
     ja: {
         pageLangLabel: "言語を選択:",
         dashboardTitle: "紹介ダッシュボード",
-        dashboardSubtitle: "詳細を入力して紹介状況を表示",
-        phoneLabel: "電話番号:",
-        phonePlaceholder: "電話番号を入力 (01XXXXXXXX)",
-        phoneError: "有効な電話番号を入力してください (01XXXXXXXX)",
+        dashboardSubtitle: "メールアドレスを入力して紹介状況を表示",
         emailLabel: "メールアドレス:",
         emailPlaceholder: "メールアドレスを入力",
         emailError: "有効なメールアドレスを入力してください",
@@ -137,7 +138,7 @@ const translations = {
         filteredViewLabel: "簡易ステータス表示",
         previouslyAppliedNote: "注意:",
         previouslyAppliedNoteText: "候補者が以前にTPに応募していた場合、支払いは行われません",
-        connectingMessage: "SharePointに接続中...",
+        connectingMessage: "接続中...",
         statusGuideTitle: "ステータスガイドと支払い情報",
         location: "場所",
         source: "ソース",
@@ -153,15 +154,19 @@ const translations = {
         condition: "条件",
         payment: "支払い",
         noPaymentNote: "候補者は紹介前に応募済み",
-        errorMessage: "サーバーに接続できません。利用可能なデータを表示しています。"
+        errorMessage: "サーバーに接続できません。利用可能なデータを表示しています。",
+        // OTP related
+        otpTitle: "セキュリティ認証",
+        otpSentMessage: "確認コードを送信しました:",
+        enterOtp: "6桁のコードを入力",
+        verifyBtn: "確認してログイン",
+        didntReceive: "コードが届きませんか？",
+        resendBtn: "再送信"
     },
     ko: {
         pageLangLabel: "언어 선택:",
         dashboardTitle: "추천 대시보드",
-        dashboardSubtitle: "추천 현황을 보려면 정보 입력",
-        phoneLabel: "전화번호:",
-        phonePlaceholder: "전화번호 입력 (01XXXXXXXX)",
-        phoneError: "유효한 전화번호 입력 (01XXXXXXXX)",
+        dashboardSubtitle: "이메일을 입력하여 추천 현황 보기",
         emailLabel: "이메일 주소:",
         emailPlaceholder: "이메일 주소 입력",
         emailError: "유효한 이메일 주소 입력",
@@ -213,7 +218,7 @@ const translations = {
         filteredViewLabel: "간략한 상태 보기",
         previouslyAppliedNote: "참고:",
         previouslyAppliedNoteText: "후보자가 이전에 TP에 지원한 경우 지급되지 않습니다",
-        connectingMessage: "SharePoint에 연결 중...",
+        connectingMessage: "연결 중...",
         statusGuideTitle: "상태 가이드 및 결제 정보",
         location: "위치",
         source: "소스",
@@ -229,15 +234,19 @@ const translations = {
         condition: "조건",
         payment: "결제",
         noPaymentNote: "후보자가 추천 전에 지원함",
-        errorMessage: "서버에 연결할 수 없습니다. 사용 가능한 데이터를 표시합니다."
+        errorMessage: "서버에 연결할 수 없습니다. 사용 가능한 데이터를 표시합니다.",
+        // OTP related
+        otpTitle: "보안 인증",
+        otpSentMessage: "인증 코드를 보냈습니다:",
+        enterOtp: "6자리 코드 입력",
+        verifyBtn: "확인 및 로그인",
+        didntReceive: "코드를 받지 못하셨나요?",
+        resendBtn: "재전송"
     },
     "zh-CN": {
         pageLangLabel: "选择语言:",
         dashboardTitle: "推荐仪表板",
-        dashboardSubtitle: "输入信息查看推荐状态",
-        phoneLabel: "电话号码:",
-        phonePlaceholder: "输入电话号码 (01XXXXXXXX)",
-        phoneError: "请输入有效电话号码 (01XXXXXXXX)",
+        dashboardSubtitle: "输入电子邮件查看推荐状态",
         emailLabel: "电子邮件:",
         emailPlaceholder: "输入电子邮件",
         emailError: "请输入有效电子邮件",
@@ -289,7 +298,7 @@ const translations = {
         filteredViewLabel: "简化状态视图",
         previouslyAppliedNote: "注意:",
         previouslyAppliedNoteText: "如果候选人之前申请过TP，将不会支付",
-        connectingMessage: "正在连接到SharePoint...",
+        connectingMessage: "正在连接...",
         statusGuideTitle: "状态指南和支付信息",
         location: "位置",
         source: "来源",
@@ -305,15 +314,19 @@ const translations = {
         condition: "条件",
         payment: "支付",
         noPaymentNote: "候选人在推荐前已申请",
-        errorMessage: "无法连接到服务器。显示可用数据。"
+        errorMessage: "无法连接到服务器。显示可用数据。",
+        // OTP related
+        otpTitle: "安全验证",
+        otpSentMessage: "我们已发送验证码至:",
+        enterOtp: "输入6位验证码",
+        verifyBtn: "验证并登录",
+        didntReceive: "没有收到验证码？",
+        resendBtn: "重新发送"
     },
     "zh-HK": {
         pageLangLabel: "選擇語言:",
         dashboardTitle: "推薦儀表板",
-        dashboardSubtitle: "輸入信息查看推薦狀態",
-        phoneLabel: "電話號碼:",
-        phonePlaceholder: "輸入電話號碼 (01XXXXXXXX)",
-        phoneError: "請輸入有效電話號碼 (01XXXXXXXX)",
+        dashboardSubtitle: "輸入電子郵件查看推薦狀態",
         emailLabel: "電子郵件:",
         emailPlaceholder: "輸入電子郵件",
         emailError: "請輸入有效電子郵件",
@@ -365,7 +378,7 @@ const translations = {
         filteredViewLabel: "簡化狀態視圖",
         previouslyAppliedNote: "注意:",
         previouslyAppliedNoteText: "如果候選人之前申請過TP，將不會支付",
-        connectingMessage: "正在連接到SharePoint...",
+        connectingMessage: "正在連接...",
         statusGuideTitle: "狀態指南和支付信息",
         location: "位置",
         source: "來源",
@@ -381,6 +394,13 @@ const translations = {
         condition: "條件",
         payment: "支付",
         noPaymentNote: "候選人在推薦前已申請",
-        errorMessage: "無法連接到伺服器。顯示可用數據。"
+        errorMessage: "無法連接到伺服器。顯示可用數據。",
+        // OTP related
+        otpTitle: "安全驗證",
+        otpSentMessage: "我們已發送驗證碼至:",
+        enterOtp: "輸入6位驗證碼",
+        verifyBtn: "驗證並登錄",
+        didntReceive: "沒有收到驗證碼？",
+        resendBtn: "重新發送"
     }
 };
