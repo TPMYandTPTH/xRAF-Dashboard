@@ -1,5 +1,5 @@
-// Main Application Script with Updated Logic
-// Updated: January 2026 - Email-only login, New payment structure (RM500/RM800/RM3000)
+// Main Application Script
+// Updated: January 2026 - Email-only login with OTP verification
 
 document.addEventListener('DOMContentLoaded', function() {
     // Application State
@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
         statusChart: null,
         currentReferralsData: [],
         isLoading: false,
-        pendingLogin: { email: null }, // Store email while waiting for OTP
-        debugMode: false // Set to true for debugging
+        pendingLogin: { email: null },
+        debugMode: false
     };
     
     // Initialize application
@@ -19,12 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         document.getElementById('dashboard-email').focus();
         
-        // Test connection if in debug mode
-        if (AppState.debugMode) {
-            ApiService.testConnection();
-        }
-        
-        // Check for demo mode
+        // Check for demo mode via URL parameter
         checkForDemoMode();
     }
     
@@ -38,8 +33,55 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up event listeners
     function setupEventListeners() {
+        // Language change
         document.getElementById('lang-select').addEventListener('change', handleLanguageChange);
-        document.getElementById('dashboard-submit').addEventListener('click', handleFormSubmit);
+        
+        // Step 1: Send OTP button
+        document.getElementById('send-otp-btn').addEventListener('click', handleSendOTP);
+        
+        // Step 2: Verify OTP button
+        document.getElementById('verify-otp-btn').addEventListener('click', handleVerifyOTP);
+        
+        // Change email link
+        document.getElementById('change-email-btn').addEventListener('click', handleChangeEmail);
+        
+        // Resend OTP link
+        document.getElementById('resend-otp').addEventListener('click', handleResendOTP);
+        
+        // OTP input - auto enable button when 6 digits entered
+        document.getElementById('otp-input').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            const btn = document.getElementById('verify-otp-btn');
+            btn.disabled = this.value.length !== 6;
+            
+            // Auto-submit when 6 digits entered
+            if (this.value.length === 6) {
+                setTimeout(() => btn.click(), 100);
+            }
+            
+            // Clear error on input
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+            }
+        });
+        
+        // Enter key support for email field
+        document.getElementById('dashboard-email').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSendOTP();
+            }
+        });
+        
+        // Enter key support for OTP field
+        document.getElementById('otp-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (this.value.length === 6) {
+                    handleVerifyOTP();
+                }
+            }
+        });
         
         // Delegate event handling for dynamic content
         document.addEventListener('click', function(e) {
@@ -50,117 +92,89 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleBackButton();
             }
         });
-        
-        // Enter key support
-        document.getElementById('dashboard-form').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleFormSubmit();
-            }
-        });
-
-        // OTP Modal Listeners
-        document.getElementById('verify-otp-btn').addEventListener('click', handleOtpVerify);
-        document.getElementById('resend-otp').addEventListener('click', handleResendOtp);
-        
-        // Auto-enable verify button when 6 digits entered
-        document.getElementById('otp-input').addEventListener('input', function(e) {
-            // Allow numbers only
-            this.value = this.value.replace(/[^0-9]/g, '');
-            const btn = document.getElementById('verify-otp-btn');
-            btn.disabled = this.value.length !== 6;
-            
-            // Auto-submit on 6th digit
-            if (this.value.length === 6) {
-                // small delay for UI feedback
-                setTimeout(() => btn.click(), 100);
-            }
-            
-            // Clear error on input
-            if (this.classList.contains('is-invalid')) {
-                this.classList.remove('is-invalid');
-            }
-        });
     }
     
-    // Handle form submission - STEP 1: Request OTP
-    async function handleFormSubmit() {
+    // Step 1: Handle Send OTP
+    async function handleSendOTP() {
         const email = document.getElementById('dashboard-email').value.trim();
         
-        if (!validateInputs(email)) return;
+        // Validate email
+        if (!validateEmail(email)) {
+            showError(document.getElementById('dashboard-email'), 
+                     translations[AppState.currentLanguage].emailError);
+            return;
+        }
         
-        // Store email temporarily
-        AppState.pendingLogin = { email };
+        clearError(document.getElementById('dashboard-email'));
         
-        setLoadingState(true);
+        // Store email
+        AppState.pendingLogin.email = email;
+        
+        // Show loading state
+        const btn = document.getElementById('send-otp-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+        btn.disabled = true;
         
         try {
             // Request OTP
             await AuthService.requestOTP(email);
             
-            // Show OTP Modal
-            const otpModal = new bootstrap.Modal(document.getElementById('otpModal'));
-            document.getElementById('otp-target-email').textContent = email;
+            // Show OTP section, hide email section
+            document.getElementById('email-section').style.display = 'none';
+            document.getElementById('otp-section').classList.add('show');
+            document.getElementById('confirmed-email').textContent = email;
             document.getElementById('otp-input').value = '';
-            document.getElementById('otp-input').classList.remove('is-invalid');
-            
-            setLoadingState(false);
-            otpModal.show();
-            
-            // Focus OTP input
-            setTimeout(() => document.getElementById('otp-input').focus(), 500);
+            document.getElementById('otp-input').focus();
             
         } catch (error) {
             console.error('OTP Error:', error);
-            showNonBlockingError('Failed to send OTP. Please try again.');
-            setLoadingState(false);
+            showNonBlockingError('Failed to send verification code. Please try again.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     }
     
-    // Handle OTP Verify - STEP 2: Verify and Login
-    async function handleOtpVerify() {
-        const input = document.getElementById('otp-input');
+    // Step 2: Handle Verify OTP
+    async function handleVerifyOTP() {
+        const otpInput = document.getElementById('otp-input');
+        const otpValue = otpInput.value;
         const btn = document.getElementById('verify-otp-btn');
-        const otpValue = input.value;
         
-        // UI Loading State
+        // Show loading state
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
         btn.disabled = true;
-        input.disabled = true;
+        otpInput.disabled = true;
         
         // Verify OTP
         const verification = AuthService.verifyOTP(otpValue);
         
         if (verification.success) {
-            // Success! Proceed to dashboard
-            const modalEl = document.getElementById('otpModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-            
-            // Reset modal UI
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            input.disabled = false;
-            
-            // Proceed to load dashboard data
-            await finalizedLogin();
-            
+            // Success! Load dashboard
+            await loadDashboard();
         } else {
-            // Failure
-            input.classList.add('is-invalid');
+            // Failure - show error
+            otpInput.classList.add('is-invalid');
             document.getElementById('otp-error-msg').textContent = verification.message;
-            
-            // Reset UI
             btn.innerHTML = originalText;
             btn.disabled = false;
-            input.disabled = false;
-            input.focus();
+            otpInput.disabled = false;
+            otpInput.focus();
         }
     }
     
-    // Resend OTP
-    async function handleResendOtp(e) {
+    // Handle Change Email (go back to step 1)
+    function handleChangeEmail() {
+        document.getElementById('otp-section').classList.remove('show');
+        document.getElementById('email-section').style.display = 'block';
+        document.getElementById('dashboard-email').focus();
+        AppState.pendingLogin.email = null;
+    }
+    
+    // Handle Resend OTP
+    async function handleResendOTP(e) {
         e.preventDefault();
         const email = AppState.pendingLogin.email;
         if (!email) return;
@@ -178,67 +192,53 @@ document.addEventListener('DOMContentLoaded', function() {
             link.style.pointerEvents = 'auto';
         }, 3000);
     }
-
-    // Finalize Login after OTP success
-    async function finalizedLogin() {
+    
+    // Load Dashboard after successful OTP verification
+    async function loadDashboard() {
         const { email } = AppState.pendingLogin;
         
-        // Show main loading state again
-        setLoadingState(true);
-        
         try {
-            // Fetch referrals from API (handles demo mode internally)
+            // Fetch referrals from API
             const apiData = await ApiService.fetchReferrals(email);
             
-            // Process and store referrals with deduplication
+            // Process and store referrals
             AppState.currentReferralsData = processReferrals(apiData);
             
-            // Always show dashboard
+            // Show dashboard
             showReferralResults(AppState.currentReferralsData);
             
         } catch (error) {
             console.error('Error:', error);
-            // Still show dashboard with empty data
             AppState.currentReferralsData = [];
             showReferralResults([]);
             showNonBlockingError(translations[AppState.currentLanguage].errorMessage);
-        } finally {
-            setLoadingState(false);
         }
     }
     
-    // Process API response with deduplication and fixed status mapping
+    // Process API response with deduplication
     function processReferrals(apiData) {
         if (!Array.isArray(apiData)) return [];
         
-        // Create a Map to track unique referrals by email+name combination
         const uniqueReferrals = new Map();
         
         apiData.forEach(item => {
-            // Create unique key using email and name (or phone as fallback)
-            // Support both simplified and SharePoint field names
             const email = (item.Person_x0020_Email || item.Email || item.email || '').toLowerCase().trim();
             const name = (item.Person_x0020_Full_x0020_Name || item.First_Name || item.name || 'Unknown').trim();
             const phone = (item.Default_x0020_Phone || item.Employee || item.phone || '').trim();
             
-            // Use email+name as primary key, or phone+name as fallback
             const uniqueKey = email ? `${email}_${name}` : `${phone}_${name}`;
             
-            // Skip if we've already processed this person
             if (uniqueReferrals.has(uniqueKey)) {
                 const existing = uniqueReferrals.get(uniqueKey);
-                // If duplicate found, keep the one with more recent update date
                 const existingDate = new Date(existing.UpdatedDate || existing.updatedDate || 0);
                 const currentDate = new Date(item.UpdatedDate || item.updatedDate || item.Modified || 0);
                 if (currentDate <= existingDate) {
-                    return; // Skip this duplicate
+                    return;
                 }
             }
             
-            // Parse dates - support SharePoint field names
             const parseDate = (dateStr) => {
                 if (!dateStr) return new Date();
-                // Handle various date formats
                 if (dateStr.includes('/')) {
                     const [month, day, year] = dateStr.split(/[\/\s]/).filter(Boolean).map(Number);
                     return new Date(year, month - 1, day);
@@ -253,18 +253,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const daysSinceCreation = Math.floor((new Date() - createdDate) / (86400000));
             const daysSinceHire = hireDate ? Math.floor((new Date() - hireDate) / (86400000)) : 0;
             
-            // Get status and source - support SharePoint field names
             const rawStatus = (item.Recent_x0020_Status || item.Status || item.status || 'Application Received').trim();
             const source = (item.Source_x0020_Name || item.Source || item.source || item.SourceName || '').trim();
             
-            // Check if xRAF referral (only xRAF is accepted for payment)
             const sourceL = source.toLowerCase().trim();
             const isXRAF = sourceL === 'xraf';
             
-            // Map status with all parameters including source and days
             let mappedStatus = StatusMapping.mapStatusToGroup(rawStatus, null, source, daysInStage);
             
-            // Special case: if status indicates hired, check days since hire date or creation
             if (mappedStatus === 'Hired (Probation)') {
                 const daysEmployed = hireDate ? daysSinceHire : daysSinceCreation;
                 if (daysEmployed >= 90) {
@@ -275,83 +271,48 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusType = StatusMapping.getSimplifiedStatusType(rawStatus, null, source, daysInStage);
             const stage = StatusMapping.determineStage(rawStatus, null, source, daysInStage);
             
-            // Check if needs reminder (any Application Received status)
             const needsAction = mappedStatus === 'Application Received';
             
-            // Get location and position for payment tier determination
             const location = (item.Location || item.location || '').trim();
             const position = (item.Position || item.position || '').trim();
-            const paymentTier = item.PaymentTier || null; // From mock data
+            const paymentTier = item.PaymentTier || null;
             
             const processedReferral = {
-                // IDs
                 id: item.Person_system_id || item.personId || item.ID || uniqueKey,
                 personId: item.Person_system_id || item.personId || item.ID,
                 uniqueKey: uniqueKey,
-                
-                // Contact info
                 name: name,
                 email: email,
                 phone: phone,
-                
-                // Status info
                 status: rawStatus,
                 mappedStatus: mappedStatus,
                 statusType: statusType,
                 stage: stage,
-                
-                // Source and eligibility
                 source: source,
                 isXRAF: isXRAF,
                 isPreviousCandidate: !isXRAF && source !== '',
-                
-                // Location and position info
                 location: location,
                 position: position,
                 nationality: item.F_Nationality || item.nationality || '',
-                PaymentTier: paymentTier, // For tier-based earnings calculation
-                
-                // Dates
+                PaymentTier: paymentTier,
                 createdDate: createdDate,
                 updatedDate: updatedDate,
                 daysInStage: daysInStage,
                 daysSinceCreation: daysSinceCreation,
-                
-                // Action flags
                 needsAction: needsAction,
-                
-                // Payment eligibility - only after 90 days probation
                 isEligibleForPayment: isXRAF && mappedStatus === 'Hired (Confirmed)',
-                
-                // Original data for debugging
                 _original: item
             };
             
-            // Add to unique map
             uniqueReferrals.set(uniqueKey, processedReferral);
         });
         
-        // Convert Map values to array and sort by created date (newest first)
         return Array.from(uniqueReferrals.values()).sort((a, b) => {
             return b.createdDate - a.createdDate;
         });
     }
     
-    // Validate form inputs (email only)
-    function validateInputs(email) {
-        let isValid = true;
-        
-        if (!validateEmail(email)) {
-            showError(document.getElementById('dashboard-email'), 
-                     translations[AppState.currentLanguage].emailError);
-            isValid = false;
-        } else {
-            clearError(document.getElementById('dashboard-email'));
-        }
-        
-        return isValid;
-    }
-    
+    // Validate email
     function validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
@@ -365,15 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function clearError(input) {
         input.classList.remove('is-invalid');
-    }
-    
-    // Set loading state
-    function setLoadingState(isLoading) {
-        const submitBtn = document.getElementById('dashboard-submit');
-        submitBtn.disabled = isLoading;
-        submitBtn.innerHTML = isLoading ? 
-            `<span class="spinner-border spinner-border-sm me-2"></span>${translations[AppState.currentLanguage].connectingMessage}` :
-            translations[AppState.currentLanguage].viewStatusBtn;
     }
     
     // Handle language change
@@ -391,10 +343,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const resultsStep = document.getElementById('results-step');
         resultsStep.style.display = 'block';
         
-        // Create results content
         resultsStep.innerHTML = createResultsContent(referrals);
         
-        // Initialize dashboard components
         updateChart(referrals);
         updateEarningsTable(referrals);
         updateReminderSection(referrals);
@@ -403,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTranslations();
     }
     
-    // Create results HTML with new sections
+    // Create results HTML
     function createResultsContent(referrals) {
         const hiredCount = referrals.filter(r => 
             r.mappedStatus === 'Hired (Confirmed)' || r.mappedStatus === 'Hired (Probation)'
@@ -414,15 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
             r.mappedStatus === 'Assessment Stage'
         ).length;
         
-        // Debug logging
-        console.log('Referral Status Summary:');
-        referrals.forEach(r => {
-            console.log(`${r.name}: ${r.status} -> ${r.mappedStatus} (Source: ${r.source})`);
-        });
-        console.log('In Progress Count:', inProgressCount);
-        console.log('Hired Count:', hiredCount);
-        
-        const userName = document.getElementById('dashboard-email').value.split('@')[0];
+        const userName = AppState.pendingLogin.email.split('@')[0];
         
         return `
             <div class="d-flex justify-content-between align-items-start mb-4">
@@ -435,7 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
             
-            <!-- Stats Cards -->
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
                     <div class="card stats-card total">
@@ -463,7 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <!-- Status Distribution Chart -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="statusDistribution">Status Distribution</h5>
@@ -474,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
 
-            <!-- Earnings Table -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="earningsTitle">Your Earnings</h5>
@@ -505,7 +444,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <!-- Reminder Section -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3" data-translate="remindFriendsTitle">Remind Your Friends</h5>
@@ -514,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <!-- Referral List -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="mb-3">All Referrals</h5>
@@ -522,7 +459,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <!-- Status Guide moved to end -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-4" data-translate="statusGuideTitle">Status Guide & Payment Information</h5>
@@ -536,12 +472,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleBackButton() {
         document.getElementById('auth-step').style.display = 'block';
         document.getElementById('results-step').style.display = 'none';
+        
+        // Reset form state
+        document.getElementById('email-section').style.display = 'block';
+        document.getElementById('otp-section').classList.remove('show');
         document.getElementById('dashboard-email').value = '';
+        document.getElementById('otp-input').value = '';
         document.getElementById('dashboard-email').focus();
+        
         AppState.currentReferralsData = [];
+        AppState.pendingLogin.email = null;
     }
     
-    // Handle WhatsApp reminders with professional message
+    // Handle WhatsApp reminders
     function handleReminderClick(e) {
         const button = e.target.closest('.remind-btn');
         if (!button) return;
@@ -551,60 +494,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const lang = button.dataset.lang || AppState.currentLanguage;
         if (!phone) return;
         
-        // Format phone for WhatsApp
         const formattedPhone = phone.startsWith('0') ? '6' + phone : phone;
         
-        // Professional messages in different languages
         const messages = {
-            en: `Hello ${name},\n\nI hope this message finds you well. This is a friendly reminder regarding your application to TP.\n\nWe noticed that you haven't completed your assessment yet. Please check your personal email for the assessment link that was sent to you.\n\nCompleting the assessment is an important step in your application process. If you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTP Recruitment Team`,
-            
-            ja: `${name}様\n\nお世話になっております。テレパフォーマンスへのご応募に関するリマインダーです。\n\nまだアセスメントを完了されていないようです。個人のメールアドレスに送信されたアセスメントのリンクをご確認ください。\n\nアセスメントの完了は、応募プロセスの重要なステップです。ご不明な点がございましたら、お気軽にお問い合わせください。\n\nよろしくお願いいたします。\nTP採用チーム`,
-            
-            ko: `안녕하세요 ${name}님,\n\n텔레퍼포먼스 지원과 관련하여 안내 드립니다.\n\n아직 평가를 완료하지 않으신 것으로 확인됩니다. 개인 이메일로 발송된 평가 링크를 확인해 주시기 바랍니다.\n\n평가 완료는 지원 과정에서 중요한 단계입니다. 궁금한 점이 있으시면 언제든지 문의해 주세요.\n\n감사합니다.\nTP 채용팀`,
-            
-            "zh-CN": `${name} 您好，\n\n这是关于您申请TP的友好提醒。\n\n我们注意到您还没有完成评估。请查看您的个人邮箱中发送的评估链接。\n\n完成评估是申请过程中的重要步骤。如果您有任何问题或需要帮助，请随时与我们联系。\n\n祝好，\nTP招聘团队`,
-            
-            "zh-HK": `${name} 您好，\n\n這是關於您申請TP的友好提醒。\n\n我們注意到您還沒有完成評估。請查看您的個人郵箱中發送的評估鏈接。\n\n完成評估是申請過程中的重要步驟。如果您有任何問題或需要幫助，請隨時與我們聯繫。\n\n祝好，\nTP招聘團隊`
+            en: `Hello ${name},\n\nThis is a friendly reminder regarding your application to TP.\n\nPlease check your personal email for the assessment link.\n\nBest regards,\nTP Recruitment Team`,
+            ja: `${name}様\n\nテレパフォーマンスへのご応募に関するリマインダーです。\n\n個人のメールアドレスに送信されたアセスメントのリンクをご確認ください。\n\nよろしくお願いいたします。\nTP採用チーム`,
+            ko: `안녕하세요 ${name}님,\n\n텔레퍼포먼스 지원과 관련하여 안내 드립니다.\n\n개인 이메일로 발송된 평가 링크를 확인해 주시기 바랍니다.\n\n감사합니다.\nTP 채용팀`,
+            "zh-CN": `${name} 您好，\n\n这是关于您申请TP的友好提醒。\n\n请查看您的个人邮箱中发送的评估链接。\n\n祝好，\nTP招聘团队`,
+            "zh-HK": `${name} 您好，\n\n這是關於您申請TP的友好提醒。\n\n請查看您的個人郵箱中發送的評估鏈接。\n\n祝好，\nTP招聘團隊`
         };
         
         const message = messages[lang] || messages.en;
         window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
     }
     
-    // Update status chart with fixed mapping
+    // Update status chart
     function updateChart(referrals) {
         const ctx = document.getElementById('statusChart')?.getContext('2d');
         if (!ctx) return;
         
-        // Destroy previous chart
         if (AppState.statusChart) {
             AppState.statusChart.destroy();
         }
         
-        // Count statuses using fixed mapping
         const counts = {};
         StatusMapping.displayOrder.forEach(status => {
             counts[status] = 0;
         });
         
-        // Count each referral's mapped status
         referrals.forEach(r => {
             if (counts[r.mappedStatus] !== undefined) {
                 counts[r.mappedStatus]++;
             }
         });
         
-        // Chart colors - TP Brand colors
         const colors = [
-            '#3047b0',  // Application Received - Blue TP
-            '#00d769',  // Assessment Stage - Green Flash TP
-            '#F5D200',  // Hired (Probation) - Yellow TP
-            '#84c98b',  // Hired (Confirmed) - Green Light TP
-            '#676767',  // Previously Applied (No Payment) - Gray TP
-            '#dc3545'   // Not Selected - red
+            '#3047b0',  // Application Received
+            '#00d769',  // Assessment Stage
+            '#F5D200',  // Hired (Probation)
+            '#84c98b',  // Hired (Confirmed)
+            '#676767',  // Previously Applied
+            '#dc3545'   // Not Selected
         ];
         
-        // Create new chart
         AppState.statusChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -626,16 +558,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         position: 'bottom',
                         labels: {
                             padding: 15,
-                            font: {
-                                size: 12
-                            },
+                            font: { size: 12 },
                             generateLabels: function(chart) {
                                 const data = chart.data;
                                 if (data.labels.length && data.datasets.length) {
                                     return data.labels.map((label, i) => {
                                         const value = data.datasets[0].data[i];
-                                        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                         return {
                                             text: `${label} (${value})`,
                                             fillStyle: data.datasets[0].backgroundColor[i],
@@ -664,22 +592,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Update earnings table with new 3-tier structure
-    // Counts eligible referrals by payment tier based on PaymentTier field or auto-detection
+    // Update earnings table
     function updateEarningsTable(referrals) {
         const earningsBody = document.getElementById('earnings-body');
         if (!earningsBody) return;
         
-        // Count eligible candidates (Hired Confirmed + xRAF source)
         const eligibleReferrals = referrals.filter(r => r.isEligibleForPayment);
         
-        // Count by payment tier
         let johorCount = 0;
         let standardCount = 0;
         let interpreterCount = 0;
         
         eligibleReferrals.forEach(r => {
-            // Use PaymentTier if available (from mock data), otherwise auto-detect
             const tier = r.PaymentTier || detectPaymentTier(r);
             
             if (tier === 'johor') {
@@ -691,7 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Calculate earnings
         const johorEarnings = johorCount * 500;
         const standardEarnings = standardCount * 800;
         const interpreterEarnings = interpreterCount * 3000;
@@ -723,22 +646,16 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('total-earnings').textContent = `RM ${totalEarnings.toLocaleString()}`;
     }
     
-    // Auto-detect payment tier from referral data
     function detectPaymentTier(referral) {
         const position = (referral.position || referral.Position || '').toLowerCase();
         const location = (referral.location || referral.Location || '').toLowerCase();
         
-        // Check for Interpreter position
         if (position.includes('interpreter')) {
             return 'interpreter';
         }
-        
-        // Check for Johor location
         if (location.includes('johor')) {
             return 'johor';
         }
-        
-        // Default to standard
         return 'standard';
     }
     
@@ -747,7 +664,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('friends-to-remind');
         if (!container) return;
         
-        // Filter friends needing reminder (Application Received status only)
         const friendsToRemind = referrals.filter(r => 
             r.mappedStatus === 'Application Received' && r.phone
         );
@@ -806,9 +722,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        container.innerHTML = '<h5 class="mb-3"></h5>';
+        container.innerHTML = '';
         
-        // Sort referrals by status order
         const sortedReferrals = [...referrals].sort((a, b) => {
             const aIndex = StatusMapping.displayOrder.indexOf(a.mappedStatus);
             const bIndex = StatusMapping.displayOrder.indexOf(b.mappedStatus);
@@ -869,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Update status guide section
+    // Update status guide
     function updateStatusGuide() {
         const container = document.getElementById('status-guide-content');
         if (!container) return;
@@ -878,12 +793,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         container.innerHTML = `
             <div class="row">
-                <!-- Status Examples -->
                 <div class="col-md-6">
                     <h6 class="mb-3" data-translate="statusExamples">Status Examples</h6>
                     <div class="status-examples">
                         ${statusExamples.map(example => {
-                            // Get the correct status type for coloring
                             let statusType = StatusMapping.getSimplifiedStatusType(example.status);
                             if (example.status === "Hired (Confirmed)") statusType = 'passed';
                             if (example.status === "Previously Applied (No Payment)") statusType = 'previously-applied';
@@ -904,7 +817,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
-                <!-- Payment Conditions -->
                 <div class="col-md-6">
                     <h6 class="mb-3" data-translate="paymentConditions">Payment Conditions</h6>
                     <div class="table-responsive">
@@ -979,7 +891,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         alertContainer.appendChild(alert);
         
-        // Auto-dismiss after 5 seconds
         setTimeout(() => {
             const alertEl = document.getElementById(alertId);
             if (alertEl) {
@@ -989,9 +900,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Initialize the app
+    // Initialize
     initializeApp();
     
-    // Expose state for debugging
+    // Expose for debugging
     window.AppState = AppState;
 });
