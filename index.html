@@ -15,12 +15,46 @@
 
   <!-- Small inline overrides -->
   <style>
-    /* ensure "In Progress" card doesn't clash with .progress */
     .stats-card.in-progress { border-left: 4px solid var(--warning-color); }
-    /* boxed social media area with heavier shadow */
     .social-card { box-shadow: 0 12px 40px rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: .5rem; }
-    /* center the logo in Status Distribution chart */
     .chart-logo { position: absolute; inset: 0; margin: auto; width: 60px; height: 60px; opacity: .1; pointer-events: none; transform: none; left: auto; top: auto; }
+    
+    /* OTP input styling */
+    .otp-input {
+      letter-spacing: 8px;
+      font-size: 1.5rem;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    /* OTP section initially hidden */
+    #otp-section {
+      display: none;
+    }
+    #otp-section.show {
+      display: block;
+    }
+    
+    /* Email confirmed display */
+    .email-confirmed {
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 8px;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .email-confirmed .email-text {
+      font-weight: 600;
+      color: #2e7d32;
+    }
+    .email-confirmed .change-btn {
+      font-size: 0.85rem;
+      color: #1976d2;
+      cursor: pointer;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -55,14 +89,48 @@
           <p class="card-text text-center mb-4" data-translate="dashboardSubtitle">Enter your email to view your referral status</p>
 
           <form id="dashboard-form">
-            <div class="mb-3">
-              <label for="dashboard-email" class="form-label" data-translate="emailLabel">Email Address:</label>
-              <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" data-translate-placeholder="emailPlaceholder" required>
-              <div class="invalid-feedback" data-translate="emailError">Please provide a valid email address.</div>
+            <!-- Step 1: Email Input -->
+            <div id="email-section">
+              <div class="mb-3">
+                <label for="dashboard-email" class="form-label" data-translate="emailLabel">Email Address:</label>
+                <input type="email" class="form-control" id="dashboard-email" placeholder="Enter your email address" data-translate-placeholder="emailPlaceholder" required>
+                <div class="invalid-feedback" data-translate="emailError">Please provide a valid email address.</div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="button" id="send-otp-btn" class="btn btn-primary" data-translate="sendOtpBtn">
+                  <i class="fas fa-paper-plane me-2"></i>Send Verification Code
+                </button>
+              </div>
             </div>
 
-            <div class="d-grid gap-2">
-              <button type="button" id="dashboard-submit" class="btn btn-primary" data-translate="viewStatusBtn">View Referral Status</button>
+            <!-- Step 2: OTP Input (hidden initially, shown after email submitted) -->
+            <div id="otp-section">
+              <div class="mb-3">
+                <div class="email-confirmed mb-3">
+                  <span class="email-text" id="confirmed-email"></span>
+                  <span class="change-btn" id="change-email-btn" data-translate="changeEmailBtn">Change</span>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="otp-input" class="form-label" data-translate="otpLabel">Verification Code:</label>
+                <input type="text" class="form-control otp-input" id="otp-input" maxlength="6" placeholder="------" autocomplete="one-time-code">
+                <div class="invalid-feedback" id="otp-error-msg" data-translate="otpError">Invalid verification code.</div>
+                <small class="text-muted mt-2 d-block">
+                  <span data-translate="otpSentMessage">We sent a 6-digit code to your email.</span>
+                  <a href="#" id="resend-otp" class="ms-2" data-translate="resendBtn">Resend</a>
+                </small>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="button" id="verify-otp-btn" class="btn btn-primary" disabled data-translate="verifyBtn">
+                  <i class="fas fa-check me-2"></i>Verify & View Dashboard
+                </button>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
               <a href="https://tpmyandtpth.github.io/xRAF/" class="btn btn-outline-secondary" data-translate="backToRAF">Back to Referral Form</a>
             </div>
           </form>
@@ -83,7 +151,7 @@
     <!-- Results Step (initially hidden) -->
     <div id="results-step" style="display:none;"></div>
 
-    <!-- Social Media (boxed + heavier shadow) -->
+    <!-- Social Media -->
     <div class="card social-card mt-4">
       <div class="card-body">
         <div class="row text-center">
@@ -113,14 +181,14 @@
       </div>
     </div>
 
-  </div><!-- /.container -->
+  </div>
 
   <!-- Footer -->
   <footer class="footer mt-auto py-3 bg-dark text-white">
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-6">
-          <p class="mb-1">© <span id="current-year"></span> TP. All rights reserved.</p>
+          <p class="mb-1">© <span id="current-year"></span> Teleperformance Malaysia Sdn. Bhd.</p>
         </div>
         <div class="col-md-6 text-md-end">
           <p class="mb-1 small">External Referral Program</p>
@@ -129,7 +197,7 @@
     </div>
   </footer>
 
-  <!-- TnG Terms Modal - UPDATED January 2026 -->
+  <!-- TnG Terms Modal -->
   <div class="modal fade" id="tngModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -142,7 +210,6 @@
             <div class="col-md-6">
               <h6><i class="fas fa-money-bill-wave me-2" style="color: #ff5c00;"></i>Payment Structure</h6>
               <div class="mb-3">
-                <!-- Johor Tier - Orange -->
                 <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background: #ff5c00; color: #fff; border-radius: 12px;">
                   <div>
                     <strong>Mandarin - Johor</strong><br>
@@ -150,7 +217,6 @@
                   </div>
                   <span class="badge bg-light text-dark fs-6" style="border-radius: 8px;">RM500</span>
                 </div>
-                <!-- Standard Tier - Black -->
                 <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background: #84c98b; color: #fff; border-radius: 12px;">
                   <div>
                     <strong>Standard Roles (Other Locations)</strong><br>
@@ -158,7 +224,6 @@
                   </div>
                   <span class="badge bg-light text-dark fs-6" style="border-radius: 8px;">RM800</span>
                 </div>
-                <!-- Interpreter Tier - Turquoise -->
                 <div class="d-flex justify-content-between align-items-center p-3" style="background: #00af9b; color: #fff; border-radius: 12px;">
                   <div>
                     <strong>Interpreter (Work From Home)</strong><br>
@@ -180,7 +245,7 @@
               </ul>
               <div class="alert alert-warning small mt-3" style="border-radius: 12px;">
                 <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Note:</strong> Tax responsibility is borne by the referrer. All payments are subject to TP's verification and approval.
+                <strong>Note:</strong> Tax responsibility is borne by the referrer.
               </div>
             </div>
           </div>
@@ -192,47 +257,11 @@
     </div>
   </div>
 
-  <!-- OTP Verification Modal -->
-  <div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-translate="otpTitle">Security Verification</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <div class="mb-4">
-            <i class="fas fa-envelope-open-text fa-3x text-primary"></i>
-          </div>
-          <h6 data-translate="otpSentMessage">We have sent a verification code to:</h6>
-          <p id="otp-target-email" class="fw-bold mb-4"></p>
-          
-          <div class="mb-3">
-            <label for="otp-input" class="form-label" data-translate="enterOtp">Enter 6-digit Code</label>
-            <input type="text" class="form-control text-center fs-4 letter-spacing-2" id="otp-input" maxlength="6" autocomplete="one-time-code" placeholder="------">
-            <div class="invalid-feedback" id="otp-error-msg">Invalid Code</div>
-          </div>
-          
-          <div class="d-grid gap-2 mb-3">
-            <button type="button" class="btn btn-dark" id="verify-otp-btn" disabled>
-              <span id="verify-btn-text" data-translate="verifyBtn">Verify & Login</span>
-            </button>
-          </div>
-          
-          <p class="small text-muted mb-0">
-            <span data-translate="didntReceive">Didn't receive code?</span> 
-            <a href="#" id="resend-otp" class="text-decoration-none" data-translate="resendBtn">Resend</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- App scripts (order matters) -->
+  <!-- App scripts -->
   <script src="translations.js"></script>
   <script src="statusMapping.js"></script>
   <script src="authService.js"></script>
