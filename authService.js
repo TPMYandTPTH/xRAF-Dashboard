@@ -15,7 +15,7 @@ const AuthService = {
         otpLength: 6,
         expiryMinutes: 5,
         debugMode: true,
-        webhookUrl: "https://23a7afdc1481eef092e7eca1366142.95.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e1583b4aa1f140df8402c75d18538409/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ez5KgWgv8BE8tsS1YC0vCBa6BEOuB7cN2bN0lg0ddC0"
+        webhookUrl: "https://d8855a0b6453e4089c94add3719cb2.9c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c30686246ea248f8b2e47e50e030f615/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9UqQ_qRyKs4cYJgmAnZ-RrUNp12iP29c9uBLgfJQbpQ"
     },
     
     generateOTP() {
